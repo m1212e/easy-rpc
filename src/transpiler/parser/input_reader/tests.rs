@@ -1,7 +1,10 @@
 #[cfg(test)]
 mod tests {
 
-    use crate::transpiler::parser::input_reader::{InputReader, InputReaderError};
+    use crate::transpiler::parser::{
+        input_reader::{InputReader, InputReaderError},
+        CodePosition,
+    };
 
     #[test]
     fn test_peek_and_consume() -> Result<(), InputReaderError> {
@@ -120,6 +123,50 @@ mod tests {
 
         assert_eq!(reader.consume(12)?, "This is a ❎ ");
         assert_eq!(reader.consume(17)?, "unicode 👶 symbol!");
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_consume_until() -> Result<(), InputReaderError> {
+        let mut reader = InputReader::new("This is a ❎ unicode \n symbol!".as_bytes());
+
+        assert_eq!(reader.consume_until_or_end("❎")?, "This is a ❎");
+        assert_eq!(reader.consume_until_or_end("\n")?, " unicode \n");
+        assert_eq!(reader.consume_until_or_end("nonexistent")?, " symbol!");
+
+        match reader.consume_until_or_end("nonexistent") {
+            Ok(_) => panic!("Should return error"),
+            Err(err) => assert_eq!(matches!(err, InputReaderError::DONE), true),
+        }
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_consume_until_only_nonexistent() -> Result<(), InputReaderError> {
+        let mut reader = InputReader::new("This is a ❎ unicode 👶 symbol!".as_bytes());
+
+        assert_eq!(
+            reader.consume_until_or_end("\n")?,
+            "This is a ❎ unicode 👶 symbol!"
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_get_code_position() -> Result<(), InputReaderError> {
+        let mut reader = InputReader::new("This is a ❎ unicode 👶 symbol!".as_bytes());
+
+        let cp1 = reader.get_current_position().clone();
+        reader.consume(5)?;
+        let cp2 = reader.get_current_position().clone();
+        reader.consume(5)?;
+        let cp3 = reader.get_current_position().clone();
+        assert_eq!(cp1.character, 0);
+        assert_eq!(cp2.character, 5);
+        assert_eq!(cp3.character, 10);
 
         Ok(())
     }

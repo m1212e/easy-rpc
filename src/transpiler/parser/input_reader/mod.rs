@@ -42,7 +42,7 @@ impl<T: Read> InputReader<T> {
     }
 
     pub fn consume(&mut self, amount: usize) -> Result<String, InputReaderError> {
-        if self.done {
+        if self.is_done() {
             return Err(InputReaderError::DONE);
         }
 
@@ -62,14 +62,52 @@ impl<T: Read> InputReader<T> {
         return Ok(read);
     }
 
+    /**
+       Consumes chars until a specific string is met. The delimeter is INCLUSIVE and the cursor will be positioned BEHIND the delimeter after execution.
+        If the delimeter can't be found, the reader will be consumed until the end.
+    */
+    pub fn consume_until_or_end(&mut self, delimeter: &str) -> Result<String, InputReaderError> {
+        if self.is_done() {
+            return Err(InputReaderError::DONE);
+        }
+
+        let char_amount_of_delimeter = delimeter.chars().count();
+        let mut ret = String::new();
+
+        loop {
+            if self.is_done() {
+                return Ok(ret);
+            }
+
+            let peeked = self.peek(char_amount_of_delimeter)?;
+            if peeked == delimeter {
+                ret.push_str(&self.consume(char_amount_of_delimeter)?);
+                break;
+            }
+            ret.push_str(&self.consume(1)?);
+        }
+
+        Ok(ret)
+    }
+
     pub fn peek(&mut self, amount: usize) -> Result<String, InputReaderError> {
-        if self.done {
+        if self.is_done() {
             return Err(InputReaderError::DONE);
         }
 
         self.extend_buffer_by(amount)?;
 
         return Ok(self.buffer.chars().take(amount).collect());
+    }
+
+    pub fn is_done(&mut self) -> bool {
+        // since the self.done is only set AFTER the EOF was detected, try to fill the buffer to detect a possible EOF and return a correct result
+        let _ = self.extend_buffer_by(1);
+        return self.done && self.buffer.len() == 0;
+    }
+
+    pub fn get_current_position(&self) -> &CodePosition {
+        return &self.current_position;
     }
 
     /**
