@@ -9,6 +9,7 @@ use crate::transpiler::parser::{
     Invalid characters which are unknown to the parser or are missplaced in a kind of way that the parser
     cant handle them. This is used as a fallback to handle invalid syntax.
  */
+#[derive(Clone)]
 pub struct InvalidCharacters {
     content: String,
     start: CodePosition,

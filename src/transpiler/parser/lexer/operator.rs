@@ -11,7 +11,7 @@ use crate::transpiler::parser::{
 /**
     Operators are mostly single chars inside the source code used to syntactically indicate various things.
  */
-#[derive(Display, EnumIter)]
+#[derive(Display, EnumIter, Clone)]
 pub enum OperatorType {
     #[strum(serialize = "|")]
     Pipe,
@@ -32,7 +32,7 @@ pub enum OperatorType {
     #[strum(serialize = "?")]
     QuestionMark,
 }
-
+#[derive(Clone)]
 pub struct Operator {
     operator_type: OperatorType,
     start: CodePosition,

@@ -9,14 +9,15 @@ use crate::transpiler::parser::{
 
 /**
     Literals are fixed values typed out in the source code of various kinds.
- */
+    */
+#[derive(Clone)]
 pub enum LiteralType {
     Boolean(bool),
     String(String),
     Float(f32),
     Integer(i32),
 }
-
+#[derive(Clone)]
 pub struct Literal {
     literalType: LiteralType,
     start: CodePosition,

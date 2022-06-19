@@ -8,6 +8,7 @@ use crate::transpiler::parser::{
 /**
    A comment which can be ignored.
 */
+#[derive(Clone)]
 pub struct DisposeableComment {
     content: String,
     start: CodePosition,

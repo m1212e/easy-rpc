@@ -1,28 +1,38 @@
 mod tests;
 
-use std::io::{Read};
+use std::io::Read;
 
-use self::{disposeable_comment::DisposeableComment, token::Token, invalid_characters::InvalidCharacters, documentational_comment::DocumentationalComment, line_break::LineBreak, space::Space, operator::Operator, keyword::Keyword, literal::Literal, identifier::Identifier};
+use self::{
+    disposeable_comment::DisposeableComment, documentational_comment::DocumentationalComment,
+    identifier::Identifier, invalid_characters::InvalidCharacters, keyword::Keyword,
+    line_break::LineBreak, literal::Literal, operator::Operator, space::Space, token::Token,
+};
 
 use super::input_reader::{InputReader, InputReaderError};
 
 pub mod disposeable_comment;
 pub mod documentational_comment;
-pub mod invalid_characters;
 pub mod identifier;
-pub mod token;
-pub mod space;
+pub mod invalid_characters;
 pub mod keyword;
 pub mod line_break;
 pub mod literal;
 pub mod operator;
+pub mod space;
+pub mod token;
 
+/**
+   Wraps around an input reader and lexes the input into tokens.
+*/
 pub struct TokenReader {
     buffer: Vec<Token>,
     done: bool,
 }
 
 impl TokenReader {
+    /**
+       Creates a new token reader.
+    */
     pub fn new<T: Read>(reader: InputReader<T>) -> Result<TokenReader, InputReaderError> {
         let mut ret = TokenReader {
             buffer: Vec::new(),
@@ -34,7 +44,6 @@ impl TokenReader {
     }
 
     fn run<T: Read>(&mut self, mut reader: InputReader<T>) -> Result<(), InputReaderError> {
-
         // The order in which the tokens are processed matters!
 
         loop {
@@ -44,32 +53,39 @@ impl TokenReader {
 
             if let Some(value) = DocumentationalComment::lex_documentational_comment(&mut reader)? {
                 self.buffer.push(value.into());
+                continue;
             }
 
             if let Some(value) = DisposeableComment::lex_disposeable_comment(&mut reader)? {
                 self.buffer.push(value.into());
+                continue;
             }
-            
+
             Space::skip_space(&mut reader)?;
 
             if let Some(value) = LineBreak::lex_line_break(&mut reader)? {
                 self.buffer.push(value.into());
+                continue;
             }
 
             if let Some(value) = Operator::lex_operator(&mut reader)? {
                 self.buffer.push(value.into());
+                continue;
             }
 
             if let Some(value) = Keyword::lex_keyword(&mut reader)? {
                 self.buffer.push(value.into());
+                continue;
             }
 
             if let Some(value) = Literal::lex_literal(&mut reader)? {
                 self.buffer.push(value.into());
+                continue;
             }
 
             if let Some(value) = Identifier::lex_identifier(&mut reader)? {
                 self.buffer.push(value.into());
+                continue;
             }
 
             if reader.is_done() {
@@ -84,13 +100,63 @@ impl TokenReader {
         Ok(())
     }
 
-    pub fn peek(&mut self, amount: usize) -> Option<&[Token]> {
+    /**
+       Peeks the next n token without consuming it. The option contains none if there are no tokens available to return.
+    */
+    pub fn peek(&mut self, mut amount: usize) -> Option<Vec<Token>> {
         if self.done {
             return None;
         }
 
-        let elements = &self.buffer[1..amount];
+        if amount > self.buffer.len() {
+            amount = self.buffer.len();
+        }
 
-        return None;
+        let elements = &self.buffer[0..amount];
+
+        return Some(elements.to_vec());
+    }
+
+    /**
+       Returns the next n tokens and consumes them.
+    */
+    pub fn consume(&mut self, mut amount: usize) -> Option<Vec<Token>> {
+        if self.done {
+            return None;
+        }
+
+        if amount > self.buffer.len() {
+            amount = self.buffer.len();
+        }
+
+        let elements: Vec<Token> = self.buffer.drain(0..amount).collect();
+
+        if self.buffer.len() == 0 {
+            self.done = true;
+        }
+
+        return Some(elements);
+    }
+
+    /**
+        Consumes until the callback returns false. INCLUDES the iteration where false has been returned.
+     */
+    pub fn consume_until(
+        &mut self,
+        approve: fn(current: &Token, total: &[Token]) -> bool,
+    ) -> Option<Vec<Token>> {
+        let mut offset = 0;
+
+        loop {
+            offset += 1;
+            let peeked = self.peek(offset).unwrap();
+
+            if self.buffer.len() < offset {
+                return self.consume(peeked.len());
+            }
+            if !approve(&peeked[peeked.len()-1], &peeked) {
+                return self.consume(peeked.len());
+            }
+        }
     }
 }

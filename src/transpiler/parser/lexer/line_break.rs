@@ -8,6 +8,7 @@ use crate::transpiler::parser::{
 /**
     Line breaks are all kinds of newline chars. They are lexed seperately to improve parser quality.
  */
+#[derive(Clone)]
 pub struct LineBreak {
     start: CodePosition,
     end: CodePosition,

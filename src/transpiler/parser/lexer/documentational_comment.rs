@@ -8,6 +8,7 @@ use crate::transpiler::parser::{
 /**
     A documentational comment which can be used to document something.
  */
+#[derive(Clone)]
 pub struct DocumentationalComment {
     content: String,
     start: CodePosition,

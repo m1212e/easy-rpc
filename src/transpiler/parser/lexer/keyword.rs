@@ -11,7 +11,7 @@ use crate::transpiler::parser::{
 /**
     Keywords are predefined words which the parser knows.
  */
-#[derive(Display, EnumIter)]
+#[derive(Display, EnumIter, Clone)]
 pub enum KeywordType {
     Type,
     Import,
@@ -27,6 +27,7 @@ pub enum KeywordType {
     Float,
 }
 
+#[derive(Clone)]
 pub struct Keyword {
     keyword_type: KeywordType,
     start: CodePosition,
