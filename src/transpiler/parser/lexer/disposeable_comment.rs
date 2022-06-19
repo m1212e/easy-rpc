@@ -2,9 +2,12 @@ use std::io::{Error, Read};
 
 use crate::transpiler::parser::{
     input_reader::{InputReader, InputReaderError},
-    CodePosition,
+    CodeArea, CodePosition,
 };
 
+/**
+   A comment which can be ignored.
+*/
 pub struct DisposeableComment {
     content: String,
     start: CodePosition,
@@ -15,9 +18,19 @@ impl DisposeableComment {
     pub fn lex_disposeable_comment<T: Read>(
         reader: &mut InputReader<T>,
     ) -> Result<Option<DisposeableComment>, InputReaderError> {
-        let peek = reader.peek(2)?;
+        let peek = reader.peek(3)?;
 
         let start = reader.get_current_position().clone();
+
+        /*
+            There are 3 types of disposeable comments:
+            // Single line comments introduced with a double slash
+            # Single line comments introduced with a number sign
+
+            /*
+                Multi line comments enclosed by /* and */
+            */
+        */
 
         if peek.starts_with("#") {
             reader.consume(1)?;
@@ -39,7 +52,7 @@ impl DisposeableComment {
             }));
         }
 
-        if peek.starts_with("/*") {
+        if peek.starts_with("/*") && !peek.starts_with("/**") {
             reader.consume(2)?;
             let content = reader.consume_until_or_end("*/")?;
             return Ok(Some(DisposeableComment {
@@ -55,12 +68,14 @@ impl DisposeableComment {
     pub fn get_content(&self) -> &String {
         &self.content
     }
+}
 
-    pub fn get_start(&self) -> &CodePosition {
+impl CodeArea for DisposeableComment {
+    fn get_start(&self) -> &CodePosition {
         &self.start
     }
 
-    pub fn get_end(&self) -> &CodePosition {
+    fn get_end(&self) -> &CodePosition {
         &self.end
     }
 }

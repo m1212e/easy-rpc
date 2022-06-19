@@ -2,9 +2,12 @@ use std::io::{Error, Read};
 
 use crate::transpiler::parser::{
     input_reader::{InputReader, InputReaderError},
-    CodePosition,
+    CodePosition, CodeArea,
 };
 
+/**
+    A documentational comment which can be used to document something.
+ */
 pub struct DocumentationalComment {
     content: String,
     start: CodePosition,
@@ -18,6 +21,10 @@ impl DocumentationalComment {
         let peek = reader.peek(3)?;
 
         let start = reader.get_current_position().clone();
+
+        /*
+            Documentational comments are enclosed by a starting /** and a closing */
+        */
 
         if peek.starts_with("/**") {
             reader.consume(3)?;
@@ -35,12 +42,14 @@ impl DocumentationalComment {
     pub fn get_content(&self) -> &String {
         &self.content
     }
+}
 
-    pub fn get_start(&self) -> &CodePosition {
+impl CodeArea for DocumentationalComment {
+    fn get_start(&self) -> &CodePosition {
         &self.start
     }
 
-    pub fn get_end(&self) -> &CodePosition {
+    fn get_end(&self) -> &CodePosition {
         &self.end
     }
 }

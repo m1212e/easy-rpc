@@ -2,7 +2,7 @@
 mod tests {
     use crate::transpiler::parser::{
         input_reader::{InputReader, InputReaderError},
-        lexer::documentational_comment::DocumentationalComment,
+        lexer::documentational_comment::DocumentationalComment, CodeArea,
     };
 
     #[test]
