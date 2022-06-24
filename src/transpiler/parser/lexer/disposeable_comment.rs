@@ -1,8 +1,11 @@
-use std::io::{Error, Read};
+use std::io::{Read};
 
-use crate::transpiler::parser::{
-    input_reader::{InputReader, InputReaderError},
-    CodeArea, CodePosition,
+use crate::{
+    transpiler::parser::{
+        input_reader::{InputReader, InputReaderError},
+        CodeArea, CodePosition,
+    },
+    unwrap_result_option,
 };
 
 /**
@@ -19,8 +22,7 @@ impl DisposeableComment {
     pub fn lex_disposeable_comment<T: Read>(
         reader: &mut InputReader<T>,
     ) -> Result<Option<DisposeableComment>, InputReaderError> {
-        let peek = reader.peek(3)?;
-
+        let peek = unwrap_result_option!(reader.peek(3));
         let start = reader.get_current_position().clone();
 
         /*
@@ -35,27 +37,27 @@ impl DisposeableComment {
 
         if peek.starts_with("#") {
             reader.consume(1)?;
-            let content = reader.consume_until_or_end("\n")?;
+            let content = unwrap_result_option!(reader.consume_until_or_end("\n"));
             return Ok(Some(DisposeableComment {
                 start: start,
                 end: reader.get_current_position().clone(),
-                content: content,
+                content
             }));
         }
 
         if peek.starts_with("//") {
             reader.consume(2)?;
-            let content = reader.consume_until_or_end("\n")?;
+            let content = unwrap_result_option!(reader.consume_until_or_end("\n"));
             return Ok(Some(DisposeableComment {
                 start: start,
                 end: reader.get_current_position().clone(),
-                content: content,
+                content
             }));
         }
 
         if peek.starts_with("/*") && !peek.starts_with("/**") {
             reader.consume(2)?;
-            let content = reader.consume_until_or_end("*/")?;
+            let content = unwrap_result_option!(reader.consume_until_or_end("*/"));
             return Ok(Some(DisposeableComment {
                 start: start,
                 end: reader.get_current_position().clone(),

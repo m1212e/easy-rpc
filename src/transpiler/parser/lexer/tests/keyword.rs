@@ -19,7 +19,7 @@ mod tests {
         assert_eq!(output.get_end().line, 0);
         assert_eq!(matches!(output.get_type(), KeywordType::Type), true);
 
-        assert_eq!(reader.peek(4)?, "blah");
+        assert_eq!(reader.peek(4)?.unwrap(), "blah");
         Ok(())
     }
 
@@ -36,7 +36,7 @@ mod tests {
         assert_eq!(output.get_end().line, 0);
         assert_eq!(matches!(output.get_type(), KeywordType::Import), true);
 
-        assert_eq!(reader.peek(4)?, "blah");
+        assert_eq!(reader.peek(4)?.unwrap(), "blah");
         Ok(())
     }
 
@@ -53,7 +53,7 @@ mod tests {
         assert_eq!(output.get_end().line, 0);
         assert_eq!(matches!(output.get_type(), KeywordType::Boolean), true);
 
-        assert_eq!(reader.peek(4)?, "blah");
+        assert_eq!(reader.peek(4)?.unwrap(), "blah");
         Ok(())
     }
 
@@ -70,7 +70,7 @@ mod tests {
         assert_eq!(output.get_end().line, 0);
         assert_eq!(matches!(output.get_type(), KeywordType::Int), true);
 
-        assert_eq!(reader.peek(4)?, "blah");
+        assert_eq!(reader.peek(4)?.unwrap(), "blah");
         Ok(())
     }
 
@@ -87,7 +87,7 @@ mod tests {
         assert_eq!(output.get_end().line, 0);
         assert_eq!(matches!(output.get_type(), KeywordType::Int8), true);
 
-        assert_eq!(reader.peek(4)?, "blah");
+        assert_eq!(reader.peek(4)?.unwrap(), "blah");
         Ok(())
     }
 
@@ -104,7 +104,7 @@ mod tests {
         assert_eq!(output.get_end().line, 0);
         assert_eq!(matches!(output.get_type(), KeywordType::Int16), true);
 
-        assert_eq!(reader.peek(4)?, "blah");
+        assert_eq!(reader.peek(4)?.unwrap(), "blah");
         Ok(())
     }
 
@@ -121,7 +121,7 @@ mod tests {
         assert_eq!(output.get_end().line, 0);
         assert_eq!(matches!(output.get_type(), KeywordType::Int32), true);
 
-        assert_eq!(reader.peek(4)?, "blah");
+        assert_eq!(reader.peek(4)?.unwrap(), "blah");
         Ok(())
     }
 
@@ -138,7 +138,7 @@ mod tests {
         assert_eq!(output.get_end().line, 0);
         assert_eq!(matches!(output.get_type(), KeywordType::Int64), true);
 
-        assert_eq!(reader.peek(4)?, "blah");
+        assert_eq!(reader.peek(4)?.unwrap(), "blah");
         Ok(())
     }
 
@@ -155,7 +155,7 @@ mod tests {
         assert_eq!(output.get_end().line, 0);
         assert_eq!(matches!(output.get_type(), KeywordType::Float), true);
 
-        assert_eq!(reader.peek(4)?, "blah");
+        assert_eq!(reader.peek(4)?.unwrap(), "blah");
         Ok(())
     }
 
@@ -172,7 +172,7 @@ mod tests {
         assert_eq!(output.get_end().line, 0);
         assert_eq!(matches!(output.get_type(), KeywordType::Float32), true);
 
-        assert_eq!(reader.peek(4)?, "blah");
+        assert_eq!(reader.peek(4)?.unwrap(), "blah");
         Ok(())
     }
 
@@ -189,7 +189,7 @@ mod tests {
         assert_eq!(output.get_end().line, 0);
         assert_eq!(matches!(output.get_type(), KeywordType::Float64), true);
 
-        assert_eq!(reader.peek(4)?, "blah");
+        assert_eq!(reader.peek(4)?.unwrap(), "blah");
         Ok(())
     }
 
@@ -206,7 +206,7 @@ mod tests {
         assert_eq!(output.get_end().line, 0);
         assert_eq!(matches!(output.get_type(), KeywordType::String), true);
 
-        assert_eq!(reader.peek(4)?, "blah");
+        assert_eq!(reader.peek(4)?.unwrap(), "blah");
         Ok(())
     }
 }

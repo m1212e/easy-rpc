@@ -21,7 +21,6 @@ pub struct InputReader<T: Read> {
 pub enum InputReaderError {
     Io(std::io::Error),
     Utf8(std::str::Utf8Error),
-    Done,
 }
 
 impl From<std::io::Error> for InputReaderError {
@@ -52,17 +51,21 @@ impl<T: Read> InputReader<T> {
     }
 
     /**
-       Consumes a given amount of characters from the input source and returns them. If there are not enough characters left
-       to provide the requested amount a shorter string is returned.
-       Returns an error if called on a reader which is done.
+       Consumes a given amount of characters from the input source and returns them.
+       Returns none when the amount requested cant be provided and no chars are consumed.
     */
-    pub fn consume(&mut self, amount: usize) -> Result<String, InputReaderError> {
+    pub fn consume(&mut self, amount: usize) -> Result<Option<String>, InputReaderError> {
         if self.is_done() {
-            return Err(InputReaderError::Done);
+            return Ok(None);
         }
 
         self.extend_buffer_by(amount)?;
         let read: String = self.buffer.chars().take(amount).collect();
+
+        if read.len() < amount {
+            return Ok(None);
+        }
+
         self.buffer = self.buffer.split_at(read.as_bytes().len()).1.to_string();
 
         let amount_of_newlines = read.as_bytes().iter().filter(|&&c| c == b'\n').count();
@@ -74,54 +77,61 @@ impl<T: Read> InputReader<T> {
             self.current_position.character = read.lines().last().unwrap().chars().count() as u16;
         }
 
-        return Ok(read);
+        return Ok(Some(read));
     }
 
     /**
        Consumes chars until a specific string is met. The delimeter is INCLUSIVE and the cursor will be positioned BEHIND the delimeter after execution.
         If the delimeter can't be found, the reader will be consumed until the end.
     */
-    pub fn consume_until_or_end(&mut self, delimeter: &str) -> Result<String, InputReaderError> {
+    pub fn consume_until_or_end(
+        &mut self,
+        delimeter: &str,
+    ) -> Result<Option<String>, InputReaderError> {
         if self.is_done() {
-            return Err(InputReaderError::Done);
+            return Ok(None);
         }
 
-        let char_amount_of_delimeter = delimeter.chars().count();
         let mut ret = String::new();
 
         loop {
             if self.is_done() {
-                return Ok(ret);
-            }
-
-            let peeked = self.peek(char_amount_of_delimeter)?;
-            if peeked == delimeter {
-                ret.push_str(&self.consume(char_amount_of_delimeter)?);
                 break;
             }
-            ret.push_str(&self.consume(1)?);
+
+            let read = self.consume(1)?;
+            if read.is_none() {
+                break;
+            }
+            ret.push_str(&read.unwrap());
+
+            if ret.ends_with(delimeter) {
+                break;
+            }
         }
 
-        Ok(ret)
+        if ret.len() > 0 {
+            return Ok(Some(ret));
+        }
+        return Ok(None);
     }
 
     /**
        Returns the requested amount of chars as string, without consuming them.
-       If the requested amount can't be provided, a shorter string is returned.
-       Throws an error if called on a reader which is done.
+       Returns none if the requested amount can't be provided.
     */
-    pub fn peek(&mut self, mut amount: usize) -> Result<String, InputReaderError> {
+    pub fn peek(&mut self, mut amount: usize) -> Result<Option<String>, InputReaderError> {
         if self.is_done() {
-            return Err(InputReaderError::Done);
+            return Ok(None);
         }
 
         self.extend_buffer_by(amount)?;
 
         if amount > self.buffer.len() {
-            amount = self.buffer.len();
+            return Ok(None);
         }
 
-        return Ok(self.buffer.chars().take(amount).collect());
+        return Ok(Some(self.buffer.chars().take(amount).collect()));
     }
 
     /**
@@ -132,20 +142,26 @@ impl<T: Read> InputReader<T> {
     pub fn peek_until(
         &mut self,
         approve: fn(current: char, total: &String) -> bool,
-    ) -> Result<String, InputReaderError> {
+    ) -> Result<Option<String>, InputReaderError> {
         let mut offset = 0;
+
+        let mut peeked = String::new();
 
         loop {
             offset += 1;
-            let peeked = self.peek(offset)?;
-
-            if self.buffer.len() < offset {
-                return Ok(peeked);
+            let peek_result = self.peek(offset)?;
+            if peek_result.is_none() {
+                if peeked.len() > 0 {
+                    return Ok(Some(peeked));
+                }
+                return Ok(None);
             }
+            peeked = peek_result.unwrap();
+
             let mut chars = peeked.chars();
             let last_char = chars.next_back();
             if !approve(last_char.unwrap(), &peeked) {
-                return Ok(chars.as_str().to_string());
+                return Ok(Some(chars.as_str().to_string()));
             }
         }
     }

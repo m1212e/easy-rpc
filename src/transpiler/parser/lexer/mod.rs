@@ -102,15 +102,13 @@ impl TokenReader {
 
     /**
        Peeks the next n token without consuming it. The option contains none if there are no tokens available to return.
+       If the requested amount is greater than the amount which can be supplied, none is returned, even tough there are tokens left.
     */
-    pub fn peek(&mut self, mut amount: usize) -> Option<Vec<Token>> {
-        if self.done {
+    pub fn peek(&mut self, amount: usize) -> Option<Vec<Token>> {
+        if self.done || amount > self.buffer.len() {
             return None;
         }
 
-        if amount > self.buffer.len() {
-            amount = self.buffer.len();
-        }
 
         let elements = &self.buffer[0..amount];
 
@@ -119,15 +117,13 @@ impl TokenReader {
 
     /**
        Returns the next n tokens and consumes them.
+       If the requested amount is greater than the amount which can be supplied, none is returned, even tough there are tokens left.
     */
-    pub fn consume(&mut self, mut amount: usize) -> Option<Vec<Token>> {
-        if self.done {
+    pub fn consume(&mut self, amount: usize) -> Option<Vec<Token>> {
+        if self.done || amount > self.buffer.len() {
             return None;
         }
 
-        if amount > self.buffer.len() {
-            amount = self.buffer.len();
-        }
 
         let elements: Vec<Token> = self.buffer.drain(0..amount).collect();
 
@@ -139,24 +135,40 @@ impl TokenReader {
     }
 
     /**
-        Consumes until the callback returns false. INCLUDES the iteration where false has been returned.
-     */
+       Consumes until the callback returns false. INCLUDES the iteration where false has been returned.
+    */
     pub fn consume_until(
         &mut self,
         approve: fn(current: &Token, total: &[Token]) -> bool,
     ) -> Option<Vec<Token>> {
-        let mut offset = 0;
+        let mut ret: Vec<Token> = Vec::new();
 
         loop {
-            offset += 1;
-            let peeked = self.peek(offset).unwrap();
-
-            if self.buffer.len() < offset {
-                return self.consume(peeked.len());
+            if self.done {
+                break;
             }
-            if !approve(&peeked[peeked.len()-1], &peeked) {
-                return self.consume(peeked.len());
+
+            let consumed = self.consume(1);
+
+            if consumed.is_none() {
+                break;
+            }
+            let mut tokens = consumed.unwrap();
+            ret.append(&mut tokens);
+
+            if !approve(&ret.last().unwrap(), &ret) {
+                break;
             }
         }
+
+        if ret.len() == 0 {
+            return None;
+        }
+
+        return Some(ret);
+    }
+
+    pub fn is_done(&self) -> bool {
+        return self.done;
     }
 }

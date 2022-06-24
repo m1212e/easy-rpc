@@ -2,14 +2,17 @@ use lazy_static::lazy_static;
 use regex::Regex;
 use std::io::Read;
 
-use crate::transpiler::parser::{
-    input_reader::{InputReader, InputReaderError},
-    CodeArea, CodePosition,
+use crate::{
+    transpiler::parser::{
+        input_reader::{InputReader, InputReaderError},
+        CodeArea, CodePosition,
+    },
+    unwrap_result_option,
 };
 
 /**
-    Literals are fixed values typed out in the source code of various kinds.
-    */
+Literals are fixed values typed out in the source code of various kinds.
+*/
 #[derive(Clone)]
 pub enum LiteralType {
     Boolean(bool),
@@ -54,16 +57,17 @@ impl Literal {
 fn process_boolean<T: Read>(
     reader: &mut InputReader<T>,
 ) -> Result<Option<Literal>, InputReaderError> {
-    let peek = reader.peek(6)?;
-
     lazy_static! {
         static ref MATCH_WHITESPACE: Regex = Regex::new(r"\s").unwrap();
     };
 
+    let peek = unwrap_result_option!(reader.peek(4));
     if peek.starts_with("true") {
-        let next = peek.chars().nth(4);
+        let next_char = reader.peek(5)?.unwrap_or(String::new()).chars().nth(4);
 
-        if next.is_none() || MATCH_WHITESPACE.is_match(next.unwrap().to_string().as_str()) {
+        // check if the word is over so we can make sure were not detecting a literal
+        if next_char.is_none() || MATCH_WHITESPACE.is_match(next_char.unwrap().to_string().as_str())
+        {
             let start = reader.get_current_position().clone();
             reader.consume(4)?;
             let end = reader.get_current_position().clone();
@@ -76,10 +80,13 @@ fn process_boolean<T: Read>(
         }
     }
 
+    let peek = unwrap_result_option!(reader.peek(5));
     if peek.starts_with("false") {
-        let next = peek.chars().nth(5);
+        let next_char = reader.peek(6)?.unwrap_or(String::new()).chars().nth(5);
 
-        if next.is_none() || MATCH_WHITESPACE.is_match(next.unwrap().to_string().as_str()) {
+        // check if the word is over so we can make sure were not detecting a literal
+        if next_char.is_none() || MATCH_WHITESPACE.is_match(next_char.unwrap().to_string().as_str())
+        {
             let start = reader.get_current_position().clone();
             reader.consume(5)?;
             let end = reader.get_current_position().clone();
@@ -98,22 +105,20 @@ fn process_boolean<T: Read>(
 fn process_string<T: Read>(
     reader: &mut InputReader<T>,
 ) -> Result<Option<Literal>, InputReaderError> {
-    if reader.peek(1)? != '"'.to_string() {
+    if unwrap_result_option!(reader.peek(1)) != '"'.to_string() {
         return Ok(None);
     }
     let start = reader.get_current_position().clone();
     reader.consume(1)?;
 
-    fn approve(current: char, total: &String) -> bool {
+    let ret = unwrap_result_option!(reader.peek_until(|current, total| {
         let mut rev = total.chars().rev();
         let (_, second_last) = (rev.next(), rev.next());
         if current == '"' {
             return second_last.is_some() && second_last.unwrap() == '\\';
         }
         return true;
-    }
-
-    let ret = reader.peek_until(approve)?;
+    }));
 
     reader.consume(ret.len() + 1)?; //+1 for closing "
     let end = reader.get_current_position().clone();
@@ -133,15 +138,13 @@ fn process_number<T: Read>(
         static ref MATCH_NUMBER: Regex = Regex::new(r"[\d\.-]").unwrap();
     };
 
-    if !MATCH_NUMBER_START.is_match(reader.peek(1)?.as_str()) {
+    if !MATCH_NUMBER_START.is_match(unwrap_result_option!(reader.peek(1)).as_str()) {
         return Ok(None);
     }
 
-    fn approve(current: char, _: &String) -> bool {
+    let potential_number = unwrap_result_option!(reader.peek_until(|current, total| {
         return MATCH_NUMBER.is_match(current.to_string().as_str());
-    }
-
-    let potential_number = reader.peek_until(approve)?;
+    }));
 
     if potential_number.contains(".") {
         let parsed = potential_number.parse::<f32>();

@@ -3,10 +3,10 @@ use strum_macros::{self, Display, EnumIter};
 
 use std::io::Read;
 
-use crate::transpiler::parser::{
+use crate::{transpiler::parser::{
     input_reader::{InputReader, InputReaderError},
     CodeArea, CodePosition,
-};
+}, unwrap_result_option};
 
 /**
     Keywords are predefined words which the parser knows.
@@ -39,7 +39,7 @@ impl Keyword {
         reader: &mut InputReader<T>,
     ) -> Result<Option<Keyword>, InputReaderError> {
         for keyword_type in KeywordType::iter() {
-            let peeked = reader.peek(keyword_type.to_string().len())?;
+            let peeked = unwrap_result_option!(reader.peek(keyword_type.to_string().len()));
 
             if peeked == keyword_type.to_string().to_lowercase() {
                 let start = reader.get_current_position().clone();

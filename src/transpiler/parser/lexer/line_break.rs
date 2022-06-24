@@ -1,9 +1,9 @@
 use std::io::Read;
 
-use crate::transpiler::parser::{
+use crate::{transpiler::parser::{
     input_reader::{InputReader, InputReaderError},
     CodeArea, CodePosition,
-};
+}, unwrap_result_option};
 
 /**
     Line breaks are all kinds of newline chars. They are lexed seperately to improve parser quality.
@@ -18,7 +18,7 @@ impl LineBreak {
     pub fn lex_line_break<T: Read>(
         reader: &mut InputReader<T>,
     ) -> Result<Option<LineBreak>, InputReaderError> {
-        let peek = reader.peek(2)?;
+        let peek = unwrap_result_option!(reader.peek(2));
 
         if peek.starts_with("\n") {
             let start = reader.get_current_position().clone();

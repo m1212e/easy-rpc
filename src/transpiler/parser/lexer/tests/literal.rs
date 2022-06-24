@@ -24,6 +24,16 @@ mod tests {
     }
 
     #[test]
+    fn test_true_invalid() -> Result<(), InputReaderError> {
+        let mut reader = InputReader::new("trueSomething".as_bytes());
+
+        let output = Literal::lex_literal(&mut reader)?;
+        assert!(output.is_none());
+
+        Ok(())
+    }
+
+    #[test]
     fn test_false() -> Result<(), InputReaderError> {
         let mut reader = InputReader::new("false ".as_bytes());
 
@@ -36,6 +46,16 @@ mod tests {
             matches!(output.get_type(), LiteralType::Boolean(false)),
             true
         );
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_false_invalid() -> Result<(), InputReaderError> {
+        let mut reader = InputReader::new("falseSomething".as_bytes());
+
+        let output = Literal::lex_literal(&mut reader)?;
+        assert!(output.is_none());
 
         Ok(())
     }
@@ -89,13 +109,9 @@ mod tests {
 
     #[test]
     fn test_string_invalid() -> Result<(), InputReaderError> {
-        let out = Literal::lex_literal(&mut InputReader::new("\"".as_bytes()));
-        match out {
-            Err(value) => assert_eq!(matches!(value, InputReaderError::Done), true),
-            _ => {
-                panic!("Other error")
-            }
-        }
+        let out = Literal::lex_literal(&mut InputReader::new("\"".as_bytes()))?;
+        
+        assert!(out.is_none());
 
         Ok(())
     }

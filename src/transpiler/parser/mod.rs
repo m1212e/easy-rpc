@@ -1,5 +1,6 @@
 pub mod input_reader;
 pub mod lexer;
+pub mod parser;
 
 /**
    A position in code defined by line and character.

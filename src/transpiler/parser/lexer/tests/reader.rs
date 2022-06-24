@@ -2,17 +2,16 @@
 mod tests {
     use crate::transpiler::parser::{
         input_reader::{InputReader, InputReaderError},
-        lexer::{
-            operator::{OperatorType},
-            token::Token,
-            TokenReader,
-        },
+        lexer::{operator::OperatorType, token::Token, TokenReader},
     };
 
     #[test]
     fn test_peek_consume() -> Result<(), InputReaderError> {
         let mut reader = TokenReader::new(InputReader::new("|?,".as_bytes()))?;
 
+        assert!(!reader.is_done());
+        assert!(!reader.done);
+
         match &reader.peek(1).unwrap()[0] {
             Token::Operator(value) => assert!(matches!(value.get_type(), OperatorType::Pipe)),
             _ => {
@@ -25,6 +24,10 @@ mod tests {
                 panic!("This case should never match")
             }
         }
+
+        assert!(!reader.is_done());
+        assert!(!reader.done);
+
         match &reader.consume(2).unwrap()[1] {
             Token::Operator(value) => {
                 assert!(matches!(value.get_type(), OperatorType::QuestionMark))
@@ -49,6 +52,9 @@ mod tests {
         assert!(reader.consume(10).is_none());
         assert!(reader.consume(10).is_none());
 
+        assert!(reader.is_done());
+        assert!(reader.done);
+
         Ok(())
     }
 
@@ -56,21 +62,22 @@ mod tests {
     fn test_consume_until() -> Result<(), InputReaderError> {
         let mut reader = TokenReader::new(InputReader::new("|?,|||".as_bytes()))?;
 
-        fn approve(current: &Token, total: &[Token]) -> bool {
-            match current {
-                Token::Operator(v) => {
-                    if matches!(v.get_type(), OperatorType::QuestionMark) {
-                        return false;
+        let res = reader
+            .consume_until(|current, total| {
+                match current {
+                    Token::Operator(v) => {
+                        if matches!(v.get_type(), OperatorType::QuestionMark) {
+                            assert_eq!(total.len(), 2);
+                            return false;
+                        }
+                    }
+                    _ => {
+                        panic!("Should never be called")
                     }
                 }
-                _ => {
-                    panic!("Should never be called")
-                }
-            }
-            return true;
-        }
-
-        let res = reader.consume_until(approve).unwrap();
+                return true;
+            })
+            .unwrap();
 
         assert_eq!(res.len(), 2);
 
@@ -82,7 +89,9 @@ mod tests {
         }
 
         match &res[1] {
-            Token::Operator(value) => assert!(matches!(value.get_type(), OperatorType::QuestionMark)),
+            Token::Operator(value) => {
+                assert!(matches!(value.get_type(), OperatorType::QuestionMark))
+            }
             _ => {
                 panic!("This case should never match")
             }
@@ -95,11 +104,11 @@ mod tests {
     fn test_consume_until_til_end() -> Result<(), InputReaderError> {
         let mut reader = TokenReader::new(InputReader::new("|?,|||".as_bytes()))?;
 
-        fn approve(_: &Token, _: &[Token]) -> bool {
-            return true;
-        }
-
-        let res = reader.consume_until(approve).unwrap();
+        let res = reader
+            .consume_until(|_, _| {
+                return true;
+            })
+            .unwrap();
 
         assert_eq!(res.len(), 6);
 

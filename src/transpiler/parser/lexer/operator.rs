@@ -3,10 +3,10 @@ use strum_macros::{self, Display, EnumIter};
 
 use std::io::Read;
 
-use crate::transpiler::parser::{
+use crate::{transpiler::parser::{
     input_reader::{InputReader, InputReaderError},
     CodeArea, CodePosition,
-};
+}, unwrap_result_option};
 
 /**
     Operators are mostly single chars inside the source code used to syntactically indicate various things.
@@ -44,7 +44,7 @@ impl Operator {
         reader: &mut InputReader<T>,
     ) -> Result<Option<Operator>, InputReaderError> {
         for operator_type in OperatorType::iter() {
-            let peeked = reader.peek(operator_type.to_string().len())?;
+            let peeked = unwrap_result_option!(reader.peek(operator_type.to_string().len()));
 
             if peeked == operator_type.to_string() {
                 let start = reader.get_current_position().clone();

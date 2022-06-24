@@ -2,14 +2,17 @@ use lazy_static::lazy_static;
 use regex::Regex;
 use std::io::Read;
 
-use crate::transpiler::parser::{
-    input_reader::{InputReader, InputReaderError},
-    CodePosition, CodeArea,
+use crate::{
+    transpiler::parser::{
+        input_reader::{InputReader, InputReaderError},
+        CodeArea, CodePosition,
+    },
+    unwrap_result_option,
 };
 
 /**
-    An Identifier for various elements inside the source code. Identifiers must match ^[A-Za-z0-9_]$ 
- */
+   An Identifier for various elements inside the source code. Identifiers must match ^[A-Za-z0-9_]$
+*/
 #[derive(Clone)]
 pub struct Identifier {
     content: String,
@@ -25,18 +28,17 @@ impl Identifier {
             static ref VALIDATOR: Regex = Regex::new("^[A-Za-z0-9_]$").unwrap();
         };
 
-        fn approve(current: char, _: &String) -> bool {
+        let ret = unwrap_result_option!(reader.peek_until(|current, _| {
             return VALIDATOR.is_match(current.to_string().as_str());
-        }
-
-        let ret = reader.peek_until(approve)?.len();
+        }))
+        .len();
 
         if ret == 0 {
             return Ok(None);
         }
 
         let start = reader.get_current_position().clone();
-        let content = reader.consume(ret)?;
+        let content = unwrap_result_option!(reader.consume(ret));
         let end = reader.get_current_position().clone();
 
         Ok(Some(Identifier {

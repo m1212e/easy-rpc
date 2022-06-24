@@ -1,9 +1,9 @@
 use std::io::Read;
 
-use crate::transpiler::parser::{
+use crate::{transpiler::parser::{
     input_reader::{InputReader, InputReaderError},
     CodePosition, CodeArea,
-};
+}, unwrap_result_option};
 
 /**
     Invalid characters which are unknown to the parser or are missplaced in a kind of way that the parser
@@ -22,7 +22,7 @@ impl InvalidCharacters {
     ) -> Result<Option<InvalidCharacters>, InputReaderError> {
         return Ok(Some(InvalidCharacters {
             start: reader.get_current_position().clone(),
-            content: reader.consume(1)?,
+            content: unwrap_result_option!(reader.consume(1)),
             end: reader.get_current_position().clone(),
         }));
     }

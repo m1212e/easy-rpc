@@ -1,6 +1,6 @@
 use std::io::Read;
 
-use crate::transpiler::parser::input_reader::{InputReader, InputReaderError};
+use crate::{transpiler::parser::input_reader::{InputReader, InputReaderError}, unwrap_result_option};
 
 /**
    Spaces are skipped and not stored for parsing.
@@ -15,6 +15,10 @@ impl Space {
                 break;
             }
             let peeked = reader.peek(1)?;
+            if peeked.is_none() {
+                return Ok(());
+            }
+            let peeked = peeked.unwrap();
             if peeked == " " || peeked == "	" {
                 reader.consume(1)?;
             } else {
