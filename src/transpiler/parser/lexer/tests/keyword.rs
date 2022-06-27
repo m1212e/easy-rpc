@@ -24,6 +24,33 @@ mod tests {
     }
 
     #[test]
+    fn test_only_type_success() -> Result<(), InputReaderError> {
+        let mut reader = InputReader::new("type".as_bytes());
+        let output = Keyword::lex_keyword(&mut reader)?;
+
+        assert_eq!(output.is_some(), true);
+        let output = output.unwrap();
+        assert_eq!(output.get_start().character, 0);
+        assert_eq!(output.get_start().line, 0);
+        assert_eq!(output.get_end().character, 4);
+        assert_eq!(output.get_end().line, 0);
+        assert_eq!(matches!(output.get_type(), KeywordType::Type), true);
+        assert!(reader.is_done());
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_type_invalid() -> Result<(), InputReaderError> {
+        let mut reader = InputReader::new("typ".as_bytes());
+        let output = Keyword::lex_keyword(&mut reader)?;
+
+        assert_eq!(output.is_some(), false);
+
+        Ok(())
+    }
+
+    #[test]
     fn test_import_success() -> Result<(), InputReaderError> {
         let mut reader = InputReader::new("importblah".as_bytes());
         let output = Keyword::lex_keyword(&mut reader)?;

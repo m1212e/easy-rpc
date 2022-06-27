@@ -21,6 +21,7 @@ mod tests {
         assert_eq!(output.get_start().line, 1);
         assert_eq!(output.get_end().character, 0);
         assert_eq!(output.get_end().line, 2);
+        assert!(reader.is_done());
 
         Ok(())
     }

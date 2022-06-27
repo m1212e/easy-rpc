@@ -52,7 +52,7 @@ impl<T: Read> InputReader<T> {
 
     /**
        Consumes a given amount of characters from the input source and returns them.
-       Returns none when the amount requested cant be provided and no chars are consumed.
+       Returns none when the amount requested cant be provided. In this case no chars are consumed at all.
     */
     pub fn consume(&mut self, amount: usize) -> Result<Option<String>, InputReaderError> {
         if self.is_done() {
@@ -82,9 +82,9 @@ impl<T: Read> InputReader<T> {
 
     /**
        Consumes chars until a specific string is met. The delimeter is INCLUSIVE and the cursor will be positioned BEHIND the delimeter after execution.
-        If the delimeter can't be found, the reader will be consumed until the end.
+        If the delimeter can't be found, the reader will be consumed until the end. Returns None if no char could be consumed.
     */
-    pub fn consume_until_or_end(
+    pub fn consume_to_delimeter_or_end(
         &mut self,
         delimeter: &str,
     ) -> Result<Option<String>, InputReaderError> {
@@ -117,8 +117,8 @@ impl<T: Read> InputReader<T> {
     }
 
     /**
-       Returns the requested amount of chars as string, without consuming them.
-       Returns none if the requested amount can't be provided.
+       Returns a given amount of characters from the input source without consuming them.
+       Returns none when the amount requested cant be provided.
     */
     pub fn peek(&mut self, mut amount: usize) -> Result<Option<String>, InputReaderError> {
         if self.is_done() {
@@ -135,14 +135,15 @@ impl<T: Read> InputReader<T> {
     }
 
     /**
-       Peeks char by char and calls the approve callback function with that char and the total
-       peeked chars (including current) as params.
-       Returns all approved chars as string EXCLUDING the one where the approve failed.
+       Peeks chars until the provided approve function returns false without consuming them.
+        The iteration where the approve function fails (returns false) is EXCLUSIVE, the current value will not be returned.
+        Returns None if no char could be peeked.
     */
-    pub fn peek_until(
+    pub fn peek_until<F: FnMut(char, &String) -> bool>(
         &mut self,
-        approve: fn(current: char, total: &String) -> bool,
-    ) -> Result<Option<String>, InputReaderError> {
+        mut approve: F,
+    ) -> Result<Option<String>, InputReaderError>
+    {
         let mut offset = 0;
 
         let mut peeked = String::new();

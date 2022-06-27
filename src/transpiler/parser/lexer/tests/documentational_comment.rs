@@ -7,7 +7,7 @@ mod tests {
 
     #[test]
     fn test_success() -> Result<(), InputReaderError> {
-        let mut reader = InputReader::new("/**\nSome documentational comment\n*/".as_bytes());
+        let mut reader = InputReader::new("/**\nSome documentational comment\n*/this is not part of the comment".as_bytes());
         let output = DocumentationalComment::lex_documentational_comment(&mut reader)?;
 
         assert_eq!(output.is_some(), true);
@@ -17,6 +17,7 @@ mod tests {
         assert_eq!(output.get_end().character, 2);
         assert_eq!(output.get_end().line, 2);
         assert_eq!(output.get_content(), "\nSome documentational comment\n");
+        assert_eq!(reader.peek(31)?.unwrap(), "this is not part of the comment");
 
         Ok(())
     }

@@ -1,6 +1,6 @@
 use lazy_static::lazy_static;
 use regex::Regex;
-use std::io::Read;
+use std::{cell::Cell, io::Read};
 
 use crate::{
     transpiler::parser::{
@@ -108,10 +108,14 @@ fn process_string<T: Read>(
     if unwrap_result_option!(reader.peek(1)) != '"'.to_string() {
         return Ok(None);
     }
-    let start = reader.get_current_position().clone();
-    reader.consume(1)?;
 
-    let ret = unwrap_result_option!(reader.peek_until(|current, total| {
+    let mut first = true;
+    let ret = unwrap_result_option!(reader.peek_until(|current, total| -> bool {
+        // Skip the first " which we already know exists
+        if first {
+            first = false;
+            return true;
+        }
         let mut rev = total.chars().rev();
         let (_, second_last) = (rev.next(), rev.next());
         if current == '"' {
@@ -120,13 +124,27 @@ fn process_string<T: Read>(
         return true;
     }));
 
-    reader.consume(ret.len() + 1)?; //+1 for closing "
+
+    // Check if the closing " exists or if peek until got cancelled by the end of the reader 
+    if reader.peek(ret.len()+1)?.is_none() {
+        return Ok(None);
+    }
+
+    // consume the starting "
+    let start = reader.get_current_position().clone();
+    reader.consume(1)?;
+    
+    // consume the string
+    let string_content = reader.consume(ret.len()-1)?.unwrap();
+
+    // consume the closing "
+    reader.consume(1)?;
     let end = reader.get_current_position().clone();
 
     Ok(Some(Literal {
         start: start,
         end: end,
-        literalType: LiteralType::String(ret.to_string()),
+        literalType: LiteralType::String(string_content),
     }))
 }
 

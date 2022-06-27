@@ -19,6 +19,25 @@ mod tests {
             matches!(output.get_type(), LiteralType::Boolean(true)),
             true
         );
+        assert!(!reader.is_done());
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_true_short() -> Result<(), InputReaderError> {
+        let mut reader = InputReader::new("true".as_bytes());
+
+        let output = Literal::lex_literal(&mut reader)?.unwrap();
+        assert_eq!(output.get_start().character, 0);
+        assert_eq!(output.get_start().line, 0);
+        assert_eq!(output.get_end().character, 4);
+        assert_eq!(output.get_end().line, 0);
+        assert_eq!(
+            matches!(output.get_type(), LiteralType::Boolean(true)),
+            true
+        );
+        assert!(reader.is_done());
 
         Ok(())
     }
@@ -109,9 +128,24 @@ mod tests {
 
     #[test]
     fn test_string_invalid() -> Result<(), InputReaderError> {
-        let out = Literal::lex_literal(&mut InputReader::new("\"".as_bytes()))?;
+        let reader = &mut InputReader::new("\"".as_bytes());
+        let out = Literal::lex_literal(reader)?;
         
         assert!(out.is_none());
+        assert_eq!(reader.get_current_position().line, 0);
+        assert_eq!(reader.get_current_position().character, 0);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_string_invalid_2() -> Result<(), InputReaderError> {
+        let reader = &mut InputReader::new("\"daawawdawd".as_bytes());
+        let out = Literal::lex_literal(reader)?;
+        
+        assert!(out.is_none());
+        assert_eq!(reader.get_current_position().line, 0);
+        assert_eq!(reader.get_current_position().character, 0);
 
         Ok(())
     }

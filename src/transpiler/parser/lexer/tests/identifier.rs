@@ -2,7 +2,7 @@
 mod tests {
     use crate::transpiler::parser::{
         input_reader::{InputReader, InputReaderError},
-        lexer::{documentational_comment::DocumentationalComment, identifier::Identifier}, CodeArea,
+        lexer::{identifier::Identifier}, CodeArea,
     };
 
     #[test]
@@ -17,6 +17,8 @@ mod tests {
         assert_eq!(output.get_end().character, 5);
         assert_eq!(output.get_end().line, 0);
         assert_eq!(output.get_content(), "Hello");
+        assert_eq!(reader.peek(2)?.unwrap(), "//");
+        
 
         Ok(())
     }
@@ -33,6 +35,7 @@ mod tests {
         assert_eq!(output.get_end().character, 5);
         assert_eq!(output.get_end().line, 0);
         assert_eq!(output.get_content(), "Hello");
+        assert!(reader.is_done());
 
         Ok(())
     }

@@ -31,6 +31,7 @@ mod tests {
         assert_eq!(output.get_end().character, 0);
         assert_eq!(output.get_end().line, 1);
         assert_eq!(output.get_content(), "This is a simple test string!\n");
+        assert_eq!(reader.peek(18)?.unwrap(), "this is no comment");
 
         Ok(())
     }
@@ -64,13 +65,14 @@ mod tests {
         assert_eq!(output.get_end().character, 0);
         assert_eq!(output.get_end().line, 1);
         assert_eq!(output.get_content(), "This is a simple test string!\n");
+        assert_eq!(reader.peek(18)?.unwrap(), "this is no comment");
 
         Ok(())
     }
 
     #[test]
     fn test_success_multiline() -> Result<(), InputReaderError> {
-        let mut reader = InputReader::new("/*\nThis is a simple test string!\nthis also comment\n*/".as_bytes());
+        let mut reader = InputReader::new("/*\nThis is a simple test string!\nthis also comment\n*/something".as_bytes());
         let output = DisposeableComment::lex_disposeable_comment(&mut reader)?;
         
         assert_eq!(output.is_some(), true);
@@ -80,6 +82,7 @@ mod tests {
         assert_eq!(output.get_end().character, 2);
         assert_eq!(output.get_end().line, 3);
         assert_eq!(output.get_content(), "\nThis is a simple test string!\nthis also comment\n");
+        assert_eq!(reader.peek(9)?.unwrap(), "something");
 
         Ok(())
     }

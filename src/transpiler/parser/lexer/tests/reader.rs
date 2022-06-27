@@ -50,10 +50,20 @@ mod tests {
         }
 
         assert!(reader.consume(10).is_none());
-        assert!(reader.consume(10).is_none());
+        assert!(reader.peek(10).is_none());
 
         assert!(reader.is_done());
         assert!(reader.done);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_peek_consume_empty() -> Result<(), InputReaderError> {
+        let mut reader = TokenReader::new(InputReader::new("".as_bytes()))?;
+
+        assert!(reader.peek(1).is_none());
+        assert!(reader.consume(1).is_none());
 
         Ok(())
     }
@@ -111,6 +121,28 @@ mod tests {
             .unwrap();
 
         assert_eq!(res.len(), 6);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_consume_until_empty() -> Result<(), InputReaderError> {
+        let mut reader = TokenReader::new(InputReader::new("".as_bytes()))?;
+
+        assert!(reader
+            .consume_until(|_, _| {
+                return true;
+            })
+            .is_none());
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_is_done() -> Result<(), InputReaderError> {
+        let reader = TokenReader::new(InputReader::new("".as_bytes()))?;
+
+        assert!(reader.is_done());
 
         Ok(())
     }

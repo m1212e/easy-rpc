@@ -1,4 +1,4 @@
-use std::io::{Read};
+use std::io::Read;
 
 use crate::{
     transpiler::parser::{
@@ -37,27 +37,27 @@ impl DisposeableComment {
 
         if peek.starts_with("#") {
             reader.consume(1)?;
-            let content = unwrap_result_option!(reader.consume_until_or_end("\n"));
+            let content = unwrap_result_option!(reader.consume_to_delimeter_or_end("\n"));
             return Ok(Some(DisposeableComment {
                 start: start,
                 end: reader.get_current_position().clone(),
-                content
+                content,
             }));
         }
 
         if peek.starts_with("//") {
             reader.consume(2)?;
-            let content = unwrap_result_option!(reader.consume_until_or_end("\n"));
+            let content = unwrap_result_option!(reader.consume_to_delimeter_or_end("\n"));
             return Ok(Some(DisposeableComment {
                 start: start,
                 end: reader.get_current_position().clone(),
-                content
+                content,
             }));
         }
 
         if peek.starts_with("/*") && !peek.starts_with("/**") {
             reader.consume(2)?;
-            let content = unwrap_result_option!(reader.consume_until_or_end("*/"));
+            let content = unwrap_result_option!(reader.consume_to_delimeter_or_end("*/"));
             return Ok(Some(DisposeableComment {
                 start: start,
                 end: reader.get_current_position().clone(),

@@ -40,6 +40,7 @@ impl TokenReader {
         };
 
         ret.run(reader)?;
+        ret.done = ret.buffer.len() == 0;
         return Ok(ret);
     }
 
@@ -101,14 +102,13 @@ impl TokenReader {
     }
 
     /**
-       Peeks the next n token without consuming it. The option contains none if there are no tokens available to return.
-       If the requested amount is greater than the amount which can be supplied, none is returned, even tough there are tokens left.
+        Returns a given amount of tokens without consuming them.
+        Returns none when the amount requested cant be provided.
     */
     pub fn peek(&mut self, amount: usize) -> Option<Vec<Token>> {
         if self.done || amount > self.buffer.len() {
             return None;
         }
-
 
         let elements = &self.buffer[0..amount];
 
@@ -116,14 +116,13 @@ impl TokenReader {
     }
 
     /**
-       Returns the next n tokens and consumes them.
-       If the requested amount is greater than the amount which can be supplied, none is returned, even tough there are tokens left.
+       Consumes a given amount of tokens.
+       Returns none when the amount requested cant be provided. In this case no tokens are consumed at all.
     */
     pub fn consume(&mut self, amount: usize) -> Option<Vec<Token>> {
         if self.done || amount > self.buffer.len() {
             return None;
         }
-
 
         let elements: Vec<Token> = self.buffer.drain(0..amount).collect();
 
@@ -135,7 +134,9 @@ impl TokenReader {
     }
 
     /**
-       Consumes until the callback returns false. INCLUDES the iteration where false has been returned.
+        Consumes chars until the provided approve function returns false.
+        The iteration where the approve function fails (returns false) is INCLUSIVE, the current value will be returned.
+        Returns None if no char could be peeked.
     */
     pub fn consume_until(
         &mut self,
