@@ -8,7 +8,10 @@ use self::{
     line_break::LineBreak, literal::Literal, operator::Operator, space::Space, token::Token,
 };
 
-use super::input_reader::{InputReader, InputReaderError};
+use super::{
+    input_reader::{InputReader, InputReaderError},
+    CodePosition, CodeArea,
+};
 
 pub mod disposeable_comment;
 pub mod documentational_comment;
@@ -27,6 +30,8 @@ pub mod token;
 pub struct TokenReader {
     buffer: Vec<Token>,
     done: bool,
+    last_token_code_start: CodePosition,
+    last_token_code_end: CodePosition,
 }
 
 impl TokenReader {
@@ -37,6 +42,14 @@ impl TokenReader {
         let mut ret = TokenReader {
             buffer: Vec::new(),
             done: false,
+            last_token_code_start: CodePosition {
+                line: 0,
+                character: 0,
+            },
+            last_token_code_end: CodePosition {
+                line: 0,
+                character: 0,
+            },
         };
 
         ret.run(reader)?;
@@ -105,14 +118,14 @@ impl TokenReader {
         Returns a given amount of tokens without consuming them.
         Returns none when the amount requested cant be provided.
     */
-    pub fn peek(&mut self, amount: usize) -> Option<Vec<Token>> {
+    pub fn peek(&mut self, amount: usize) -> Option<&[Token]> {
         if self.done || amount > self.buffer.len() {
             return None;
         }
 
         let elements = &self.buffer[0..amount];
 
-        return Some(elements.to_vec());
+        return Some(elements);
     }
 
     /**
@@ -126,6 +139,9 @@ impl TokenReader {
 
         let elements: Vec<Token> = self.buffer.drain(0..amount).collect();
 
+        self.last_token_code_start = elements.last().unwrap().get_start().clone();
+        self.last_token_code_end = elements.last().unwrap().get_end().clone();
+
         if self.buffer.len() == 0 {
             self.done = true;
         }
@@ -136,14 +152,9 @@ impl TokenReader {
     /**
         Consumes chars until the provided approve function returns false.
         The iteration where the approve function fails (returns false) is INCLUSIVE, the current value will be returned.
-        Returns None if no char could be peeked.
+        Returns None if no char could be consumed.
     */
-    pub fn consume_until(
-        &mut self,
-        approve: fn(current: &Token, total: &[Token]) -> bool,
-    ) -> Option<Vec<Token>> {
-        let mut ret: Vec<Token> = Vec::new();
-
+    pub fn consume_until<F: FnMut(Token) -> bool>(&mut self, mut approve: F) {
         loop {
             if self.done {
                 break;
@@ -154,19 +165,19 @@ impl TokenReader {
             if consumed.is_none() {
                 break;
             }
-            let mut tokens = consumed.unwrap();
-            ret.append(&mut tokens);
 
-            if !approve(&ret.last().unwrap(), &ret) {
+            if !approve(consumed.unwrap()[0]) {
                 break;
             }
         }
+    }
 
-        if ret.len() == 0 {
-            return None;
-        }
-
-        return Some(ret);
+    pub fn last_token_code_start(&self)-> &CodePosition {
+        return &self.last_token_code_start;
+    }
+    
+    pub fn last_token_code_end(&self)-> &CodePosition {
+        return &self.last_token_code_end;
     }
 
     pub fn is_done(&self) -> bool {

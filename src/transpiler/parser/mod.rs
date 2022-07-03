@@ -5,7 +5,7 @@ pub mod parser;
 /**
    A position in code defined by line and character.
 */
-#[derive(Clone, Debug)]
+#[derive(Copy, Clone, Debug)]
 struct CodePosition {
     line: u16,
     character: u16,

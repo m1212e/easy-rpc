@@ -72,33 +72,32 @@ mod tests {
     fn test_consume_until() -> Result<(), InputReaderError> {
         let mut reader = TokenReader::new(InputReader::new("|?,|||".as_bytes()))?;
 
-        let res = reader
-            .consume_until(|current, total| {
-                match current {
-                    Token::Operator(v) => {
-                        if matches!(v.get_type(), OperatorType::QuestionMark) {
-                            assert_eq!(total.len(), 2);
-                            return false;
-                        }
-                    }
-                    _ => {
-                        panic!("Should never be called")
+        let tokens = Vec::new();
+        reader.consume_until(|current| {
+            tokens.push(current);
+            match current {
+                Token::Operator(v) => {
+                    if matches!(v.get_type(), OperatorType::QuestionMark) {
+                        return false;
                     }
                 }
-                return true;
-            })
-            .unwrap();
+                _ => {
+                    panic!("Should never be called")
+                }
+            }
+            return true;
+        });
 
-        assert_eq!(res.len(), 2);
+        assert_eq!(tokens.len(), 2);
 
-        match &res[0] {
+        match &tokens[0] {
             Token::Operator(value) => assert!(matches!(value.get_type(), OperatorType::Pipe)),
             _ => {
                 panic!("This case should never match")
             }
         }
 
-        match &res[1] {
+        match &tokens[1] {
             Token::Operator(value) => {
                 assert!(matches!(value.get_type(), OperatorType::QuestionMark))
             }
@@ -114,13 +113,11 @@ mod tests {
     fn test_consume_until_til_end() -> Result<(), InputReaderError> {
         let mut reader = TokenReader::new(InputReader::new("|?,|||".as_bytes()))?;
 
-        let res = reader
-            .consume_until(|_, _| {
-                return true;
-            })
-            .unwrap();
+        reader.consume_until(|_| {
+            return true;
+        });
 
-        assert_eq!(res.len(), 6);
+        assert!(reader.is_done());
 
         Ok(())
     }
@@ -128,12 +125,13 @@ mod tests {
     #[test]
     fn test_consume_until_empty() -> Result<(), InputReaderError> {
         let mut reader = TokenReader::new(InputReader::new("".as_bytes()))?;
+        let mut called = false;
+        reader.consume_until(|_| {
+            called = true;
+            return true;
+        });
 
-        assert!(reader
-            .consume_until(|_, _| {
-                return true;
-            })
-            .is_none());
+        assert!(!called);
 
         Ok(())
     }
@@ -145,5 +143,15 @@ mod tests {
         assert!(reader.is_done());
 
         Ok(())
+    }
+
+    #[test]
+    fn test_last_element_position_start() -> Result<(), InputReaderError> {
+        todo!()
+    }
+
+    #[test]
+    fn test_last_element_position_end() -> Result<(), InputReaderError> {
+        todo!()
     }
 }
