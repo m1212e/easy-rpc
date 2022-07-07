@@ -1,6 +1,13 @@
+use std::collections::VecDeque;
+
 use crate::transpiler::parser::{
     lexer::{
-        identifier::Identifier, literal::Literal, operator::OperatorType, token::Token, TokenReader,
+        identifier::Identifier,
+        keyword::{Keyword, KeywordType},
+        literal::{Literal, LiteralType},
+        operator::OperatorType,
+        token::Token,
+        TokenReader,
     },
     parser::ParseError,
     CodeArea, CodePosition,
@@ -20,11 +27,13 @@ enum ParameterType {
 
 struct Primitive {
     primitive_type: PrimitiveType,
-    /*
-        If this is a list type
-        -1: no list, 0: list but no length defined, >=1: the int is the max length
-    */
-    array_amount: u64,
+    array_amount: ArrayAmount,
+}
+
+enum ArrayAmount {
+    NoArray,
+    NoLengthSpecified,
+    LengthSpecified(i32),
 }
 
 enum PrimitiveType {
@@ -150,23 +159,24 @@ fn parse_endpoint_parameter(reader: &mut TokenReader) -> Result<Parameter, Parse
         });
     }
 
-    let peeked = peeked.unwrap();
+    let vec = peeked.unwrap().to_owned();
+    let mut peeked = vec.iter();
 
-    let mut identifier = match peeked[0] {
+    let identifier = match peeked.next().unwrap() {
         Token::Identifier(value) => {
             reader.consume(1);
             value
         }
-        _ => {
+        value => {
             return Err(ParseError {
-                start: peeked[0].get_start().clone(),
-                end: peeked[0].get_end().clone(),
+                start: value.get_start().clone(),
+                end: value.get_end().clone(),
                 message: "Expected parameter identifier".to_string(),
             });
         }
     };
 
-    let optional = match peeked[1] {
+    let optional = match peeked.next().unwrap() {
         Token::Operator(operator) => match operator.get_type() {
             OperatorType::QuestionMark => {
                 reader.consume(1);
@@ -179,38 +189,153 @@ fn parse_endpoint_parameter(reader: &mut TokenReader) -> Result<Parameter, Parse
 
     let parameter_type = parse_endpoint_parameter_type(reader)?;
 
-    return Ok(Parameter{
-        identifier: *identifier.get_content(),
+    return Ok(Parameter {
+        identifier: identifier.get_content().clone(),
         optional,
-        parameter_type
+        parameter_type,
     });
 }
 
-fn parse_endpoint_parameter_type(
-    reader: &mut TokenReader,
-) -> Result<ParameterType, ParseError> {
+fn parse_endpoint_parameter_type(reader: &mut TokenReader) -> Result<ParameterType, ParseError> {
     let peeked = reader.peek(1);
 
     if peeked.is_none() {
-        return Err(ParseError{
+        return Err(ParseError {
             message: "Expected a parameter type".to_string(),
             start: reader.last_token_code_start().clone(),
-            end: reader.last_token_code_end().clone()
-        })
+            end: reader.last_token_code_end().clone(),
+        });
     }
 
     let peeked = peeked.unwrap();
 
-    match &peeked[0] {
-        Token::Keyword(value) => {
+    return match peeked[0].to_owned() {
+        Token::Keyword(value) => parse_primitive_type(reader, value),
+        _ => Err(ParseError {
+            message: "Expected a parameter type".to_string(),
+            start: reader.last_token_code_start().clone(),
+            end: reader.last_token_code_end().clone(),
+        }),
+    };
+}
 
-        },
-        _ => {todo!()}
+fn parse_primitive_type(
+    reader: &mut TokenReader,
+    keyword: Keyword,
+) -> Result<ParameterType, ParseError> {
+    let primitive_type = match keyword.get_type() {
+        KeywordType::Boolean => PrimitiveType::Boolean,
+        KeywordType::Int8 => PrimitiveType::Int8,
+        KeywordType::Int16 => PrimitiveType::Int16,
+        KeywordType::Int32 => PrimitiveType::Int32,
+        KeywordType::Int64 => PrimitiveType::Int64,
+        KeywordType::Float32 => PrimitiveType::Float32,
+        KeywordType::Float64 => PrimitiveType::Float64,
+        KeywordType::String => PrimitiveType::String,
+        KeywordType::Int => PrimitiveType::Int16,
+        KeywordType::Float => PrimitiveType::Float32,
+        _ => {
+            return Err(ParseError {
+                start: keyword.get_start().clone(),
+                end: keyword.get_end().clone(),
+                message: "Invalid keyword type for primitive type".to_string(),
+            })
+        }
+    };
+
+    return Ok(ParameterType::Primitive(Primitive {
+        primitive_type,
+        array_amount: parse_array_length(reader)?,
+    }));
+}
+
+fn parse_array_length(reader: &mut TokenReader) -> Result<ArrayAmount, ParseError> {
+    let peeked = reader.peek(2);
+
+    if peeked.is_none() {
+        return Ok(ArrayAmount::NoArray);
     }
 
-    return Err(ParseError{
-        message: "Expected a parameter type".to_string(),
-        start: reader.last_token_code_start().clone(),
-        end: reader.last_token_code_end().clone()
-    })
+    let peeked = peeked.unwrap().to_owned();
+
+    let arrayOpened = match &peeked[0] {
+        Token::Operator(value) => match value.get_type() {
+            OperatorType::SquareOpenBracket => true,
+            _ => false,
+        },
+        _ => false,
+    };
+
+    if arrayOpened {
+        return Ok(ArrayAmount::NoArray);
+    }
+
+    reader.consume(1);
+
+    //TODO this can probably be done more elegantly?
+    let mut length_token: Option<Token> = None;
+    let mut length_token_counter = 0;
+
+    reader.consume_until(|token| {
+        return match &peeked[0] {
+            Token::Operator(value) => match value.get_type() {
+                OperatorType::SquareCloseBracket => true,
+                _ => {
+                    length_token = Some(token);
+                    length_token_counter += 1;
+                    false
+                }
+            },
+            _ => {
+                length_token = Some(token);
+                length_token_counter += 1;
+                false
+            }
+        };
+    });
+
+    let length_token = length_token.unwrap();
+
+    if length_token_counter == 0 {
+        return Ok(ArrayAmount::NoLengthSpecified);
+    }
+
+    if length_token_counter > 1 {
+        return Err(ParseError {
+            start: reader.last_token_code_start().clone(),
+            end: reader.last_token_code_end().clone(),
+            message: "Invalid amount of tokens for specifying array length".to_string(),
+        });
+    }
+
+    let array_length = match &length_token {
+        Token::Literal(literal) => match literal.get_type() {
+            LiteralType::Integer(value) => {
+                if *value < 1 {
+                    return Err(ParseError {
+                        start: literal.get_start().clone(),
+                        end: literal.get_end().clone(),
+                        message: "Invalid array length. Value can't be less than 1".to_string(),
+                    });
+                }
+                value
+            }
+            _ => {
+                return Err(ParseError {
+                    start: literal.get_start().clone(),
+                    end: literal.get_end().clone(),
+                    message: "Integer literal required to specify array length".to_string(),
+                });
+            }
+        },
+        token => {
+            return Err(ParseError {
+                start: token.get_start().clone(),
+                end: token.get_end().clone(),
+                message: "Integer literal required to specify array length".to_string(),
+            });
+        }
+    };
+
+    return Ok(ArrayAmount::LengthSpecified(*array_length));
 }
