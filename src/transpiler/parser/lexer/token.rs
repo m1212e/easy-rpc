@@ -1,9 +1,9 @@
-use crate::transpiler::parser::{CodeArea, CodePosition};
+use crate::transpiler::parser::{CodePosition};
 
 use super::{
     disposeable_comment::DisposeableComment, documentational_comment::DocumentationalComment,
     identifier::Identifier, invalid_characters::InvalidCharacters, keyword::Keyword,
-    line_break::LineBreak, literal::Literal, operator::Operator, space::Space,
+    line_break::LineBreak, literal::Literal, operator::Operator,
 };
 
 /**
@@ -19,7 +19,6 @@ pub enum Token {
     LineBreak(LineBreak),
     Literal(Literal),
     Operator(Operator),
-    Space(Space),
 }
 
 impl From<DisposeableComment> for Token {
@@ -70,21 +69,30 @@ impl From<Operator> for Token {
     }
 }
 
-impl From<Space> for Token {
-    fn from(el: Space) -> Self {
-        Token::Space(el)
+impl Token {
+    pub fn start(&self) -> CodePosition {
+        match self {
+            Token::DisposeableComment(value) => value.start,
+            Token::DocumentationalComment(value) => value.start,
+            Token::Identifier(value) => value.start,
+            Token::InvalidCharacters(value) => value.start,
+            Token::Keyword(value) => value.start,
+            Token::LineBreak(value) => value.start,
+            Token::Literal(value) => value.start,
+            Token::Operator(value) => value.start,
+        }
     }
-}
 
-//TODO manual type check instead of dyn?
-impl CodeArea for Token {
-    fn get_start(&self) -> &CodePosition {
-        let s = self as &dyn CodeArea;
-        return s.get_start();
-    }
-
-    fn get_end(&self) -> &CodePosition {
-        let s = self as &dyn CodeArea;
-        return s.get_end();
+    pub fn end(&self) -> CodePosition {
+        match self {
+            Token::DisposeableComment(value) => value.end,
+            Token::DocumentationalComment(value) => value.end,
+            Token::Identifier(value) => value.end,
+            Token::InvalidCharacters(value) => value.end,
+            Token::Keyword(value) => value.end,
+            Token::LineBreak(value) => value.end,
+            Token::Literal(value) => value.end,
+            Token::Operator(value) => value.end,
+        }
     }
 }

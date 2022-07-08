@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use crate::transpiler::parser::{input_reader::{InputReaderError, InputReader}, lexer::disposeable_comment::DisposeableComment, CodeArea};
+    use crate::transpiler::parser::{input_reader::{InputReaderError, InputReader}, lexer::disposeable_comment::DisposeableComment};
 
     #[test]
     fn test_success_nbs() -> Result<(), InputReaderError> {
@@ -10,11 +10,11 @@ mod tests {
         
         assert_eq!(output.is_some(), true);
         let output = output.unwrap();
-        assert_eq!(output.get_start().character, 0);
-        assert_eq!(output.get_start().line, 0);
-        assert_eq!(output.get_end().character, input.len() as u16);
-        assert_eq!(output.get_end().line, 0);
-        assert_eq!(output.get_content(), "This is a simple test string!");
+        assert_eq!(output.start.character, 0);
+        assert_eq!(output.start.line, 0);
+        assert_eq!(output.end.character, input.len() as u16);
+        assert_eq!(output.end.line, 0);
+        assert_eq!(output.content, "This is a simple test string!");
 
         Ok(())
     }
@@ -26,11 +26,11 @@ mod tests {
         
         assert_eq!(output.is_some(), true);
         let output = output.unwrap();
-        assert_eq!(output.get_start().character, 0);
-        assert_eq!(output.get_start().line, 0);
-        assert_eq!(output.get_end().character, 0);
-        assert_eq!(output.get_end().line, 1);
-        assert_eq!(output.get_content(), "This is a simple test string!\n");
+        assert_eq!(output.start.character, 0);
+        assert_eq!(output.start.line, 0);
+        assert_eq!(output.end.character, 0);
+        assert_eq!(output.end.line, 1);
+        assert_eq!(output.content, "This is a simple test string!\n");
         assert_eq!(reader.peek(18)?.unwrap(), "this is no comment");
 
         Ok(())
@@ -44,11 +44,11 @@ mod tests {
         
         assert_eq!(output.is_some(), true);
         let output = output.unwrap();
-        assert_eq!(output.get_start().character, 0);
-        assert_eq!(output.get_start().line, 0);
-        assert_eq!(output.get_end().character, input.len() as u16);
-        assert_eq!(output.get_end().line, 0);
-        assert_eq!(output.get_content(), "This is a simple test string!");
+        assert_eq!(output.start.character, 0);
+        assert_eq!(output.start.line, 0);
+        assert_eq!(output.end.character, input.len() as u16);
+        assert_eq!(output.end.line, 0);
+        assert_eq!(output.content, "This is a simple test string!");
 
         Ok(())
     }
@@ -60,11 +60,11 @@ mod tests {
         
         assert_eq!(output.is_some(), true);
         let output = output.unwrap();
-        assert_eq!(output.get_start().character, 0);
-        assert_eq!(output.get_start().line, 0);
-        assert_eq!(output.get_end().character, 0);
-        assert_eq!(output.get_end().line, 1);
-        assert_eq!(output.get_content(), "This is a simple test string!\n");
+        assert_eq!(output.start.character, 0);
+        assert_eq!(output.start.line, 0);
+        assert_eq!(output.end.character, 0);
+        assert_eq!(output.end.line, 1);
+        assert_eq!(output.content, "This is a simple test string!\n");
         assert_eq!(reader.peek(18)?.unwrap(), "this is no comment");
 
         Ok(())
@@ -77,11 +77,11 @@ mod tests {
         
         assert_eq!(output.is_some(), true);
         let output = output.unwrap();
-        assert_eq!(output.get_start().character, 0);
-        assert_eq!(output.get_start().line, 0);
-        assert_eq!(output.get_end().character, 2);
-        assert_eq!(output.get_end().line, 3);
-        assert_eq!(output.get_content(), "\nThis is a simple test string!\nthis also comment\n");
+        assert_eq!(output.start.character, 0);
+        assert_eq!(output.start.line, 0);
+        assert_eq!(output.end.character, 2);
+        assert_eq!(output.end.line, 3);
+        assert_eq!(output.content, "\nThis is a simple test string!\nthis also comment\n");
         assert_eq!(reader.peek(9)?.unwrap(), "something");
 
         Ok(())

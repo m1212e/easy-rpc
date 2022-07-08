@@ -3,7 +3,6 @@ mod tests {
     use crate::transpiler::parser::{
         input_reader::{InputReader, InputReaderError},
         lexer::literal::{Literal, LiteralType},
-        CodeArea,
     };
 
     #[test]
@@ -11,12 +10,12 @@ mod tests {
         let mut reader = InputReader::new("true ".as_bytes());
 
         let output = Literal::lex_literal(&mut reader)?.unwrap();
-        assert_eq!(output.get_start().character, 0);
-        assert_eq!(output.get_start().line, 0);
-        assert_eq!(output.get_end().character, 4);
-        assert_eq!(output.get_end().line, 0);
+        assert_eq!(output.start.character, 0);
+        assert_eq!(output.start.line, 0);
+        assert_eq!(output.end.character, 4);
+        assert_eq!(output.end.line, 0);
         assert_eq!(
-            matches!(output.get_type(), LiteralType::Boolean(true)),
+            matches!(output.literal_type, LiteralType::Boolean(true)),
             true
         );
         assert!(!reader.is_done());
@@ -29,12 +28,12 @@ mod tests {
         let mut reader = InputReader::new("true".as_bytes());
 
         let output = Literal::lex_literal(&mut reader)?.unwrap();
-        assert_eq!(output.get_start().character, 0);
-        assert_eq!(output.get_start().line, 0);
-        assert_eq!(output.get_end().character, 4);
-        assert_eq!(output.get_end().line, 0);
+        assert_eq!(output.start.character, 0);
+        assert_eq!(output.start.line, 0);
+        assert_eq!(output.end.character, 4);
+        assert_eq!(output.end.line, 0);
         assert_eq!(
-            matches!(output.get_type(), LiteralType::Boolean(true)),
+            matches!(output.literal_type, LiteralType::Boolean(true)),
             true
         );
         assert!(reader.is_done());
@@ -57,12 +56,12 @@ mod tests {
         let mut reader = InputReader::new("false ".as_bytes());
 
         let output = Literal::lex_literal(&mut reader)?.unwrap();
-        assert_eq!(output.get_start().character, 0);
-        assert_eq!(output.get_start().line, 0);
-        assert_eq!(output.get_end().character, 5);
-        assert_eq!(output.get_end().line, 0);
+        assert_eq!(output.start.character, 0);
+        assert_eq!(output.start.line, 0);
+        assert_eq!(output.end.character, 5);
+        assert_eq!(output.end.line, 0);
         assert_eq!(
-            matches!(output.get_type(), LiteralType::Boolean(false)),
+            matches!(output.literal_type, LiteralType::Boolean(false)),
             true
         );
 
@@ -84,12 +83,12 @@ mod tests {
         let mut reader = InputReader::new("\"some string literal\" ".as_bytes());
 
         let output = Literal::lex_literal(&mut reader)?.unwrap();
-        assert_eq!(output.get_start().character, 0);
-        assert_eq!(output.get_start().line, 0);
-        assert_eq!(output.get_end().character, 21);
-        assert_eq!(output.get_end().line, 0);
-        assert_eq!(matches!(output.get_type(), LiteralType::String(_)), true);
-        match output.get_type() {
+        assert_eq!(output.start.character, 0);
+        assert_eq!(output.start.line, 0);
+        assert_eq!(output.end.character, 21);
+        assert_eq!(output.end.line, 0);
+        assert_eq!(matches!(output.literal_type, LiteralType::String(_)), true);
+        match output.literal_type {
             LiteralType::String(value) => assert_eq!(value, "some string literal"),
             _ => {}
         }
@@ -102,12 +101,12 @@ mod tests {
         let mut reader = InputReader::new("\"some string\\\" literal\" ".as_bytes());
 
         let output = Literal::lex_literal(&mut reader)?.unwrap();
-        assert_eq!(output.get_start().character, 0);
-        assert_eq!(output.get_start().line, 0);
-        assert_eq!(output.get_end().character, 23);
-        assert_eq!(output.get_end().line, 0);
-        assert_eq!(matches!(output.get_type(), LiteralType::String(_)), true);
-        match output.get_type() {
+        assert_eq!(output.start.character, 0);
+        assert_eq!(output.start.line, 0);
+        assert_eq!(output.end.character, 23);
+        assert_eq!(output.end.line, 0);
+        assert_eq!(matches!(output.literal_type, LiteralType::String(_)), true);
+        match output.literal_type {
             LiteralType::String(value) => assert_eq!(value, "some string\\\" literal"),
             _ => {}
         }
@@ -118,7 +117,7 @@ mod tests {
     #[test]
     fn test_string_empty() -> Result<(), InputReaderError> {
         let output = Literal::lex_literal(&mut InputReader::new("\"\"".as_bytes()))?.unwrap();
-        match output.get_type() {
+        match output.literal_type {
             LiteralType::String(value) => assert_eq!(value, ""),
             _ => {}
         }
@@ -130,10 +129,10 @@ mod tests {
     fn test_string_invalid() -> Result<(), InputReaderError> {
         let reader = &mut InputReader::new("\"".as_bytes());
         let out = Literal::lex_literal(reader)?;
-        
+
         assert!(out.is_none());
-        assert_eq!(reader.get_current_position().line, 0);
-        assert_eq!(reader.get_current_position().character, 0);
+        assert_eq!(reader.current_position.line, 0);
+        assert_eq!(reader.current_position.character, 0);
 
         Ok(())
     }
@@ -142,10 +141,10 @@ mod tests {
     fn test_string_invalid_2() -> Result<(), InputReaderError> {
         let reader = &mut InputReader::new("\"daawawdawd".as_bytes());
         let out = Literal::lex_literal(reader)?;
-        
+
         assert!(out.is_none());
-        assert_eq!(reader.get_current_position().line, 0);
-        assert_eq!(reader.get_current_position().character, 0);
+        assert_eq!(reader.current_position.line, 0);
+        assert_eq!(reader.current_position.character, 0);
 
         Ok(())
     }
@@ -155,12 +154,12 @@ mod tests {
         let mut reader = InputReader::new("5458.5166".as_bytes());
 
         let output = Literal::lex_literal(&mut reader)?.unwrap();
-        assert_eq!(output.get_start().character, 0);
-        assert_eq!(output.get_start().line, 0);
-        assert_eq!(output.get_end().character, 9);
-        assert_eq!(output.get_end().line, 0);
-        assert_eq!(matches!(output.get_type(), LiteralType::Float(_)), true);
-        match output.get_type() {
+        assert_eq!(output.start.character, 0);
+        assert_eq!(output.start.line, 0);
+        assert_eq!(output.end.character, 9);
+        assert_eq!(output.end.line, 0);
+        assert_eq!(matches!(output.literal_type, LiteralType::Float(_)), true);
+        match output.literal_type {
             LiteralType::Float(value) => assert_eq!(value.to_string(), 5458.5166.to_string()),
             _ => {}
         }
@@ -173,12 +172,12 @@ mod tests {
         let mut reader = InputReader::new("-5458.5166".as_bytes());
 
         let output = Literal::lex_literal(&mut reader)?.unwrap();
-        assert_eq!(output.get_start().character, 0);
-        assert_eq!(output.get_start().line, 0);
-        assert_eq!(output.get_end().character, 10);
-        assert_eq!(output.get_end().line, 0);
-        assert_eq!(matches!(output.get_type(), LiteralType::Float(_)), true);
-        match output.get_type() {
+        assert_eq!(output.start.character, 0);
+        assert_eq!(output.start.line, 0);
+        assert_eq!(output.end.character, 10);
+        assert_eq!(output.end.line, 0);
+        assert_eq!(matches!(output.literal_type, LiteralType::Float(_)), true);
+        match output.literal_type {
             LiteralType::Float(value) => assert_eq!(value.to_string(), (-5458.5166).to_string()),
             _ => {}
         }
@@ -191,12 +190,12 @@ mod tests {
         let mut reader = InputReader::new("5458".as_bytes());
 
         let output = Literal::lex_literal(&mut reader)?.unwrap();
-        assert_eq!(output.get_start().character, 0);
-        assert_eq!(output.get_start().line, 0);
-        assert_eq!(output.get_end().character, 4);
-        assert_eq!(output.get_end().line, 0);
-        assert_eq!(matches!(output.get_type(), LiteralType::Integer(_)), true);
-        match output.get_type() {
+        assert_eq!(output.start.character, 0);
+        assert_eq!(output.start.line, 0);
+        assert_eq!(output.end.character, 4);
+        assert_eq!(output.end.line, 0);
+        assert_eq!(matches!(output.literal_type, LiteralType::Integer(_)), true);
+        match output.literal_type {
             LiteralType::Float(value) => assert_eq!(value.to_string(), 5458.to_string()),
             _ => {}
         }
@@ -209,12 +208,12 @@ mod tests {
         let mut reader = InputReader::new("-5458".as_bytes());
 
         let output = Literal::lex_literal(&mut reader)?.unwrap();
-        assert_eq!(output.get_start().character, 0);
-        assert_eq!(output.get_start().line, 0);
-        assert_eq!(output.get_end().character, 5);
-        assert_eq!(output.get_end().line, 0);
-        assert_eq!(matches!(output.get_type(), LiteralType::Integer(_)), true);
-        match output.get_type() {
+        assert_eq!(output.start.character, 0);
+        assert_eq!(output.start.line, 0);
+        assert_eq!(output.end.character, 5);
+        assert_eq!(output.end.line, 0);
+        assert_eq!(matches!(output.literal_type, LiteralType::Integer(_)), true);
+        match output.literal_type {
             LiteralType::Float(value) => assert_eq!(value.to_string(), (-5458).to_string()),
             _ => {}
         }

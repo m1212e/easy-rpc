@@ -42,11 +42,11 @@ mod tests {
     fn test_getter() -> Result<(), InputReaderError> {
         let mut reader = InputReader::new("This is a ❎ unicode 👶 symbol!".as_bytes());
 
-        let cp1 = reader.get_current_position().clone();
+        let cp1 = reader.current_position.clone();
         reader.consume(5)?;
-        let cp2 = reader.get_current_position().clone();
+        let cp2 = reader.current_position.clone();
         reader.consume(5)?;
-        let cp3 = reader.get_current_position().clone();
+        let cp3 = reader.current_position.clone();
         assert_eq!(cp1.character, 0);
         assert_eq!(cp1.line, 0);
         assert_eq!(cp2.character, 5);

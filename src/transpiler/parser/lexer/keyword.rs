@@ -3,14 +3,17 @@ use strum_macros::{self, Display, EnumIter};
 
 use std::io::Read;
 
-use crate::{transpiler::parser::{
-    input_reader::{InputReader, InputReaderError},
-    CodeArea, CodePosition,
-}, unwrap_result_option};
+use crate::{
+    transpiler::parser::{
+        input_reader::{InputReader, InputReaderError},
+        CodePosition,
+    },
+    unwrap_result_option,
+};
 
 /**
-    Keywords are predefined words which the parser knows.
- */
+   Keywords are predefined words which the parser knows.
+*/
 #[derive(Display, EnumIter, Clone)]
 pub enum KeywordType {
     Type,
@@ -29,9 +32,9 @@ pub enum KeywordType {
 
 #[derive(Clone)]
 pub struct Keyword {
-    keyword_type: KeywordType,
-    start: CodePosition,
-    end: CodePosition,
+    pub keyword_type: KeywordType,
+    pub start: CodePosition,
+    pub end: CodePosition,
 }
 
 impl Keyword {
@@ -42,9 +45,9 @@ impl Keyword {
             let peeked = unwrap_result_option!(reader.peek(keyword_type.to_string().len()));
 
             if peeked == keyword_type.to_string().to_lowercase() {
-                let start = reader.get_current_position().clone();
+                let start = reader.current_position.clone();
                 reader.consume(peeked.len())?;
-                let end = reader.get_current_position().clone();
+                let end = reader.current_position.clone();
 
                 return Ok(Some(Keyword {
                     keyword_type,
@@ -56,17 +59,4 @@ impl Keyword {
         Ok(None)
     }
 
-    pub fn get_type(&self) -> &KeywordType {
-        return &self.keyword_type;
-    }
-}
-
-impl CodeArea for Keyword {
-    fn get_start(&self) -> &CodePosition {
-        &self.start
-    }
-
-    fn get_end(&self) -> &CodePosition {
-        &self.end
-    }
 }

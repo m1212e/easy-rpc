@@ -2,7 +2,7 @@
 mod tests {
     use crate::transpiler::parser::{
         input_reader::{InputReader, InputReaderError},
-        lexer::{identifier::Identifier}, CodeArea,
+        lexer::{identifier::Identifier},
     };
 
     #[test]
@@ -12,11 +12,11 @@ mod tests {
 
         assert_eq!(output.is_some(), true);
         let output = output.unwrap();
-        assert_eq!(output.get_start().character, 0);
-        assert_eq!(output.get_start().line, 0);
-        assert_eq!(output.get_end().character, 5);
-        assert_eq!(output.get_end().line, 0);
-        assert_eq!(output.get_content(), "Hello");
+        assert_eq!(output.start.character, 0);
+        assert_eq!(output.start.line, 0);
+        assert_eq!(output.end.character, 5);
+        assert_eq!(output.end.line, 0);
+        assert_eq!(output.content, "Hello");
         assert_eq!(reader.peek(2)?.unwrap(), "//");
         
 
@@ -30,11 +30,11 @@ mod tests {
 
         assert_eq!(output.is_some(), true);
         let output = output.unwrap();
-        assert_eq!(output.get_start().character, 0);
-        assert_eq!(output.get_start().line, 0);
-        assert_eq!(output.get_end().character, 5);
-        assert_eq!(output.get_end().line, 0);
-        assert_eq!(output.get_content(), "Hello");
+        assert_eq!(output.start.character, 0);
+        assert_eq!(output.start.line, 0);
+        assert_eq!(output.end.character, 5);
+        assert_eq!(output.end.line, 0);
+        assert_eq!(output.content, "Hello");
         assert!(reader.is_done());
 
         Ok(())

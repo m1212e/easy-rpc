@@ -10,7 +10,7 @@ use self::{
 
 use super::{
     input_reader::{InputReader, InputReaderError},
-    CodePosition, CodeArea,
+    CodePosition,
 };
 
 pub mod disposeable_comment;
@@ -29,9 +29,9 @@ pub mod token;
 */
 pub struct TokenReader {
     buffer: Vec<Token>,
-    done: bool,
-    last_token_code_start: CodePosition,
-    last_token_code_end: CodePosition,
+    pub done: bool,
+    pub last_token_code_start: CodePosition,
+    pub last_token_code_end: CodePosition,
 }
 
 impl TokenReader {
@@ -139,8 +139,8 @@ impl TokenReader {
 
         let elements: Vec<Token> = self.buffer.drain(0..amount).collect();
 
-        self.last_token_code_start = elements.last().unwrap().get_start().clone();
-        self.last_token_code_end = elements.last().unwrap().get_end().clone();
+        self.last_token_code_start = elements.last().unwrap().start();
+        self.last_token_code_end = elements.last().unwrap().end();
 
         if self.buffer.len() == 0 {
             self.done = true;
@@ -166,21 +166,9 @@ impl TokenReader {
                 break;
             }
 
-            if !approve(consumed.unwrap()[0]) {
+            if !approve(consumed.unwrap().remove(0)) {
                 break;
             }
         }
-    }
-
-    pub fn last_token_code_start(&self)-> &CodePosition {
-        return &self.last_token_code_start;
-    }
-    
-    pub fn last_token_code_end(&self)-> &CodePosition {
-        return &self.last_token_code_end;
-    }
-
-    pub fn is_done(&self) -> bool {
-        return self.done;
     }
 }

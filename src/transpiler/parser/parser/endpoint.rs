@@ -1,41 +1,49 @@
 use std::collections::VecDeque;
 
-use crate::transpiler::parser::{
-    lexer::{
-        identifier::Identifier,
-        keyword::{Keyword, KeywordType},
-        literal::{Literal, LiteralType},
-        operator::OperatorType,
-        token::Token,
-        TokenReader,
+use crate::{
+    cast,
+    transpiler::parser::{
+        lexer::{
+            identifier::Identifier,
+            keyword::{Keyword, KeywordType},
+            literal::{Literal, LiteralType},
+            operator::OperatorType,
+            token::Token,
+            TokenReader,
+        },
+        parser::ParseError,
+        CodePosition,
     },
-    parser::ParseError,
-    CodeArea, CodePosition,
 };
 
-struct Parameter {
+#[derive(Debug)]
+pub struct Parameter {
     optional: bool,
     identifier: String,
     parameter_type: ParameterType,
 }
 
-enum ParameterType {
+#[derive(Debug)]
+pub enum ParameterType {
     Primitive(Primitive),
     Enum(Enum),
     Custom(Custom),
 }
 
+#[derive(Debug)]
 struct Primitive {
     primitive_type: PrimitiveType,
     array_amount: ArrayAmount,
 }
 
+#[derive(Debug)]
 enum ArrayAmount {
     NoArray,
     NoLengthSpecified,
     LengthSpecified(i32),
 }
 
+#[derive(Debug)]
 enum PrimitiveType {
     Boolean,
     Int8,
@@ -47,10 +55,12 @@ enum PrimitiveType {
     String,
 }
 
+#[derive(Debug)]
 struct Enum {
     values: Vec<Literal>,
 }
 
+#[derive(Debug)]
 struct Custom {
     /*
         If this is a list type
@@ -61,17 +71,22 @@ struct Custom {
 }
 
 pub struct Endpoint {
-    start: CodePosition,
-    end: CodePosition,
-    documentation: Option<String>,
-    identifier: String,
-    role: String,
-    parameters: Vec<Parameter>,
-    return_type: Option<ParameterType>,
+    pub start: CodePosition,
+    pub end: CodePosition,
+    pub documentation: Option<String>,
+    pub identifier: String,
+    pub role: String,
+    pub parameters: Vec<Parameter>,
+    pub return_type: Option<ParameterType>,
 }
 
 impl Endpoint {
-    pub fn parse_endpoint(reader: &mut TokenReader) -> Option<(Endpoint, Vec<ParseError>)> {
+    /**
+       Parses an endpoint and consumes the reader accordingly. Only returns some if the function is confident that the currently
+       parsed tokens are meant to be an endpoint. Returns either a correctly parsed endpoint or an error which describes
+       what cancelled the process.
+    */
+    pub fn parse_endpoint(reader: &mut TokenReader) -> Option<Result<Endpoint, ParseError>> {
         /*
             Endpoints always consist of at least 4 tokens:
             1      2           34
@@ -79,13 +94,13 @@ impl Endpoint {
 
             Optionally there could be a documentational comment before the endpoint which is often followed by a newline
         */
-        let mut peeked = reader.peek(6)?;
-        let documentation = match &peeked[0] {
-            Token::DocumentationalComment(value) => Some(value.get_content()),
-            _ => None,
+        let mut peeked = reader.peek(4)?;
+        let has_docs = match &peeked[0] {
+            Token::DocumentationalComment(value) => true,
+            _ => false,
         };
 
-        let newline_after_doc = if documentation.is_some() {
+        let newline_after_doc = if has_docs {
             peeked = &peeked[1..];
 
             match peeked[0] {
@@ -99,15 +114,21 @@ impl Endpoint {
             false
         };
 
-        let role = match &peeked[0] {
-            Token::Identifier(value) => value.get_content(),
+        if newline_after_doc {
+            peeked = reader.peek(6)?;
+        } else if has_docs {
+            peeked = reader.peek(5)?;
+        }
+
+        match &peeked[0] {
+            Token::Identifier(_) => {}
             _ => {
                 return None;
             }
         };
 
-        let identifier = match &peeked[1] {
-            Token::Identifier(value) => value.get_content(),
+        match &peeked[1] {
+            Token::Identifier(_) => {}
             _ => return None,
         };
 
@@ -120,31 +141,82 @@ impl Endpoint {
             _ => return None,
         };
 
-        // at this point it's pretty safe that the currently parsed tokens are meant to build an endpoint
-        // thatswhy we can start consuming
+        // at this point it's pretty safe that the currently parsed tokens are meant to build an endpoint, therefore we can start consuming
+        // we also checked the types/order of the following tokens and can consume them directly, without re-checking
+
+        let mut start: CodePosition;
+        let mut documentation: Option<String> = None;
+        let mut role: String;
+        let mut identifier: String;
 
         if newline_after_doc {
-            reader.consume(5);
-        } else if !newline_after_doc && documentation.is_some() {
-            reader.consume(4);
+            let mut consumed = reader.consume(5)?;
+
+            let doc_token = consumed.remove(0);
+            start = doc_token.start();
+            documentation = Some(cast!(doc_token, Token::DocumentationalComment).content);
+            consumed.remove(0); // newline
+            role = cast!(consumed.remove(0), Token::Identifier).content;
+            identifier = cast!(consumed.remove(0), Token::Identifier).content;
+        } else if !newline_after_doc && has_docs {
+            let mut consumed = reader.consume(4)?;
+
+            let doc_token = consumed.remove(0);
+            start = doc_token.start();
+            documentation = Some(cast!(doc_token, Token::DocumentationalComment).content);
+            role = cast!(consumed.remove(0), Token::Identifier).content;
+            identifier = cast!(consumed.remove(0), Token::Identifier).content;
         } else {
-            reader.consume(3);
+            let mut consumed = reader.consume(3)?;
+
+            let role_token = consumed.remove(0);
+            start = role_token.start();
+            role = cast!(role_token, Token::Identifier).content;
+            identifier = cast!(consumed.remove(0), Token::Identifier).content;
         }
 
-        //TODO at this point start parsing the parameters
-        // if that errors, skip until the closing ) to enable errors for the rest of the file
+        let mut parameters: Vec<Parameter> = Vec::new();
 
-        None
-    }
-}
+        loop {
+            let peeked = reader.peek(1);
+            // in valid cases this is either a parameter token or the closing bracket which at this point is not yet consumed
+            if peeked.is_none() {
+                return Some(Err(ParseError {
+                    start: reader.last_token_code_start,
+                    end: reader.last_token_code_end,
+                    message: "Expected more tokens for correct endpoint syntax".to_string(),
+                }));
+            }
 
-impl CodeArea for Endpoint {
-    fn get_start(&self) -> &CodePosition {
-        return &self.start;
-    }
+            let peeked = &peeked.unwrap()[0];
 
-    fn get_end(&self) -> &CodePosition {
-        return &self.end;
+            match peeked {
+                Token::Operator(operator) => match operator.get_type() {
+                    OperatorType::CloseBracket => {
+                        reader.consume(1);
+                        break;
+                    }
+                    _ => {}
+                },
+                _ => {}
+            };
+
+            let endpoint = parse_endpoint_parameter(reader);
+            if endpoint.is_err() {
+                return Some(Err(endpoint.unwrap_err()));
+            }
+            parameters.push(endpoint.unwrap())
+        }
+
+        Some(Ok(Endpoint {
+            documentation,
+            start,
+            end: reader.last_token_code_end,
+            identifier,
+            parameters,
+            return_type: None, //TODO this is for testing only, obviously this needs to be parsed
+            role,
+        }))
     }
 }
 
@@ -153,8 +225,8 @@ fn parse_endpoint_parameter(reader: &mut TokenReader) -> Result<Parameter, Parse
 
     if peeked.is_none() {
         return Err(ParseError {
-            start: reader.last_token_code_start().clone(),
-            end: reader.last_token_code_end().clone(),
+            start: reader.last_token_code_start,
+            end: reader.last_token_code_end,
             message: "Expected valid parameter".to_string(),
         });
     }
@@ -162,15 +234,14 @@ fn parse_endpoint_parameter(reader: &mut TokenReader) -> Result<Parameter, Parse
     let vec = peeked.unwrap().to_owned();
     let mut peeked = vec.iter();
 
-    let identifier = match peeked.next().unwrap() {
-        Token::Identifier(value) => {
-            reader.consume(1);
-            value
+    let identifier: Identifier = match peeked.next().unwrap() {
+        Token::Identifier(_) => {
+            cast!(reader.consume(1).unwrap().remove(0), Token::Identifier)
         }
         value => {
             return Err(ParseError {
-                start: value.get_start().clone(),
-                end: value.get_end().clone(),
+                start: value.start(),
+                end: value.start(),
                 message: "Expected parameter identifier".to_string(),
             });
         }
@@ -190,7 +261,7 @@ fn parse_endpoint_parameter(reader: &mut TokenReader) -> Result<Parameter, Parse
     let parameter_type = parse_endpoint_parameter_type(reader)?;
 
     return Ok(Parameter {
-        identifier: identifier.get_content().clone(),
+        identifier: identifier.content,
         optional,
         parameter_type,
     });
@@ -202,8 +273,8 @@ fn parse_endpoint_parameter_type(reader: &mut TokenReader) -> Result<ParameterTy
     if peeked.is_none() {
         return Err(ParseError {
             message: "Expected a parameter type".to_string(),
-            start: reader.last_token_code_start().clone(),
-            end: reader.last_token_code_end().clone(),
+            start: reader.last_token_code_start,
+            end: reader.last_token_code_end,
         });
     }
 
@@ -213,8 +284,8 @@ fn parse_endpoint_parameter_type(reader: &mut TokenReader) -> Result<ParameterTy
         Token::Keyword(value) => parse_primitive_type(reader, value),
         _ => Err(ParseError {
             message: "Expected a parameter type".to_string(),
-            start: reader.last_token_code_start().clone(),
-            end: reader.last_token_code_end().clone(),
+            start: reader.last_token_code_start,
+            end: reader.last_token_code_end,
         }),
     };
 }
@@ -223,7 +294,7 @@ fn parse_primitive_type(
     reader: &mut TokenReader,
     keyword: Keyword,
 ) -> Result<ParameterType, ParseError> {
-    let primitive_type = match keyword.get_type() {
+    let primitive_type = match keyword.keyword_type {
         KeywordType::Boolean => PrimitiveType::Boolean,
         KeywordType::Int8 => PrimitiveType::Int8,
         KeywordType::Int16 => PrimitiveType::Int16,
@@ -236,8 +307,8 @@ fn parse_primitive_type(
         KeywordType::Float => PrimitiveType::Float32,
         _ => {
             return Err(ParseError {
-                start: keyword.get_start().clone(),
-                end: keyword.get_end().clone(),
+                start: keyword.start,
+                end: keyword.start,
                 message: "Invalid keyword type for primitive type".to_string(),
             })
         }
@@ -258,7 +329,7 @@ fn parse_array_length(reader: &mut TokenReader) -> Result<ArrayAmount, ParseErro
 
     let peeked = peeked.unwrap().to_owned();
 
-    let arrayOpened = match &peeked[0] {
+    let array_opened = match &peeked[0] {
         Token::Operator(value) => match value.get_type() {
             OperatorType::SquareOpenBracket => true,
             _ => false,
@@ -266,7 +337,7 @@ fn parse_array_length(reader: &mut TokenReader) -> Result<ArrayAmount, ParseErro
         _ => false,
     };
 
-    if arrayOpened {
+    if !array_opened {
         return Ok(ArrayAmount::NoArray);
     }
 
@@ -302,19 +373,19 @@ fn parse_array_length(reader: &mut TokenReader) -> Result<ArrayAmount, ParseErro
 
     if length_token_counter > 1 {
         return Err(ParseError {
-            start: reader.last_token_code_start().clone(),
-            end: reader.last_token_code_end().clone(),
+            start: reader.last_token_code_start,
+            end: reader.last_token_code_end,
             message: "Invalid amount of tokens for specifying array length".to_string(),
         });
     }
 
     let array_length = match &length_token {
-        Token::Literal(literal) => match literal.get_type() {
+        Token::Literal(literal) => match literal.literal_type {
             LiteralType::Integer(value) => {
-                if *value < 1 {
+                if value < 1 {
                     return Err(ParseError {
-                        start: literal.get_start().clone(),
-                        end: literal.get_end().clone(),
+                        start: literal.start,
+                        end: literal.start,
                         message: "Invalid array length. Value can't be less than 1".to_string(),
                     });
                 }
@@ -322,20 +393,20 @@ fn parse_array_length(reader: &mut TokenReader) -> Result<ArrayAmount, ParseErro
             }
             _ => {
                 return Err(ParseError {
-                    start: literal.get_start().clone(),
-                    end: literal.get_end().clone(),
+                    start: literal.start,
+                    end: literal.start,
                     message: "Integer literal required to specify array length".to_string(),
                 });
             }
         },
         token => {
             return Err(ParseError {
-                start: token.get_start().clone(),
-                end: token.get_end().clone(),
+                start: token.start(),
+                end: token.end(),
                 message: "Integer literal required to specify array length".to_string(),
             });
         }
     };
 
-    return Ok(ArrayAmount::LengthSpecified(*array_length));
+    return Ok(ArrayAmount::LengthSpecified(array_length));
 }

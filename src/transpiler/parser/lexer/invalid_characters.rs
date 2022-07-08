@@ -1,19 +1,22 @@
 use std::io::Read;
 
-use crate::{transpiler::parser::{
-    input_reader::{InputReader, InputReaderError},
-    CodePosition, CodeArea,
-}, unwrap_result_option};
+use crate::{
+    transpiler::parser::{
+        input_reader::{InputReader, InputReaderError},
+        CodePosition,
+    },
+    unwrap_result_option,
+};
 
 /**
-    Invalid characters which are unknown to the parser or are missplaced in a kind of way that the parser
-    cant handle them. This is used as a fallback to handle invalid syntax.
- */
+   Invalid characters which are unknown to the parser or are missplaced in a kind of way that the parser
+   cant handle them. This is used as a fallback to handle invalid syntax.
+*/
 #[derive(Clone)]
 pub struct InvalidCharacters {
-    content: String,
-    start: CodePosition,
-    end: CodePosition,
+    pub content: String,
+    pub start: CodePosition,
+    pub end: CodePosition,
 }
 
 impl InvalidCharacters {
@@ -21,23 +24,10 @@ impl InvalidCharacters {
         reader: &mut InputReader<T>,
     ) -> Result<Option<InvalidCharacters>, InputReaderError> {
         return Ok(Some(InvalidCharacters {
-            start: reader.get_current_position().clone(),
+            start: reader.current_position.clone(),
             content: unwrap_result_option!(reader.consume(1)),
-            end: reader.get_current_position().clone(),
+            end: reader.current_position.clone(),
         }));
     }
 
-    pub fn get_content(&self) -> &String {
-        &self.content
-    }
-}
-
-impl CodeArea for InvalidCharacters {
-    fn get_start(&self) -> &CodePosition {
-        &self.start
-    }
-
-    fn get_end(&self) -> &CodePosition {
-        &self.end
-    }
 }

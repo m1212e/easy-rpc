@@ -3,14 +3,17 @@ use strum_macros::{self, Display, EnumIter};
 
 use std::io::Read;
 
-use crate::{transpiler::parser::{
-    input_reader::{InputReader, InputReaderError},
-    CodeArea, CodePosition,
-}, unwrap_result_option};
+use crate::{
+    transpiler::parser::{
+        input_reader::{InputReader, InputReaderError},
+        CodePosition,
+    },
+    unwrap_result_option,
+};
 
 /**
-    Operators are mostly single chars inside the source code used to syntactically indicate various things.
- */
+   Operators are mostly single chars inside the source code used to syntactically indicate various things.
+*/
 #[derive(Display, EnumIter, Clone)]
 pub enum OperatorType {
     #[strum(serialize = "|")]
@@ -34,9 +37,9 @@ pub enum OperatorType {
 }
 #[derive(Clone)]
 pub struct Operator {
-    operator_type: OperatorType,
-    start: CodePosition,
-    end: CodePosition,
+    pub operator_type: OperatorType,
+    pub start: CodePosition,
+    pub end: CodePosition,
 }
 
 impl Operator {
@@ -47,9 +50,9 @@ impl Operator {
             let peeked = unwrap_result_option!(reader.peek(operator_type.to_string().len()));
 
             if peeked == operator_type.to_string() {
-                let start = reader.get_current_position().clone();
+                let start = reader.current_position.clone();
                 reader.consume(peeked.len())?;
-                let end = reader.get_current_position().clone();
+                let end = reader.current_position.clone();
 
                 return Ok(Some(Operator {
                     operator_type,
@@ -63,15 +66,5 @@ impl Operator {
 
     pub fn get_type(&self) -> &OperatorType {
         return &self.operator_type;
-    }
-}
-
-impl CodeArea for Operator {
-    fn get_start(&self) -> &CodePosition {
-        &self.start
-    }
-
-    fn get_end(&self) -> &CodePosition {
-        &self.end
     }
 }

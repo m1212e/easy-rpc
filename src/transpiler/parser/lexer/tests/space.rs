@@ -9,9 +9,9 @@ mod tests {
     fn test_success() -> Result<(), InputReaderError> {
         let mut reader = InputReader::new("  		   ".as_bytes());
 
-        assert_eq!(reader.get_current_position().character, 0);
+        assert_eq!(reader.current_position.character, 0);
         Space::skip_space(&mut reader)?;
-        assert_eq!(reader.get_current_position().character, 7);
+        assert_eq!(reader.current_position.character, 7);
 
         Ok(())
     }

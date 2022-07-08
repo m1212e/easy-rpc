@@ -10,7 +10,7 @@ use std::io::{BufRead, BufReader, Read};
 pub struct InputReader<T: Read> {
     buffer: String,
     done: bool,
-    current_position: CodePosition,
+    pub current_position: CodePosition,
     reader: BufReader<T>,
 }
 
@@ -174,13 +174,6 @@ impl<T: Read> InputReader<T> {
         // since the self.done is only set AFTER the EOF was detected, try to fill the buffer to detect a possible EOF and return a correct result
         let _ = self.extend_buffer_by(1);
         return self.done && self.buffer.len() == 0;
-    }
-
-    /**
-       Returns the current position of the reader.
-    */
-    pub fn get_current_position(&self) -> &CodePosition {
-        return &self.current_position;
     }
 
     /**

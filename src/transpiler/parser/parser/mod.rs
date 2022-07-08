@@ -1,11 +1,12 @@
 use self::disposeable_comment::DisposeableComment;
 
-use super::{lexer::TokenReader, CodePosition, CodeArea};
+use super::{lexer::TokenReader, CodePosition};
 
 mod tests;
 mod disposeable_comment;
 mod endpoint;
 
+#[derive(Debug)]
 pub struct ParseError {
     start: CodePosition,
     end: CodePosition,
@@ -15,16 +16,6 @@ pub struct ParseError {
 impl  ParseError {
     fn get_message(&self) -> &String {
         &self.message
-    }
-}
-
-impl CodeArea for ParseError {
-    fn get_start(&self) -> &CodePosition {
-        &self.start
-    }
-
-    fn get_end(&self) -> &CodePosition {
-        &self.end
     }
 }
 
@@ -43,7 +34,7 @@ impl Parser {
 
     fn run(&mut self, reader: &mut TokenReader) {
         loop {
-            if reader.is_done() {
+            if reader.done {
                 break;
             }
 
@@ -52,7 +43,7 @@ impl Parser {
             }
 
 
-            if reader.is_done() {
+            if reader.done {
                 break;
             }
         }

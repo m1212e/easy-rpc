@@ -5,7 +5,7 @@ use std::io::Read;
 use crate::{
     transpiler::parser::{
         input_reader::{InputReader, InputReaderError},
-        CodeArea, CodePosition,
+        CodePosition,
     },
     unwrap_result_option,
 };
@@ -13,11 +13,11 @@ use crate::{
 /**
    An Identifier for various elements inside the source code. Identifiers must match ^[A-Za-z0-9_]$
 */
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Identifier {
-    content: String,
-    start: CodePosition,
-    end: CodePosition,
+    pub content: String,
+    pub start: CodePosition,
+    pub end: CodePosition,
 }
 
 impl Identifier {
@@ -37,9 +37,9 @@ impl Identifier {
             return Ok(None);
         }
 
-        let start = reader.get_current_position().clone();
+        let start = reader.current_position.clone();
         let content = unwrap_result_option!(reader.consume(ret));
-        let end = reader.get_current_position().clone();
+        let end = reader.current_position.clone();
 
         Ok(Some(Identifier {
             content: content,
@@ -48,17 +48,4 @@ impl Identifier {
         }))
     }
 
-    pub fn get_content(&self) -> &String {
-        &self.content
-    }
-}
-
-impl CodeArea for Identifier {
-    fn get_start(&self) -> &CodePosition {
-        &self.start
-    }
-
-    fn get_end(&self) -> &CodePosition {
-        &self.end
-    }
 }

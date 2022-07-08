@@ -12,7 +12,7 @@ mod tests {
             TokenReader::new(InputReader::new("//Hello from the other side".as_bytes()))?;
         let result = DisposeableComment::skip_disposeable_comment(&mut reader);
         assert!(result.is_some());
-        assert!(reader.is_done());
+        assert!(reader.done);
 
         let result = DisposeableComment::skip_disposeable_comment(&mut reader);
         assert!(result.is_none());

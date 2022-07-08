@@ -1,11 +1,11 @@
 use lazy_static::lazy_static;
 use regex::Regex;
-use std::{cell::Cell, io::Read};
+use std::io::Read;
 
 use crate::{
     transpiler::parser::{
         input_reader::{InputReader, InputReaderError},
-        CodeArea, CodePosition,
+        CodePosition,
     },
     unwrap_result_option,
 };
@@ -13,18 +13,18 @@ use crate::{
 /**
 Literals are fixed values typed out in the source code of various kinds.
 */
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum LiteralType {
     Boolean(bool),
     String(String),
     Float(f32),
     Integer(i32),
 }
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Literal {
-    literalType: LiteralType,
-    start: CodePosition,
-    end: CodePosition,
+    pub literal_type: LiteralType,
+    pub start: CodePosition,
+    pub end: CodePosition,
 }
 
 impl Literal {
@@ -48,10 +48,6 @@ impl Literal {
 
         Ok(None)
     }
-
-    pub fn get_type(&self) -> &LiteralType {
-        &self.literalType
-    }
 }
 
 fn process_boolean<T: Read>(
@@ -68,12 +64,12 @@ fn process_boolean<T: Read>(
         // check if the word is over so we can make sure were not detecting a literal
         if next_char.is_none() || MATCH_WHITESPACE.is_match(next_char.unwrap().to_string().as_str())
         {
-            let start = reader.get_current_position().clone();
+            let start = reader.current_position.clone();
             reader.consume(4)?;
-            let end = reader.get_current_position().clone();
+            let end = reader.current_position.clone();
 
             return Ok(Some(Literal {
-                literalType: LiteralType::Boolean(true),
+                literal_type: LiteralType::Boolean(true),
                 start: start,
                 end: end,
             }));
@@ -87,12 +83,12 @@ fn process_boolean<T: Read>(
         // check if the word is over so we can make sure were not detecting a literal
         if next_char.is_none() || MATCH_WHITESPACE.is_match(next_char.unwrap().to_string().as_str())
         {
-            let start = reader.get_current_position().clone();
+            let start = reader.current_position.clone();
             reader.consume(5)?;
-            let end = reader.get_current_position().clone();
+            let end = reader.current_position.clone();
 
             return Ok(Some(Literal {
-                literalType: LiteralType::Boolean(false),
+                literal_type: LiteralType::Boolean(false),
                 start: start,
                 end: end,
             }));
@@ -124,27 +120,26 @@ fn process_string<T: Read>(
         return true;
     }));
 
-
-    // Check if the closing " exists or if peek until got cancelled by the end of the reader 
-    if reader.peek(ret.len()+1)?.is_none() {
+    // Check if the closing " exists or if peek until got cancelled by the end of the reader
+    if reader.peek(ret.len() + 1)?.is_none() {
         return Ok(None);
     }
 
     // consume the starting "
-    let start = reader.get_current_position().clone();
+    let start = reader.current_position.clone();
     reader.consume(1)?;
-    
+
     // consume the string
-    let string_content = reader.consume(ret.len()-1)?.unwrap();
+    let string_content = reader.consume(ret.len() - 1)?.unwrap();
 
     // consume the closing "
     reader.consume(1)?;
-    let end = reader.get_current_position().clone();
+    let end = reader.current_position.clone();
 
     Ok(Some(Literal {
         start: start,
         end: end,
-        literalType: LiteralType::String(string_content),
+        literal_type: LiteralType::String(string_content),
     }))
 }
 
@@ -168,41 +163,31 @@ fn process_number<T: Read>(
         let parsed = potential_number.parse::<f32>();
 
         if parsed.is_ok() {
-            let start = reader.get_current_position().clone();
+            let start = reader.current_position.clone();
             reader.consume(potential_number.len())?;
-            let end = reader.get_current_position().clone();
+            let end = reader.current_position.clone();
 
             return Ok(Some(Literal {
                 start: start,
                 end: end,
-                literalType: LiteralType::Float(parsed.unwrap()),
+                literal_type: LiteralType::Float(parsed.unwrap()),
             }));
         }
     } else {
         let parsed = potential_number.parse::<i32>();
 
         if parsed.is_ok() {
-            let start = reader.get_current_position().clone();
+            let start = reader.current_position.clone();
             reader.consume(potential_number.len())?;
-            let end = reader.get_current_position().clone();
+            let end = reader.current_position.clone();
 
             return Ok(Some(Literal {
                 start: start,
                 end: end,
-                literalType: LiteralType::Integer(parsed.unwrap()),
+                literal_type: LiteralType::Integer(parsed.unwrap()),
             }));
         }
     }
 
     return Ok(None);
-}
-
-impl CodeArea for Literal {
-    fn get_start(&self) -> &CodePosition {
-        &self.start
-    }
-
-    fn get_end(&self) -> &CodePosition {
-        &self.end
-    }
 }

@@ -3,7 +3,6 @@ mod tests {
     use crate::transpiler::parser::{
         input_reader::{InputReader, InputReaderError},
         lexer::keyword::{Keyword, KeywordType},
-        CodeArea,
     };
 
     #[test]
@@ -13,11 +12,11 @@ mod tests {
 
         assert_eq!(output.is_some(), true);
         let output = output.unwrap();
-        assert_eq!(output.get_start().character, 0);
-        assert_eq!(output.get_start().line, 0);
-        assert_eq!(output.get_end().character, 4);
-        assert_eq!(output.get_end().line, 0);
-        assert_eq!(matches!(output.get_type(), KeywordType::Type), true);
+        assert_eq!(output.start.character, 0);
+        assert_eq!(output.start.line, 0);
+        assert_eq!(output.end.character, 4);
+        assert_eq!(output.end.line, 0);
+        assert_eq!(matches!(output.keyword_type, KeywordType::Type), true);
 
         assert_eq!(reader.peek(4)?.unwrap(), "blah");
         Ok(())
@@ -30,11 +29,11 @@ mod tests {
 
         assert_eq!(output.is_some(), true);
         let output = output.unwrap();
-        assert_eq!(output.get_start().character, 0);
-        assert_eq!(output.get_start().line, 0);
-        assert_eq!(output.get_end().character, 4);
-        assert_eq!(output.get_end().line, 0);
-        assert_eq!(matches!(output.get_type(), KeywordType::Type), true);
+        assert_eq!(output.start.character, 0);
+        assert_eq!(output.start.line, 0);
+        assert_eq!(output.end.character, 4);
+        assert_eq!(output.end.line, 0);
+        assert_eq!(matches!(output.keyword_type, KeywordType::Type), true);
         assert!(reader.is_done());
 
         Ok(())
@@ -57,11 +56,11 @@ mod tests {
 
         assert_eq!(output.is_some(), true);
         let output = output.unwrap();
-        assert_eq!(output.get_start().character, 0);
-        assert_eq!(output.get_start().line, 0);
-        assert_eq!(output.get_end().character, 6);
-        assert_eq!(output.get_end().line, 0);
-        assert_eq!(matches!(output.get_type(), KeywordType::Import), true);
+        assert_eq!(output.start.character, 0);
+        assert_eq!(output.start.line, 0);
+        assert_eq!(output.end.character, 6);
+        assert_eq!(output.end.line, 0);
+        assert_eq!(matches!(output.keyword_type, KeywordType::Import), true);
 
         assert_eq!(reader.peek(4)?.unwrap(), "blah");
         Ok(())
@@ -74,11 +73,11 @@ mod tests {
 
         assert_eq!(output.is_some(), true);
         let output = output.unwrap();
-        assert_eq!(output.get_start().character, 0);
-        assert_eq!(output.get_start().line, 0);
-        assert_eq!(output.get_end().character, 7);
-        assert_eq!(output.get_end().line, 0);
-        assert_eq!(matches!(output.get_type(), KeywordType::Boolean), true);
+        assert_eq!(output.start.character, 0);
+        assert_eq!(output.start.line, 0);
+        assert_eq!(output.end.character, 7);
+        assert_eq!(output.end.line, 0);
+        assert_eq!(matches!(output.keyword_type, KeywordType::Boolean), true);
 
         assert_eq!(reader.peek(4)?.unwrap(), "blah");
         Ok(())
@@ -91,11 +90,11 @@ mod tests {
 
         assert_eq!(output.is_some(), true);
         let output = output.unwrap();
-        assert_eq!(output.get_start().character, 0);
-        assert_eq!(output.get_start().line, 0);
-        assert_eq!(output.get_end().character, 3);
-        assert_eq!(output.get_end().line, 0);
-        assert_eq!(matches!(output.get_type(), KeywordType::Int), true);
+        assert_eq!(output.start.character, 0);
+        assert_eq!(output.start.line, 0);
+        assert_eq!(output.end.character, 3);
+        assert_eq!(output.end.line, 0);
+        assert_eq!(matches!(output.keyword_type, KeywordType::Int), true);
 
         assert_eq!(reader.peek(4)?.unwrap(), "blah");
         Ok(())
@@ -108,11 +107,11 @@ mod tests {
 
         assert_eq!(output.is_some(), true);
         let output = output.unwrap();
-        assert_eq!(output.get_start().character, 0);
-        assert_eq!(output.get_start().line, 0);
-        assert_eq!(output.get_end().character, 4);
-        assert_eq!(output.get_end().line, 0);
-        assert_eq!(matches!(output.get_type(), KeywordType::Int8), true);
+        assert_eq!(output.start.character, 0);
+        assert_eq!(output.start.line, 0);
+        assert_eq!(output.end.character, 4);
+        assert_eq!(output.end.line, 0);
+        assert_eq!(matches!(output.keyword_type, KeywordType::Int8), true);
 
         assert_eq!(reader.peek(4)?.unwrap(), "blah");
         Ok(())
@@ -125,11 +124,11 @@ mod tests {
 
         assert_eq!(output.is_some(), true);
         let output = output.unwrap();
-        assert_eq!(output.get_start().character, 0);
-        assert_eq!(output.get_start().line, 0);
-        assert_eq!(output.get_end().character, 5);
-        assert_eq!(output.get_end().line, 0);
-        assert_eq!(matches!(output.get_type(), KeywordType::Int16), true);
+        assert_eq!(output.start.character, 0);
+        assert_eq!(output.start.line, 0);
+        assert_eq!(output.end.character, 5);
+        assert_eq!(output.end.line, 0);
+        assert_eq!(matches!(output.keyword_type, KeywordType::Int16), true);
 
         assert_eq!(reader.peek(4)?.unwrap(), "blah");
         Ok(())
@@ -142,11 +141,11 @@ mod tests {
 
         assert_eq!(output.is_some(), true);
         let output = output.unwrap();
-        assert_eq!(output.get_start().character, 0);
-        assert_eq!(output.get_start().line, 0);
-        assert_eq!(output.get_end().character, 5);
-        assert_eq!(output.get_end().line, 0);
-        assert_eq!(matches!(output.get_type(), KeywordType::Int32), true);
+        assert_eq!(output.start.character, 0);
+        assert_eq!(output.start.line, 0);
+        assert_eq!(output.end.character, 5);
+        assert_eq!(output.end.line, 0);
+        assert_eq!(matches!(output.keyword_type, KeywordType::Int32), true);
 
         assert_eq!(reader.peek(4)?.unwrap(), "blah");
         Ok(())
@@ -159,11 +158,11 @@ mod tests {
 
         assert_eq!(output.is_some(), true);
         let output = output.unwrap();
-        assert_eq!(output.get_start().character, 0);
-        assert_eq!(output.get_start().line, 0);
-        assert_eq!(output.get_end().character, 5);
-        assert_eq!(output.get_end().line, 0);
-        assert_eq!(matches!(output.get_type(), KeywordType::Int64), true);
+        assert_eq!(output.start.character, 0);
+        assert_eq!(output.start.line, 0);
+        assert_eq!(output.end.character, 5);
+        assert_eq!(output.end.line, 0);
+        assert_eq!(matches!(output.keyword_type, KeywordType::Int64), true);
 
         assert_eq!(reader.peek(4)?.unwrap(), "blah");
         Ok(())
@@ -176,11 +175,11 @@ mod tests {
 
         assert_eq!(output.is_some(), true);
         let output = output.unwrap();
-        assert_eq!(output.get_start().character, 0);
-        assert_eq!(output.get_start().line, 0);
-        assert_eq!(output.get_end().character, 5);
-        assert_eq!(output.get_end().line, 0);
-        assert_eq!(matches!(output.get_type(), KeywordType::Float), true);
+        assert_eq!(output.start.character, 0);
+        assert_eq!(output.start.line, 0);
+        assert_eq!(output.end.character, 5);
+        assert_eq!(output.end.line, 0);
+        assert_eq!(matches!(output.keyword_type, KeywordType::Float), true);
 
         assert_eq!(reader.peek(4)?.unwrap(), "blah");
         Ok(())
@@ -193,11 +192,11 @@ mod tests {
 
         assert_eq!(output.is_some(), true);
         let output = output.unwrap();
-        assert_eq!(output.get_start().character, 0);
-        assert_eq!(output.get_start().line, 0);
-        assert_eq!(output.get_end().character, 7);
-        assert_eq!(output.get_end().line, 0);
-        assert_eq!(matches!(output.get_type(), KeywordType::Float32), true);
+        assert_eq!(output.start.character, 0);
+        assert_eq!(output.start.line, 0);
+        assert_eq!(output.end.character, 7);
+        assert_eq!(output.end.line, 0);
+        assert_eq!(matches!(output.keyword_type, KeywordType::Float32), true);
 
         assert_eq!(reader.peek(4)?.unwrap(), "blah");
         Ok(())
@@ -210,11 +209,11 @@ mod tests {
 
         assert_eq!(output.is_some(), true);
         let output = output.unwrap();
-        assert_eq!(output.get_start().character, 0);
-        assert_eq!(output.get_start().line, 0);
-        assert_eq!(output.get_end().character, 7);
-        assert_eq!(output.get_end().line, 0);
-        assert_eq!(matches!(output.get_type(), KeywordType::Float64), true);
+        assert_eq!(output.start.character, 0);
+        assert_eq!(output.start.line, 0);
+        assert_eq!(output.end.character, 7);
+        assert_eq!(output.end.line, 0);
+        assert_eq!(matches!(output.keyword_type, KeywordType::Float64), true);
 
         assert_eq!(reader.peek(4)?.unwrap(), "blah");
         Ok(())
@@ -227,11 +226,11 @@ mod tests {
 
         assert_eq!(output.is_some(), true);
         let output = output.unwrap();
-        assert_eq!(output.get_start().character, 0);
-        assert_eq!(output.get_start().line, 0);
-        assert_eq!(output.get_end().character, 6);
-        assert_eq!(output.get_end().line, 0);
-        assert_eq!(matches!(output.get_type(), KeywordType::String), true);
+        assert_eq!(output.start.character, 0);
+        assert_eq!(output.start.line, 0);
+        assert_eq!(output.end.character, 6);
+        assert_eq!(output.end.line, 0);
+        assert_eq!(matches!(output.keyword_type, KeywordType::String), true);
 
         assert_eq!(reader.peek(4)?.unwrap(), "blah");
         Ok(())
