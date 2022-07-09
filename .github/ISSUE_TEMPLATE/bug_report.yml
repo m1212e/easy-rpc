@@ -1,0 +1,43 @@
+name: "Bug report"
+description: Report a bug to help improving easy-rpc
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for contributing to easy-rpc. Please fill out the information below.
+  - type: textarea
+    id: bug-description
+    attributes:
+      label: Describe the bug
+      description: A clear and concise description of the bug.
+      placeholder: Description
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: If you can, please state how the bug can be reproduced or what causes it to appear.
+      placeholder: Reproduction steps
+    validations:
+      required: true
+  - type: textarea
+    id: potential-fix
+    attributes:
+      label: Potential fix
+      description: If you have a suggestion for a fix, please describe your idea.
+      placeholder: Potential fix
+    validations:
+      required: false
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      description: Select the severity of this bug
+      options:
+        - low - doesn't break anything
+        - medium - breaking in edge cases
+        - high - breaking
+    validations:
+      required: true
