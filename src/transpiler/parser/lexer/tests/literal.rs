@@ -25,7 +25,7 @@ mod tests {
 
     #[test]
     fn test_true_short() -> Result<(), InputReaderError> {
-        let mut reader = InputReader::new("true".as_bytes());
+        let mut reader = InputReader::new("true,".as_bytes());
 
         let output = Literal::lex_literal(&mut reader)?.unwrap();
         assert_eq!(output.start.character, 0);
@@ -36,7 +36,6 @@ mod tests {
             matches!(output.literal_type, LiteralType::Boolean(true)),
             true
         );
-        assert!(reader.is_done());
 
         Ok(())
     }
@@ -53,7 +52,7 @@ mod tests {
 
     #[test]
     fn test_false() -> Result<(), InputReaderError> {
-        let mut reader = InputReader::new("false ".as_bytes());
+        let mut reader = InputReader::new("false, ".as_bytes());
 
         let output = Literal::lex_literal(&mut reader)?.unwrap();
         assert_eq!(output.start.character, 0);

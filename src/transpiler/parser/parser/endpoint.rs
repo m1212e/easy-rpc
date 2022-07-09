@@ -301,6 +301,7 @@ fn parse_endpoint_parameter_type(reader: &mut TokenReader) -> Result<ParameterTy
 
     return match &peeked[0].to_owned() {
         Token::Keyword(value) => parse_primitive_type(reader, value),
+        Token::Literal(_) => parse_literal_type(reader),
         _ => Err(ParseError {
             message: "Expected a parameter type".to_string(),
             start: reader.last_token_code_start,
@@ -339,6 +340,54 @@ fn parse_primitive_type(
         primitive_type,
         array_amount: parse_array_length(reader)?,
     }));
+}
+
+fn parse_literal_type(reader: &mut TokenReader) -> Result<ParameterType, ParseError> {
+    let mut values: Vec<Literal> = Vec::new();
+    loop {
+        let token = reader.consume(1);
+        if token.is_none() {
+            return Err(ParseError {
+                start: reader.last_token_code_start,
+                end: reader.last_token_code_end,
+                message: "Expected a literal for this enum type".to_string(),
+            });
+        }
+        let token = token.unwrap().remove(0);
+
+        match token {
+            Token::Literal(literal) => values.push(literal),
+            _ => {
+                return Err(ParseError {
+                    start: token.start(),
+                    end: token.end(),
+                    message: "Expected literal token".to_string(),
+                })
+            }
+        };
+
+        let next = reader.peek(1);
+
+        if next.is_none() {
+            break;
+        }
+
+        match &next.unwrap()[0] {
+            Token::Operator(operator) => match operator.operator_type {
+                OperatorType::Pipe => {
+                    reader.consume(1);
+                }
+                _ => {
+                    break;
+                }
+            },
+            _ => {
+                break;
+            }
+        };
+    }
+
+    return Ok(ParameterType::Enum(Enum { values }));
 }
 
 fn parse_array_length(reader: &mut TokenReader) -> Result<ArrayAmount, ParseError> {
@@ -410,7 +459,7 @@ fn parse_array_length(reader: &mut TokenReader) -> Result<ArrayAmount, ParseErro
             start: reader.last_token_code_start,
             end: reader.last_token_code_end,
             message: "Size of the array must be above or equal to 1".to_string(),
-        })
+        });
     }
 
     reader.consume(1);

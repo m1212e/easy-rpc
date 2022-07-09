@@ -54,15 +54,16 @@ fn process_boolean<T: Read>(
     reader: &mut InputReader<T>,
 ) -> Result<Option<Literal>, InputReaderError> {
     lazy_static! {
-        static ref MATCH_WHITESPACE: Regex = Regex::new(r"\s").unwrap();
+        // the same validator pattern that is used to determine the end of identifiers
+        static ref VALIDATOR: Regex = Regex::new("^[A-Za-z0-9_]$").unwrap();
     };
 
     let peek = unwrap_result_option!(reader.peek(4));
-    if peek.starts_with("true") {
+    if peek == "true" {
         let next_char = reader.peek(5)?.unwrap_or(String::new()).chars().nth(4);
 
         // check if the word is over so we can make sure were not detecting a literal
-        if next_char.is_none() || MATCH_WHITESPACE.is_match(next_char.unwrap().to_string().as_str())
+        if next_char.is_none() || !VALIDATOR.is_match(next_char.unwrap().to_string().as_str())
         {
             let start = reader.current_position.clone();
             reader.consume(4)?;
@@ -77,11 +78,11 @@ fn process_boolean<T: Read>(
     }
 
     let peek = unwrap_result_option!(reader.peek(5));
-    if peek.starts_with("false") {
+    if peek == "false" {
         let next_char = reader.peek(6)?.unwrap_or(String::new()).chars().nth(5);
 
         // check if the word is over so we can make sure were not detecting a literal
-        if next_char.is_none() || MATCH_WHITESPACE.is_match(next_char.unwrap().to_string().as_str())
+        if next_char.is_none() || !VALIDATOR.is_match(next_char.unwrap().to_string().as_str())
         {
             let start = reader.current_position.clone();
             reader.consume(5)?;

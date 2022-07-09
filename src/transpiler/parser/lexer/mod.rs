@@ -149,26 +149,4 @@ impl TokenReader {
         return Some(elements);
     }
 
-    /**
-        Consumes chars until the provided approve function returns false.
-        The iteration where the approve function fails (returns false) is INCLUSIVE, the current value will be returned.
-        Returns None if no char could be consumed.
-    */
-    pub fn consume_until<F: FnMut(Token) -> bool>(&mut self, mut approve: F) {
-        loop {
-            if self.done {
-                break;
-            }
-
-            let consumed = self.consume(1);
-
-            if consumed.is_none() {
-                break;
-            }
-
-            if !approve(consumed.unwrap().remove(0)) {
-                break;
-            }
-        }
-    }
 }
