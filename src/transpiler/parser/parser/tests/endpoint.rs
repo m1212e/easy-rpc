@@ -170,8 +170,6 @@ mod tests {
             _ => {panic!("should not match")}
         }
 
-        panic!("tafawd");
-
         Ok(())
     }
 }
