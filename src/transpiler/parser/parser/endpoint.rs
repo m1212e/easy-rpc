@@ -64,7 +64,7 @@ pub struct Custom {
         If this is a list type
         -1: no list, 0: list but no length defined, >=1: the int is the max length
     */
-    pub array_amount: u64,
+    pub array_amount: ArrayAmount,
     pub identifier: Identifier,
 }
 
@@ -300,8 +300,9 @@ fn parse_endpoint_parameter_type(reader: &mut TokenReader) -> Result<ParameterTy
     let peeked = peeked.unwrap();
 
     return match &peeked[0].to_owned() {
-        Token::Keyword(value) => parse_primitive_type(reader, value),
-        Token::Literal(_) => parse_literal_type(reader),
+        Token::Keyword(_) => parse_primitive_type(reader),
+        Token::Literal(_) => parse_enum_type(reader),
+        Token::Identifier(_) => parse_custom_type(reader),
         _ => Err(ParseError {
             message: "Expected a parameter type".to_string(),
             start: reader.last_token_code_start,
@@ -310,31 +311,35 @@ fn parse_endpoint_parameter_type(reader: &mut TokenReader) -> Result<ParameterTy
     };
 }
 
-fn parse_primitive_type(
-    reader: &mut TokenReader,
-    keyword: &Keyword,
-) -> Result<ParameterType, ParseError> {
-    let primitive_type = match keyword.keyword_type {
-        KeywordType::Boolean => PrimitiveType::Boolean,
-        KeywordType::Int8 => PrimitiveType::Int8,
-        KeywordType::Int16 => PrimitiveType::Int16,
-        KeywordType::Int32 => PrimitiveType::Int32,
-        KeywordType::Int64 => PrimitiveType::Int64,
-        KeywordType::Float32 => PrimitiveType::Float32,
-        KeywordType::Float64 => PrimitiveType::Float64,
-        KeywordType::String => PrimitiveType::String,
-        KeywordType::Int => PrimitiveType::Int16,
-        KeywordType::Float => PrimitiveType::Float32,
-        _ => {
+fn parse_primitive_type(reader: &mut TokenReader) -> Result<ParameterType, ParseError> {
+    let primitive_type = match reader.consume(1).unwrap().remove(0) {
+        Token::Keyword(keyword) => match keyword.keyword_type {
+            KeywordType::Boolean => PrimitiveType::Boolean,
+            KeywordType::Int8 => PrimitiveType::Int8,
+            KeywordType::Int16 => PrimitiveType::Int16,
+            KeywordType::Int32 => PrimitiveType::Int32,
+            KeywordType::Int64 => PrimitiveType::Int64,
+            KeywordType::Float32 => PrimitiveType::Float32,
+            KeywordType::Float64 => PrimitiveType::Float64,
+            KeywordType::String => PrimitiveType::String,
+            KeywordType::Int => PrimitiveType::Int16,
+            KeywordType::Float => PrimitiveType::Float32,
+            _ => {
+                return Err(ParseError {
+                    start: keyword.start,
+                    end: keyword.start,
+                    message: "Invalid keyword for primitive type".to_string(),
+                })
+            }
+        },
+        token => {
             return Err(ParseError {
-                start: keyword.start,
-                end: keyword.start,
-                message: "Invalid keyword for primitive type".to_string(),
+                start: token.start(),
+                end: token.start(),
+                message: "Invalid token for primitive type".to_string(),
             })
         }
     };
-
-    reader.consume(1);
 
     return Ok(ParameterType::Primitive(Primitive {
         primitive_type,
@@ -342,7 +347,7 @@ fn parse_primitive_type(
     }));
 }
 
-fn parse_literal_type(reader: &mut TokenReader) -> Result<ParameterType, ParseError> {
+fn parse_enum_type(reader: &mut TokenReader) -> Result<ParameterType, ParseError> {
     let mut values: Vec<Literal> = Vec::new();
     loop {
         let token = reader.consume(1);
@@ -388,6 +393,24 @@ fn parse_literal_type(reader: &mut TokenReader) -> Result<ParameterType, ParseEr
     }
 
     return Ok(ParameterType::Enum(Enum { values }));
+}
+
+fn parse_custom_type(reader: &mut TokenReader) -> Result<ParameterType, ParseError> {
+    let identifier = match reader.consume(1).unwrap().remove(0) {
+        Token::Identifier(id) => id,
+        token => {
+            return Err(ParseError{
+                start: token.start(),
+                end: token.end(),
+                message: "Invalid token for custom type".to_string()
+            })
+        }
+    };
+
+    return Ok(ParameterType::Custom(Custom{
+        identifier,
+        array_amount: parse_array_length(reader)?
+    }))
 }
 
 fn parse_array_length(reader: &mut TokenReader) -> Result<ArrayAmount, ParseError> {
