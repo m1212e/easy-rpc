@@ -42,7 +42,13 @@ impl Keyword {
         reader: &mut InputReader<T>,
     ) -> Result<Option<Keyword>, InputReaderError> {
         for keyword_type in KeywordType::iter() {
-            let peeked = unwrap_result_option!(reader.peek(keyword_type.to_string().len()));
+            let peeked = reader.peek(keyword_type.to_string().len())?;
+
+            if peeked.is_none() {
+                continue;
+            }
+
+            let peeked = peeked.unwrap();
 
             if peeked == keyword_type.to_string().to_lowercase() {
                 let start = reader.current_position.clone();

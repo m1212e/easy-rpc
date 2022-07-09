@@ -1,5 +1,3 @@
-use std::collections::VecDeque;
-
 use crate::{
     cast,
     transpiler::parser::{
@@ -18,9 +16,9 @@ use crate::{
 
 #[derive(Debug)]
 pub struct Parameter {
-    optional: bool,
-    identifier: String,
-    parameter_type: ParameterType,
+    pub optional: bool,
+    pub identifier: String,
+    pub parameter_type: ParameterType,
 }
 
 #[derive(Debug)]
@@ -31,20 +29,20 @@ pub enum ParameterType {
 }
 
 #[derive(Debug)]
-struct Primitive {
-    primitive_type: PrimitiveType,
-    array_amount: ArrayAmount,
+pub struct Primitive {
+    pub primitive_type: PrimitiveType,
+    pub array_amount: ArrayAmount,
 }
 
 #[derive(Debug)]
-enum ArrayAmount {
+pub enum ArrayAmount {
     NoArray,
     NoLengthSpecified,
     LengthSpecified(i32),
 }
 
 #[derive(Debug)]
-enum PrimitiveType {
+pub enum PrimitiveType {
     Boolean,
     Int8,
     Int16,
@@ -56,18 +54,18 @@ enum PrimitiveType {
 }
 
 #[derive(Debug)]
-struct Enum {
-    values: Vec<Literal>,
+pub struct Enum {
+    pub values: Vec<Literal>,
 }
 
 #[derive(Debug)]
-struct Custom {
+pub struct Custom {
     /*
         If this is a list type
         -1: no list, 0: list but no length defined, >=1: the int is the max length
     */
-    array_amount: u64,
-    identifier: Identifier,
+    pub array_amount: u64,
+    pub identifier: Identifier,
 }
 
 pub struct Endpoint {
@@ -134,7 +132,7 @@ impl Endpoint {
 
         // check the opening bracket
         match &peeked[2] {
-            Token::Operator(value) => match value.get_type() {
+            Token::Operator(value) => match value.operator_type {
                 OperatorType::OpenBracket => {}
                 _ => return None,
             },
@@ -191,10 +189,31 @@ impl Endpoint {
             let peeked = &peeked.unwrap()[0];
 
             match peeked {
-                Token::Operator(operator) => match operator.get_type() {
+                Token::Operator(operator) => match operator.operator_type {
                     OperatorType::CloseBracket => {
                         reader.consume(1);
                         break;
+                    }
+                    OperatorType::Comma => {
+                        reader.consume(1);
+                        let close_check = reader.peek(1);
+                        if close_check.is_some() {
+                            match &close_check.unwrap()[0] {
+                                Token::Operator(operator) => match operator.operator_type {
+                                    OperatorType::CloseBracket => {
+                                        return Some(Err(ParseError {
+                                            start: operator.start,
+                                            end: operator.end,
+                                            message:
+                                                "Expected parameters instead of closing bracket"
+                                                    .to_string(),
+                                        }))
+                                    }
+                                    _ => {}
+                                },
+                                _ => {}
+                            }
+                        }
                     }
                     _ => {}
                 },
@@ -248,7 +267,7 @@ fn parse_endpoint_parameter(reader: &mut TokenReader) -> Result<Parameter, Parse
     };
 
     let optional = match peeked.next().unwrap() {
-        Token::Operator(operator) => match operator.get_type() {
+        Token::Operator(operator) => match operator.operator_type {
             OperatorType::QuestionMark => {
                 reader.consume(1);
                 true
@@ -280,7 +299,7 @@ fn parse_endpoint_parameter_type(reader: &mut TokenReader) -> Result<ParameterTy
 
     let peeked = peeked.unwrap();
 
-    return match peeked[0].to_owned() {
+    return match &peeked[0].to_owned() {
         Token::Keyword(value) => parse_primitive_type(reader, value),
         _ => Err(ParseError {
             message: "Expected a parameter type".to_string(),
@@ -292,7 +311,7 @@ fn parse_endpoint_parameter_type(reader: &mut TokenReader) -> Result<ParameterTy
 
 fn parse_primitive_type(
     reader: &mut TokenReader,
-    keyword: Keyword,
+    keyword: &Keyword,
 ) -> Result<ParameterType, ParseError> {
     let primitive_type = match keyword.keyword_type {
         KeywordType::Boolean => PrimitiveType::Boolean,
@@ -309,10 +328,12 @@ fn parse_primitive_type(
             return Err(ParseError {
                 start: keyword.start,
                 end: keyword.start,
-                message: "Invalid keyword type for primitive type".to_string(),
+                message: "Invalid keyword for primitive type".to_string(),
             })
         }
     };
+
+    reader.consume(1);
 
     return Ok(ParameterType::Primitive(Primitive {
         primitive_type,
@@ -330,7 +351,7 @@ fn parse_array_length(reader: &mut TokenReader) -> Result<ArrayAmount, ParseErro
     let peeked = peeked.unwrap().to_owned();
 
     let array_opened = match &peeked[0] {
-        Token::Operator(value) => match value.get_type() {
+        Token::Operator(value) => match value.operator_type {
             OperatorType::SquareOpenBracket => true,
             _ => false,
         },
@@ -343,70 +364,56 @@ fn parse_array_length(reader: &mut TokenReader) -> Result<ArrayAmount, ParseErro
 
     reader.consume(1);
 
-    //TODO this can probably be done more elegantly?
-    let mut length_token: Option<Token> = None;
-    let mut length_token_counter = 0;
-
-    reader.consume_until(|token| {
-        return match &peeked[0] {
-            Token::Operator(value) => match value.get_type() {
-                OperatorType::SquareCloseBracket => true,
-                _ => {
-                    length_token = Some(token);
-                    length_token_counter += 1;
-                    false
-                }
-            },
-            _ => {
-                length_token = Some(token);
-                length_token_counter += 1;
-                false
-            }
-        };
-    });
-
-    let length_token = length_token.unwrap();
-
-    if length_token_counter == 0 {
-        return Ok(ArrayAmount::NoLengthSpecified);
-    }
-
-    if length_token_counter > 1 {
+    let length_token = reader.consume(1);
+    if length_token.is_none() {
         return Err(ParseError {
             start: reader.last_token_code_start,
             end: reader.last_token_code_end,
-            message: "Invalid amount of tokens for specifying array length".to_string(),
+            message: "Expected token to complete the length definition of this array".to_string(),
         });
     }
 
-    let array_length = match &length_token {
-        Token::Literal(literal) => match literal.literal_type {
-            LiteralType::Integer(value) => {
-                if value < 1 {
-                    return Err(ParseError {
-                        start: literal.start,
-                        end: literal.start,
-                        message: "Invalid array length. Value can't be less than 1".to_string(),
-                    });
-                }
-                value
+    let length = match length_token.unwrap().remove(0) {
+        Token::Operator(operator) => match operator.operator_type {
+            OperatorType::SquareCloseBracket => {
+                return Ok(ArrayAmount::NoLengthSpecified);
             }
             _ => {
                 return Err(ParseError {
+                    start: operator.start,
+                    end: operator.end,
+                    message: "Expected integer or closing bracket".to_string(),
+                })
+            }
+        },
+        Token::Literal(literal) => match literal.literal_type {
+            LiteralType::Integer(integer) => integer,
+            _ => {
+                return Err(ParseError {
                     start: literal.start,
-                    end: literal.start,
-                    message: "Integer literal required to specify array length".to_string(),
-                });
+                    end: literal.end,
+                    message: "Expected integer or closing bracket".to_string(),
+                })
             }
         },
         token => {
             return Err(ParseError {
                 start: token.start(),
                 end: token.end(),
-                message: "Integer literal required to specify array length".to_string(),
-            });
+                message: "Expected integer or closing bracket".to_string(),
+            })
         }
     };
 
-    return Ok(ArrayAmount::LengthSpecified(array_length));
+    if length < 1 {
+        return Err(ParseError {
+            start: reader.last_token_code_start,
+            end: reader.last_token_code_end,
+            message: "Size of the array must be above or equal to 1".to_string(),
+        })
+    }
+
+    reader.consume(1);
+
+    return Ok(ArrayAmount::LengthSpecified(length));
 }

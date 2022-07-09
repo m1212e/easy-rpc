@@ -47,7 +47,13 @@ impl Operator {
         reader: &mut InputReader<T>,
     ) -> Result<Option<Operator>, InputReaderError> {
         for operator_type in OperatorType::iter() {
-            let peeked = unwrap_result_option!(reader.peek(operator_type.to_string().len()));
+            let peeked = reader.peek(operator_type.to_string().len())?;
+
+            if peeked.is_none() {
+                continue;
+            }
+
+            let peeked = peeked.unwrap();
 
             if peeked == operator_type.to_string() {
                 let start = reader.current_position.clone();
@@ -62,9 +68,5 @@ impl Operator {
             }
         }
         Ok(None)
-    }
-
-    pub fn get_type(&self) -> &OperatorType {
-        return &self.operator_type;
     }
 }

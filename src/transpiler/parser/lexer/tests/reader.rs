@@ -16,13 +16,13 @@ mod tests {
         assert!(!reader.done);
 
         match &reader.peek(1).unwrap()[0] {
-            Token::Operator(value) => assert!(matches!(value.get_type(), OperatorType::Pipe)),
+            Token::Operator(value) => assert!(matches!(value.operator_type, OperatorType::Pipe)),
             _ => {
                 panic!("This case should never match")
             }
         }
         match &reader.peek(1).unwrap()[0] {
-            Token::Operator(value) => assert!(matches!(value.get_type(), OperatorType::Pipe)),
+            Token::Operator(value) => assert!(matches!(value.operator_type, OperatorType::Pipe)),
             _ => {
                 panic!("This case should never match")
             }
@@ -32,20 +32,20 @@ mod tests {
 
         match &reader.consume(2).unwrap()[1] {
             Token::Operator(value) => {
-                assert!(matches!(value.get_type(), OperatorType::QuestionMark))
+                assert!(matches!(value.operator_type, OperatorType::QuestionMark))
             }
             _ => {
                 panic!("This case should never match")
             }
         }
         match &reader.peek(1).unwrap()[0] {
-            Token::Operator(value) => assert!(matches!(value.get_type(), OperatorType::Comma)),
+            Token::Operator(value) => assert!(matches!(value.operator_type, OperatorType::Comma)),
             _ => {
                 panic!("This case should never match")
             }
         }
         match &reader.consume(1).unwrap()[0] {
-            Token::Operator(value) => assert!(matches!(value.get_type(), OperatorType::Comma)),
+            Token::Operator(value) => assert!(matches!(value.operator_type, OperatorType::Comma)),
             _ => {
                 panic!("This case should never match")
             }
@@ -75,7 +75,7 @@ mod tests {
 
         let mut tokens: Vec<Token> = Vec::new();
         reader.consume_until(|current| match current {
-            Token::Operator(v) => match v.get_type() {
+            Token::Operator(v) => match v.operator_type {
                 OperatorType::QuestionMark => {
                     tokens.push(Token::Operator(v));
                     false
@@ -93,7 +93,7 @@ mod tests {
         assert_eq!(tokens.len(), 2);
 
         match &tokens[0] {
-            Token::Operator(value) => assert!(matches!(value.get_type(), OperatorType::Pipe)),
+            Token::Operator(value) => assert!(matches!(value.operator_type, OperatorType::Pipe)),
             _ => {
                 panic!("This case should never match")
             }
@@ -101,7 +101,7 @@ mod tests {
 
         match &tokens[1] {
             Token::Operator(value) => {
-                assert!(matches!(value.get_type(), OperatorType::QuestionMark))
+                assert!(matches!(value.operator_type, OperatorType::QuestionMark))
             }
             _ => {
                 panic!("This case should never match")

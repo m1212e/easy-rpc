@@ -8,17 +8,10 @@ mod endpoint;
 
 #[derive(Debug)]
 pub struct ParseError {
-    start: CodePosition,
-    end: CodePosition,
-    message: String
+    pub start: CodePosition,
+    pub end: CodePosition,
+    pub message: String
 }
-
-impl  ParseError {
-    fn get_message(&self) -> &String {
-        &self.message
-    }
-}
-
 
 pub struct Parser {
     errors: Vec<ParseError>,
