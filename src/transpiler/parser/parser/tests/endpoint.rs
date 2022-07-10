@@ -207,6 +207,39 @@ mod tests {
 
         assert_eq!(result.parameters.len(), 3);
 
+        match result.parameters.remove(0).parameter_type {
+            ParameterType::Custom(value) => {
+                assert_eq!(value.identifier, "CustomType");
+                assert!(matches!(value.array_amount, ArrayAmount::NoArray));
+            }
+            _ => {
+                panic!("should not match")
+            }
+        }
+
+        match result.parameters.remove(0).parameter_type {
+            ParameterType::Custom(value) => {
+                assert_eq!(value.identifier, "CustomType2");
+                assert!(matches!(value.array_amount, ArrayAmount::NoLengthSpecified));
+            }
+            _ => {
+                panic!("should not match")
+            }
+        }
+
+        match result.parameters.remove(0).parameter_type {
+            ParameterType::Custom(value) => {
+                assert_eq!(value.identifier, "CustomType3");
+                assert!(matches!(
+                    value.array_amount,
+                    ArrayAmount::LengthSpecified(10)
+                ));
+            }
+            _ => {
+                panic!("should not match")
+            }
+        }
+
         Ok(())
     }
 }

@@ -65,7 +65,7 @@ pub struct Custom {
         -1: no list, 0: list but no length defined, >=1: the int is the max length
     */
     pub array_amount: ArrayAmount,
-    pub identifier: Identifier,
+    pub identifier: String,
 }
 
 pub struct Endpoint {
@@ -408,7 +408,7 @@ fn parse_custom_type(reader: &mut TokenReader) -> Result<ParameterType, ParseErr
     };
 
     return Ok(ParameterType::Custom(Custom{
-        identifier,
+        identifier: identifier.content,
         array_amount: parse_array_length(reader)?
     }))
 }
