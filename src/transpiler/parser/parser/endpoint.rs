@@ -114,8 +114,10 @@ impl Endpoint {
 
         if newline_after_doc {
             peeked = reader.peek(6)?;
+            peeked = &peeked[2..];
         } else if has_docs {
             peeked = reader.peek(5)?;
+            peeked = &peeked[1..];
         }
 
         match &peeked[0] {
@@ -211,7 +213,9 @@ impl Endpoint {
                                     }
                                     _ => {}
                                 },
-                                Token::LineBreak(_) => {reader.consume(1);}
+                                Token::LineBreak(_) => {
+                                    reader.consume(1);
+                                }
                                 _ => {}
                             }
                         }
@@ -233,7 +237,7 @@ impl Endpoint {
 
         if return_token.is_some() {
             match return_token.unwrap()[0].to_owned() {
-                Token::LineBreak(_) => {},
+                Token::LineBreak(_) => {}
                 _ => {
                     let t = parse_endpoint_parameter_type(reader);
                     if t.is_err() {
@@ -263,7 +267,7 @@ fn parse_endpoint_parameter(reader: &mut TokenReader) -> Result<Parameter, Parse
         return Err(ParseError {
             start: reader.last_token_code_start,
             end: reader.last_token_code_end,
-            message: "Expected valid parameter".to_string(),
+            message: "Not enough tokens to form a valid parameter".to_string(),
         });
     }
 
@@ -289,7 +293,13 @@ fn parse_endpoint_parameter(reader: &mut TokenReader) -> Result<Parameter, Parse
                 reader.consume(1);
                 true
             }
-            _ => false,
+            _ => {
+                return Err(ParseError{
+                    start: operator.start,
+                    end: operator.end,
+                    message: "Unexpected operator. Only ? is valid here.".to_string()
+                })
+            },
         },
         _ => false,
     };
@@ -416,18 +426,18 @@ fn parse_custom_type(reader: &mut TokenReader) -> Result<ParameterType, ParseErr
     let identifier = match reader.consume(1).unwrap().remove(0) {
         Token::Identifier(id) => id,
         token => {
-            return Err(ParseError{
+            return Err(ParseError {
                 start: token.start(),
                 end: token.end(),
-                message: "Invalid token for custom type".to_string()
+                message: "Invalid token for custom type".to_string(),
             })
         }
     };
 
-    return Ok(ParameterType::Custom(Custom{
+    return Ok(ParameterType::Custom(Custom {
         identifier: identifier.content,
-        array_amount: parse_array_length(reader)?
-    }))
+        array_amount: parse_array_length(reader)?,
+    }));
 }
 
 fn parse_array_length(reader: &mut TokenReader) -> Result<ArrayAmount, ParseError> {
