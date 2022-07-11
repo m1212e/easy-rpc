@@ -196,9 +196,9 @@ impl Endpoint {
                     }
                     OperatorType::Comma => {
                         reader.consume(1);
-                        let close_check = reader.peek(1);
-                        if close_check.is_some() {
-                            match &close_check.unwrap()[0] {
+                        let next = reader.peek(1);
+                        if next.is_some() {
+                            match &next.unwrap()[0] {
                                 Token::Operator(operator) => match operator.operator_type {
                                     OperatorType::CloseBracket => {
                                         return Some(Err(ParseError {
@@ -211,6 +211,7 @@ impl Endpoint {
                                     }
                                     _ => {}
                                 },
+                                Token::LineBreak(_) => {reader.consume(1);}
                                 _ => {}
                             }
                         }
@@ -227,13 +228,29 @@ impl Endpoint {
             parameters.push(endpoint.unwrap())
         }
 
+        let mut return_type: Option<ParameterType> = None;
+        let return_token = reader.peek(1);
+
+        if return_token.is_some() {
+            match return_token.unwrap()[0].to_owned() {
+                Token::LineBreak(_) => {},
+                _ => {
+                    let t = parse_endpoint_parameter_type(reader);
+                    if t.is_err() {
+                        return Some(Err(t.unwrap_err()));
+                    }
+                    return_type = Some(t.unwrap());
+                }
+            }
+        }
+
         Some(Ok(Endpoint {
             documentation,
             start,
             end: reader.last_token_code_end,
             identifier,
             parameters,
-            return_type: None, //TODO this is for testing only, obviously this needs to be parsed
+            return_type,
             role,
         }))
     }

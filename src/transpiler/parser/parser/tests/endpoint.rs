@@ -242,4 +242,97 @@ mod tests {
 
         Ok(())
     }
+
+    #[test]
+    fn test_primitive_return_value() -> Result<(), InputReaderError> {
+        let mut reader = TokenReader::new(InputReader::new(
+            " Server someEndpointIdentifier() string".as_bytes(),
+        ))?;
+
+        let result = Endpoint::parse_endpoint(&mut reader);
+
+        assert!(result.is_some());
+
+        let result = result.unwrap();
+
+        let ret_type = result.unwrap().return_type;
+
+        match ret_type.unwrap() {
+            ParameterType::Primitive(value) => match value.primitive_type {
+                PrimitiveType::String => {
+                    assert!(matches!(value.array_amount, ArrayAmount::NoArray));
+                }
+                _ => {
+                    panic!("Should not match")
+                }
+            },
+            _ => {
+                panic!("Should not match")
+            }
+        }
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_primitive_array_return_value() -> Result<(), InputReaderError> {
+        let mut reader = TokenReader::new(InputReader::new(
+            " Server someEndpointIdentifier() string[]".as_bytes(),
+        ))?;
+
+        let result = Endpoint::parse_endpoint(&mut reader);
+
+        assert!(result.is_some());
+
+        let result = result.unwrap();
+
+        let ret_type = result.unwrap().return_type;
+
+        match ret_type.unwrap() {
+            ParameterType::Primitive(value) => match value.primitive_type {
+                PrimitiveType::String => {
+                    assert!(matches!(value.array_amount, ArrayAmount::NoLengthSpecified));
+                }
+                _ => {
+                    panic!("Should not match")
+                }
+            },
+            _ => {
+                panic!("Should not match")
+            }
+        }
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_primitive_array_return_value_2() -> Result<(), InputReaderError> {
+        let mut reader = TokenReader::new(InputReader::new(
+            " Server someEndpointIdentifier() string[100]".as_bytes(),
+        ))?;
+
+        let result = Endpoint::parse_endpoint(&mut reader);
+
+        assert!(result.is_some());
+
+        let result = result.unwrap();
+
+        let ret_type = result.unwrap().return_type;
+
+        match ret_type.unwrap() {
+            ParameterType::Primitive(value) => match value.primitive_type {
+                PrimitiveType::String => {
+                    assert!(matches!(value.array_amount, ArrayAmount::LengthSpecified(100)));
+                }
+                _ => {
+                    panic!("Should not match")
+                }
+            },
+            _ => {
+                panic!("Should not match")
+            }
+        }
+
+        Ok(())
+    }
 }
