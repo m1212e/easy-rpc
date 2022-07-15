@@ -3,7 +3,10 @@ mod tests {
     use crate::transpiler::parser::{
         input_reader::{InputReader, InputReaderError},
         lexer::{literal::LiteralType, TokenReader},
-        parser::endpoint::{ArrayAmount, Endpoint, ParameterType, PrimitiveType},
+        parser::{
+            endpoint::Endpoint,
+            field_type::{ArrayAmount, PrimitiveType, Type},
+        },
     };
 
     #[test]
@@ -109,7 +112,7 @@ mod tests {
         assert_eq!(result.parameters[0].optional, true);
         assert_eq!(result.parameters[0].identifier, "paramIdentifier");
         match &result.parameters[0].parameter_type {
-            ParameterType::Primitive(primitive) => {
+            Type::Primitive(primitive) => {
                 assert!(matches!(primitive.primitive_type, PrimitiveType::String));
                 assert!(matches!(
                     primitive.array_amount,
@@ -122,7 +125,7 @@ mod tests {
         assert_eq!(result.parameters[1].optional, false);
         assert_eq!(result.parameters[1].identifier, "paramIdentifier2");
         match &result.parameters[1].parameter_type {
-            ParameterType::Primitive(primitive) => {
+            Type::Primitive(primitive) => {
                 assert!(matches!(primitive.primitive_type, PrimitiveType::Int16));
                 assert!(matches!(
                     primitive.array_amount,
@@ -135,7 +138,7 @@ mod tests {
         assert_eq!(result.parameters[2].optional, false);
         assert_eq!(result.parameters[2].identifier, "paramIdentifier3");
         match &result.parameters[2].parameter_type {
-            ParameterType::Primitive(primitive) => {
+            Type::Primitive(primitive) => {
                 assert!(matches!(primitive.primitive_type, PrimitiveType::Float32));
                 assert!(matches!(primitive.array_amount, ArrayAmount::NoArray));
             }
@@ -229,14 +232,14 @@ mod tests {
         assert_eq!(result.parameters.len(), 2);
 
         let mut p1_values = match result.parameters.remove(0).parameter_type {
-            ParameterType::Enum(en) => en.values,
+            Type::Enum(en) => en.values,
             _ => {
                 panic!("should not match")
             }
         };
 
         let mut p2_values = match result.parameters.remove(0).parameter_type {
-            ParameterType::Enum(en) => en.values,
+            Type::Enum(en) => en.values,
             _ => {
                 panic!("should not match")
             }
@@ -322,7 +325,7 @@ mod tests {
         assert_eq!(result.parameters.len(), 3);
 
         match result.parameters.remove(0).parameter_type {
-            ParameterType::Custom(value) => {
+            Type::Custom(value) => {
                 assert_eq!(value.identifier, "CustomType");
                 assert!(matches!(value.array_amount, ArrayAmount::NoArray));
             }
@@ -332,7 +335,7 @@ mod tests {
         }
 
         match result.parameters.remove(0).parameter_type {
-            ParameterType::Custom(value) => {
+            Type::Custom(value) => {
                 assert_eq!(value.identifier, "CustomType2");
                 assert!(matches!(value.array_amount, ArrayAmount::NoLengthSpecified));
             }
@@ -342,7 +345,7 @@ mod tests {
         }
 
         match result.parameters.remove(0).parameter_type {
-            ParameterType::Custom(value) => {
+            Type::Custom(value) => {
                 assert_eq!(value.identifier, "CustomType3");
                 assert!(matches!(
                     value.array_amount,
@@ -372,7 +375,7 @@ mod tests {
         let ret_type = result.unwrap().return_type;
 
         match ret_type.unwrap() {
-            ParameterType::Primitive(value) => match value.primitive_type {
+            Type::Primitive(value) => match value.primitive_type {
                 PrimitiveType::String => {
                     assert!(matches!(value.array_amount, ArrayAmount::NoArray));
                 }
@@ -403,7 +406,7 @@ mod tests {
         let ret_type = result.unwrap().return_type;
 
         match ret_type.unwrap() {
-            ParameterType::Primitive(value) => match value.primitive_type {
+            Type::Primitive(value) => match value.primitive_type {
                 PrimitiveType::String => {
                     assert!(matches!(value.array_amount, ArrayAmount::NoLengthSpecified));
                 }
@@ -434,7 +437,7 @@ mod tests {
         let ret_type = result.unwrap().return_type;
 
         match ret_type.unwrap() {
-            ParameterType::Primitive(value) => match value.primitive_type {
+            Type::Primitive(value) => match value.primitive_type {
                 PrimitiveType::String => {
                     assert!(matches!(
                         value.array_amount,
@@ -645,7 +648,9 @@ mod tests {
 
     #[test]
     fn test_invalid_12() -> Result<(), InputReaderError> {
-        let mut reader = TokenReader::new(InputReader::new(" Server hello(p1 true | something".as_bytes()))?;
+        let mut reader = TokenReader::new(InputReader::new(
+            " Server hello(p1 true | something".as_bytes(),
+        ))?;
 
         let result = Endpoint::parse_endpoint(&mut reader);
 
@@ -664,7 +669,9 @@ mod tests {
 
     #[test]
     fn test_invalid_13() -> Result<(), InputReaderError> {
-        let mut reader = TokenReader::new(InputReader::new(" Server hello(p1 string[invalid]".as_bytes()))?;
+        let mut reader = TokenReader::new(InputReader::new(
+            " Server hello(p1 string[invalid]".as_bytes(),
+        ))?;
 
         let result = Endpoint::parse_endpoint(&mut reader);
 
@@ -683,7 +690,8 @@ mod tests {
 
     #[test]
     fn test_invalid_14() -> Result<(), InputReaderError> {
-        let mut reader = TokenReader::new(InputReader::new(" Server hello(p1 string[15.5]".as_bytes()))?;
+        let mut reader =
+            TokenReader::new(InputReader::new(" Server hello(p1 string[15.5]".as_bytes()))?;
 
         let result = Endpoint::parse_endpoint(&mut reader);
 
@@ -702,7 +710,8 @@ mod tests {
 
     #[test]
     fn test_invalid_15() -> Result<(), InputReaderError> {
-        let mut reader = TokenReader::new(InputReader::new(" Server hello(p1 string[true".as_bytes()))?;
+        let mut reader =
+            TokenReader::new(InputReader::new(" Server hello(p1 string[true".as_bytes()))?;
 
         let result = Endpoint::parse_endpoint(&mut reader);
 
@@ -721,7 +730,8 @@ mod tests {
 
     #[test]
     fn test_invalid_16() -> Result<(), InputReaderError> {
-        let mut reader = TokenReader::new(InputReader::new(" Server hello(p1 string[0])".as_bytes()))?;
+        let mut reader =
+            TokenReader::new(InputReader::new(" Server hello(p1 string[0])".as_bytes()))?;
 
         let result = Endpoint::parse_endpoint(&mut reader);
 
@@ -740,7 +750,8 @@ mod tests {
 
     #[test]
     fn test_invalid_17() -> Result<(), InputReaderError> {
-        let mut reader = TokenReader::new(InputReader::new(" Server hello(p1 string[-18])".as_bytes()))?;
+        let mut reader =
+            TokenReader::new(InputReader::new(" Server hello(p1 string[-18])".as_bytes()))?;
 
         let result = Endpoint::parse_endpoint(&mut reader);
 

@@ -1,31 +1,31 @@
-use self::disposeable_comment::DisposeableComment;
+use self::{disposeable_comment::DisposeableComment, endpoint::Endpoint};
 
 use super::{lexer::TokenReader, CodePosition};
 
-mod tests;
 mod disposeable_comment;
 mod endpoint;
+mod tests;
+mod field_type;
+mod custom_type;
 
 #[derive(Debug)]
 pub struct ParseError {
     pub start: CodePosition,
     pub end: CodePosition,
-    pub message: String
+    pub message: String,
 }
 
-pub struct Parser {
-    errors: Vec<ParseError>,
+pub struct Parser;
+
+pub struct ParseResult {
+    pub endpoints: Vec<Endpoint>
 }
 
 impl Parser {
-
-    fn new(reader: &mut TokenReader) -> Parser {
-        let mut ret = Parser { errors: Vec::new() };
-        ret.run(reader);
-        return ret;
-    }
-
-    fn run(&mut self, reader: &mut TokenReader) {
+    fn run(reader: &mut TokenReader) -> Result<ParseResult, ParseError> {
+        let mut ret = ParseResult{
+            endpoints: Vec::new()
+        };
         loop {
             if reader.done {
                 break;
@@ -35,10 +35,22 @@ impl Parser {
                 continue;
             }
 
+            let ep = Endpoint::parse_endpoint(reader);
+            if ep.is_some() {
+                let ep = ep.unwrap();
+                if ep.is_ok() {
+                    ret.endpoints.push(ep.unwrap());
+                } else {
+                    return Err(ep.unwrap_err());
+                }
+                continue;
+            };
 
             if reader.done {
                 break;
             }
         }
+
+        return Ok(ret);
     }
 }
