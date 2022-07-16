@@ -7,7 +7,7 @@ use crate::{
     },
 };
 
-use super::field_type::{Type, parse_primitive_type, parse_custom_type, parse_enum_type};
+use super::field_type::{Type, parse_field_type};
 
 #[derive(Debug)]
 pub struct Parameter {
@@ -188,7 +188,7 @@ impl Endpoint {
             match return_token.unwrap()[0].to_owned() {
                 Token::LineBreak(_) => {}
                 _ => {
-                    let t = parse_endpoint_parameter_type(reader);
+                    let t = parse_field_type(reader);
                     if t.is_err() {
                         return Some(Err(t.unwrap_err()));
                     }
@@ -253,7 +253,7 @@ fn parse_endpoint_parameter(reader: &mut TokenReader) -> Result<Parameter, Parse
         _ => false,
     };
 
-    let parameter_type = parse_endpoint_parameter_type(reader)?;
+    let parameter_type = parse_field_type(reader)?;
 
     return Ok(Parameter {
         identifier: identifier.content,
@@ -262,27 +262,4 @@ fn parse_endpoint_parameter(reader: &mut TokenReader) -> Result<Parameter, Parse
     });
 }
 
-fn parse_endpoint_parameter_type(reader: &mut TokenReader) -> Result<Type, ParseError> {
-    let peeked = reader.peek(1);
 
-    if peeked.is_none() {
-        return Err(ParseError {
-            message: "Expected a parameter type".to_string(),
-            start: reader.last_token_code_start,
-            end: reader.last_token_code_end,
-        });
-    }
-
-    let peeked = peeked.unwrap();
-
-    return match &peeked[0].to_owned() {
-        Token::Keyword(_) => parse_primitive_type(reader),
-        Token::Literal(_) => parse_enum_type(reader),
-        Token::Identifier(_) => parse_custom_type(reader),
-        _ => Err(ParseError {
-            message: "Expected a parameter type".to_string(),
-            start: reader.last_token_code_start,
-            end: reader.last_token_code_end,
-        }),
-    };
-}

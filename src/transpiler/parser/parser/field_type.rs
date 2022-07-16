@@ -52,7 +52,32 @@ pub struct Custom {
     pub identifier: String,
 }
 
-pub fn parse_primitive_type(reader: &mut TokenReader) -> Result<Type, ParseError> {
+pub fn parse_field_type(reader: &mut TokenReader) -> Result<Type, ParseError> {
+    let peeked = reader.peek(1);
+
+    if peeked.is_none() {
+        return Err(ParseError {
+            message: "Expected a parameter type".to_string(),
+            start: reader.last_token_code_start,
+            end: reader.last_token_code_end,
+        });
+    }
+
+    let peeked = peeked.unwrap();
+
+    return match &peeked[0].to_owned() {
+        Token::Keyword(_) => parse_primitive_type(reader),
+        Token::Literal(_) => parse_enum_type(reader),
+        Token::Identifier(_) => parse_custom_type(reader),
+        _ => Err(ParseError {
+            message: "Expected a parameter type".to_string(),
+            start: reader.last_token_code_start,
+            end: reader.last_token_code_end,
+        }),
+    };
+}
+
+fn parse_primitive_type(reader: &mut TokenReader) -> Result<Type, ParseError> {
     let primitive_type = match reader.consume(1).unwrap().remove(0) {
         Token::Keyword(keyword) => match keyword.keyword_type {
             KeywordType::Boolean => PrimitiveType::Boolean,
@@ -88,7 +113,7 @@ pub fn parse_primitive_type(reader: &mut TokenReader) -> Result<Type, ParseError
     }));
 }
 
-pub fn parse_enum_type(reader: &mut TokenReader) -> Result<Type, ParseError> {
+fn parse_enum_type(reader: &mut TokenReader) -> Result<Type, ParseError> {
     let mut values: Vec<Literal> = Vec::new();
     loop {
         let token = reader.consume(1);
@@ -136,7 +161,7 @@ pub fn parse_enum_type(reader: &mut TokenReader) -> Result<Type, ParseError> {
     return Ok(Type::Enum(Enum { values }));
 }
 
-pub fn parse_custom_type(reader: &mut TokenReader) -> Result<Type, ParseError> {
+fn parse_custom_type(reader: &mut TokenReader) -> Result<Type, ParseError> {
     let identifier = match reader.consume(1).unwrap().remove(0) {
         Token::Identifier(id) => id,
         token => {
@@ -154,7 +179,7 @@ pub fn parse_custom_type(reader: &mut TokenReader) -> Result<Type, ParseError> {
     }));
 }
 
-pub fn parse_array_length(reader: &mut TokenReader) -> Result<ArrayAmount, ParseError> {
+fn parse_array_length(reader: &mut TokenReader) -> Result<ArrayAmount, ParseError> {
     let peeked = reader.peek(2);
 
     if peeked.is_none() {
