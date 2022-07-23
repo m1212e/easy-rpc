@@ -45,7 +45,7 @@ impl CustomType {
 
         let newline_after_doc = if has_docs {
             peeked = &peeked[1..];
-            
+
             match peeked[0] {
                 Token::LineBreak(_) => {
                     peeked = &peeked[1..];
@@ -57,12 +57,9 @@ impl CustomType {
             false
         };
 
-
         match &peeked[0] {
             Token::Keyword(keyword) => match keyword.keyword_type {
-                KeywordType::Type => {
-                    print!("CALLED");
-                }
+                KeywordType::Type => {}
                 _ => {
                     return None;
                 }
@@ -188,6 +185,7 @@ impl CustomType {
 
             let next = reader.consume(1);
             if next.is_none() {
+                // this should never occur
                 return Some(Err(ParseError {
                     start: reader.last_token_code_start,
                     end: reader.last_token_code_end,
@@ -209,6 +207,7 @@ impl CustomType {
 
             let next = reader.peek(1);
             if next.is_none() {
+                // should never occur
                 return Some(Err(ParseError {
                     start: reader.last_token_code_start,
                     end: reader.last_token_code_end,
@@ -219,7 +218,10 @@ impl CustomType {
 
             let optional = match next {
                 Token::Operator(operator) => match operator.operator_type {
-                    OperatorType::QuestionMark => true,
+                    OperatorType::QuestionMark => {
+                        reader.consume(1);
+                        true
+                    }
                     _ => false,
                 },
                 _ => false,
@@ -243,7 +245,7 @@ impl CustomType {
             start,
             documentation,
             identifier: identifier.content,
-            fields
+            fields,
         }));
     }
 }
