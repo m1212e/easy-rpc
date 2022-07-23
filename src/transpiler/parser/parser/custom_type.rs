@@ -155,6 +155,7 @@ impl CustomType {
 
             let peeked = reader.peek(2);
             if peeked.is_none() {
+                // should never occur
                 return Some(Err(ParseError {
                     start: reader.last_token_code_start,
                     end: reader.last_token_code_end,

@@ -229,7 +229,7 @@ mod tests {
     #[test]
     fn test_invalid_6() -> Result<(), InputReaderError> {
         let mut reader = TokenReader::new(InputReader::new(
-            "/**hello*/\ntype SomeType { /**hello*/\n".as_bytes(),
+            "/**hello*/type SomeType { /**hello*/\n".as_bytes(),
         ))?;
 
         let result = CustomType::parse_custom_type(&mut reader).unwrap();
@@ -240,6 +240,46 @@ mod tests {
             assert_eq!(
                 result.unwrap_err_unchecked().message,
                 "Expected field identifier"
+            );
+        }
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_invalid_7() -> Result<(), InputReaderError> {
+        let mut reader = TokenReader::new(InputReader::new(
+            "/**hello*/\ntype SomeType ".as_bytes(),
+        ))?;
+
+        let result = CustomType::parse_custom_type(&mut reader).unwrap();
+
+        assert!(result.is_err());
+
+        unsafe {
+            assert_eq!(
+                result.unwrap_err_unchecked().message,
+                "Expected an opening { for the type"
+            );
+        }
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_invalid_8() -> Result<(), InputReaderError> {
+        let mut reader = TokenReader::new(InputReader::new(
+            "/**hello*/\ntype SomeType {".as_bytes(),
+        ))?;
+
+        let result = CustomType::parse_custom_type(&mut reader).unwrap();
+
+        assert!(result.is_err());
+
+        unsafe {
+            assert_eq!(
+                result.unwrap_err_unchecked().message,
+                "Expected closing }"
             );
         }
 
