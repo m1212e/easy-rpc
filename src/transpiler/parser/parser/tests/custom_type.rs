@@ -21,12 +21,27 @@ mod tests {
     }
 
     #[test]
+    fn test_docs() -> Result<(), InputReaderError> {
+        let mut reader = TokenReader::new(InputReader::new("/**\nsome docs\n*/\ntype EmptyType {\n/**\nDocs for f1\n*/\nf1 string\n/**more docs*/\nfield2 int\n}".as_bytes()))?;
+
+        let mut result = CustomType::parse_custom_type(&mut reader).unwrap().unwrap();
+
+        assert_eq!(result.documentation.unwrap(), "\nsome docs\n");
+        assert_eq!(result.fields.remove(0).documentation.unwrap(), "\nDocs for f1\n");
+        assert_eq!(result.fields.remove(0).documentation.unwrap(), "more docs");
+
+        Ok(())
+    }
+
+    #[test]
     fn test_success_one_field() -> Result<(), InputReaderError> {
         let mut reader = TokenReader::new(InputReader::new(
-            "type EmptyType {\nfield1 string}".as_bytes(),
+            "type SomeType {\nfield1 string}".as_bytes(),
         ))?;
 
         let mut result = CustomType::parse_custom_type(&mut reader).unwrap().unwrap();
+
+        assert_eq!(result.identifier, "SomeType");
 
         assert_eq!(result.fields.len(), 1);
         match result.fields.remove(0).field_type {
@@ -43,7 +58,7 @@ mod tests {
     #[test]
     fn test_success_two_fields() -> Result<(), InputReaderError> {
         let mut reader = TokenReader::new(InputReader::new(
-            "type EmptyType {\nfield1 string\n field2 int}".as_bytes(),
+            "type SomeType {\nfield1 string\n field2 int}".as_bytes(),
         ))?;
 
         let mut result = CustomType::parse_custom_type(&mut reader).unwrap().unwrap();
@@ -79,7 +94,7 @@ mod tests {
     #[test]
     fn test_success_three_fields() -> Result<(), InputReaderError> {
         let mut reader = TokenReader::new(InputReader::new(
-            "type EmptyType {\nfield1 string\n field2 SomeCustomType\nfield3 \"Something\" | true | 17}".as_bytes(),
+            "type SomeType {\nfield1 string\n field2 SomeCustomType\nfield3 \"Something\" | true | 17}".as_bytes(),
         ))?;
 
         let mut result = CustomType::parse_custom_type(&mut reader).unwrap().unwrap();
