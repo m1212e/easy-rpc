@@ -91,6 +91,7 @@ fn parse_primitive_type(reader: &mut TokenReader) -> Result<Type, ParseError> {
             KeywordType::Int => PrimitiveType::Int16,
             KeywordType::Float => PrimitiveType::Float32,
             _ => {
+                // should not occur
                 return Err(ParseError {
                     start: keyword.start,
                     end: keyword.start,
@@ -99,6 +100,7 @@ fn parse_primitive_type(reader: &mut TokenReader) -> Result<Type, ParseError> {
             }
         },
         token => {
+            // should not occur
             return Err(ParseError {
                 start: token.start(),
                 end: token.start(),
@@ -165,6 +167,7 @@ fn parse_custom_type(reader: &mut TokenReader) -> Result<Type, ParseError> {
     let identifier = match reader.consume(1).unwrap().remove(0) {
         Token::Identifier(id) => id,
         token => {
+            // should not occur
             return Err(ParseError {
                 start: token.start(),
                 end: token.end(),
