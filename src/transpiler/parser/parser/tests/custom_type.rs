@@ -306,4 +306,24 @@ mod tests {
         Ok(())
     }
 
+    #[test]
+    fn test_invalid_10() -> Result<(), InputReaderError> {
+        let mut reader = TokenReader::new(InputReader::new(
+            "/**hello*/\ntype SomeType {field string[hello|}".as_bytes(),
+        ))?;
+
+        let result = CustomType::parse_custom_type(&mut reader).unwrap();
+
+        assert!(result.is_err());
+
+        unsafe {
+            assert_eq!(
+                result.unwrap_err_unchecked().message,
+                "Expected integer or closing bracket"
+            );
+        }
+
+        Ok(())
+    }
+
 }
