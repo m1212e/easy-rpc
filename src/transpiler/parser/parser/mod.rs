@@ -5,8 +5,8 @@ use super::{lexer::TokenReader, CodePosition};
 mod disposeable_comment;
 mod endpoint;
 mod tests;
-mod field_type;
-mod custom_type;
+pub mod field_type;
+pub mod custom_type;
 
 #[derive(Debug)]
 pub struct ParseError {
