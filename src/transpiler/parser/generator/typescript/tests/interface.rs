@@ -156,7 +156,7 @@ mod tests {
             ],
         };
 
-        let result = TypeScriptTranslator::custom_type_to_interface(t);
+        let result = TypeScriptTranslator::custom_type_to_interface(&t);
 
         assert_eq!(
             result,
@@ -183,3 +183,5 @@ docs
         )
     }
 }
+
+//TODO write some tests whith variation (no docs etc.)

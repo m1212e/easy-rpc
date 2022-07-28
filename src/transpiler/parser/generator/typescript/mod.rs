@@ -1,14 +1,33 @@
 use crate::transpiler::parser::{
     lexer::literal::LiteralType,
-    parser::field_type::{ArrayAmount, PrimitiveType, Type},
+    parser::{
+        custom_type::CustomType,
+        endpoint::Endpoint,
+        field_type::{ArrayAmount, PrimitiveType, Type},
+    },
 };
 
+use self::{endpoint::endpoint_to_function, interface::custom_type_to_interface};
+
+use super::Translator;
+
+mod endpoint;
 mod interface;
 mod tests;
 
 pub struct TypeScriptTranslator;
 
-fn stringify_field_type(field_type: Type) -> String {
+impl Translator for TypeScriptTranslator {
+    fn custom_type_to_interface(custom_type: &CustomType) -> String {
+        custom_type_to_interface(custom_type)
+    }
+
+    fn endpoint_to_function(endpoint: &Endpoint, foreign: bool, url: &str) -> String {
+        endpoint_to_function(endpoint, foreign, url)
+    }
+}
+
+fn stringify_field_type(field_type: &Type) -> String {
     match field_type {
         Type::Primitive(primitive) => {
             let mut type_string = match primitive.primitive_type {
@@ -34,15 +53,8 @@ fn stringify_field_type(field_type: Type) -> String {
         }
         Type::Enum(en) => {
             let mut ret = String::new();
-            let mut values = en.values.iter().peekable();
-
-            loop {
-                let val = values.next();
-                if val.is_none() {
-                    break;
-                }
-
-                match &val.unwrap().literal_type {
+            for i in 0..en.values.len() {
+                match &en.values[i].literal_type {
                     LiteralType::Boolean(val) => ret.push_str(&val.to_string()),
                     LiteralType::String(val) => {
                         ret.push_str("\"");
@@ -53,22 +65,26 @@ fn stringify_field_type(field_type: Type) -> String {
                     LiteralType::Integer(val) => ret.push_str(&val.to_string()),
                 }
 
-                if values.peek().is_some() {
+                if i < en.values.len() - 1 {
                     ret.push_str(" | ")
                 }
             }
 
             ret
         }
-        Type::Custom(mut custom) => match &custom.array_amount {
-            ArrayAmount::NoArray => custom.identifier,
+        Type::Custom(custom) => match &custom.array_amount {
+            ArrayAmount::NoArray => custom.identifier.to_string(),
             ArrayAmount::NoLengthSpecified => {
-                custom.identifier.push_str("[]");
-                custom.identifier
+                let mut ret = String::new();
+                ret.push_str(&custom.identifier);
+                ret.push_str("[]");
+                ret
             }
             ArrayAmount::LengthSpecified(_) => {
-                custom.identifier.push_str("[]");
-                custom.identifier
+                let mut ret = String::new();
+                ret.push_str(&custom.identifier);
+                ret.push_str("[]");
+                ret
             }
         },
     }

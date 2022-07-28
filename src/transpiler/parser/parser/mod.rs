@@ -3,7 +3,7 @@ use self::{disposeable_comment::DisposeableComment, endpoint::Endpoint};
 use super::{lexer::TokenReader, CodePosition};
 
 mod disposeable_comment;
-mod endpoint;
+pub mod endpoint;
 mod tests;
 pub mod field_type;
 pub mod custom_type;
