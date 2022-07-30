@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
     use crate::transpiler::parser::{
-        generator::{typescript::class::generate_class, ClassImport},
+        generator::{typescript::class::generate_class, Import},
         parser::{
             endpoint::{Endpoint, Parameter},
             field_type::{ArrayAmount, Primitive, PrimitiveType, Type},
@@ -58,18 +58,30 @@ mod tests {
             &endpoints,
             false,
             &vec![
-                ClassImport {
-                    folder: "SomeFolder".to_string(),
-                    class_name: "ImportedClass".to_string(),
+                Import {
+                    source: "SomeFolder".to_string(),
+                    name: "ImportedClass".to_string(),
                 },
-                ClassImport {
-                    folder: "SomeFolder2".to_string(),
-                    class_name: "ImportedClass2".to_string(),
+                Import {
+                    source: "SomeFolder2".to_string(),
+                    name: "ImportedClass2".to_string(),
+                },
+            ],
+            &vec![
+                Import {
+                    source: "SomeSource".to_string(),
+                    name: "ImportedType".to_string(),
+                },
+                Import {
+                    source: "SomeSource2".to_string(),
+                    name: "ImportedType2".to_string(),
                 },
             ],
         );
 
-        assert_eq!(result, "import ImportedClass from \"./SomeFolder/ImportedClass\"
+        assert_eq!(result, "import { ImportedType } from \"./SomeSource\"
+import { ImportedType2 } from \"./SomeSource2\"
+import ImportedClass from \"./SomeFolder/ImportedClass\"
 import ImportedClass2 from \"./SomeFolder2/ImportedClass2\"
 
 export default class MyCoolClass {
@@ -195,20 +207,38 @@ export default class MyCoolClass {
             },
         ];
 
-        let result = generate_class("MyCoolClass", "test/test2", &endpoints, true, &vec![
-            ClassImport {
-                folder: "SomeFolder".to_string(),
-                class_name: "ImportedClass".to_string(),
-            },
-            ClassImport {
-                folder: "SomeFolder2".to_string(),
-                class_name: "ImportedClass2".to_string(),
-            },
-        ],);
+        let result = generate_class(
+            "MyCoolClass",
+            "test/test2",
+            &endpoints,
+            true,
+            &vec![
+                Import {
+                    source: "SomeFolder".to_string(),
+                    name: "ImportedClass".to_string(),
+                },
+                Import {
+                    source: "SomeFolder2".to_string(),
+                    name: "ImportedClass2".to_string(),
+                },
+            ],
+            &vec![
+                Import {
+                    source: "SomeSource".to_string(),
+                    name: "ImportedType".to_string(),
+                },
+                Import {
+                    source: "SomeSource2".to_string(),
+                    name: "ImportedType2".to_string(),
+                },
+            ],
+        );
 
         assert_eq!(
             result,
-            "import ImportedClass from \"./SomeFolder/ImportedClass\"
+            "import { ImportedType } from \"./SomeSource\"
+import { ImportedType2 } from \"./SomeSource2\"
+import ImportedClass from \"./SomeFolder/ImportedClass\"
 import ImportedClass2 from \"./SomeFolder2/ImportedClass2\"
 
 export default class MyCoolClass {
