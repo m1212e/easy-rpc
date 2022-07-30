@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
     use crate::transpiler::parser::{
-        generator::typescript::class::generate_class,
+        generator::{typescript::class::generate_class, ClassImport},
         parser::{
             endpoint::{Endpoint, Parameter},
             field_type::{ArrayAmount, Primitive, PrimitiveType, Type},
@@ -52,9 +52,27 @@ mod tests {
             },
         ];
 
-        let result = generate_class("MyCoolClass", "test/test2", &endpoints, false, None);
+        let result = generate_class(
+            "MyCoolClass",
+            "test/test2",
+            &endpoints,
+            false,
+            &vec![
+                ClassImport {
+                    folder: "SomeFolder".to_string(),
+                    class_name: "ImportedClass".to_string(),
+                },
+                ClassImport {
+                    folder: "SomeFolder2".to_string(),
+                    class_name: "ImportedClass2".to_string(),
+                },
+            ],
+        );
 
-        assert_eq!(result, "export default class MyCoolClass {
+        assert_eq!(result, "import ImportedClass from \"./SomeFolder/ImportedClass\"
+import ImportedClass2 from \"./SomeFolder2/ImportedClass2\"
+
+export default class MyCoolClass {
     private server: any
     /**
         This method is used by easy-rpc internally and is not intended for manual use. It can be used to set the server of the object.
@@ -70,6 +88,8 @@ mod tests {
     constructor(callbacks?: {
         MySuperCoolEndpoint1: (p1?: string[], p2: number) => Promise<string[]>
         MySuperCoolEndpoint2: () => Promise<void>
+        ImportedClass: ImportedClass
+        ImportedClass2: ImportedClass2
     }) {
         if (callbacks?.MySuperCoolEndpoint1) {
             this.MySuperCoolEndpoint1 = callbacks.MySuperCoolEndpoint1
@@ -77,6 +97,18 @@ mod tests {
 
         if (callbacks?.MySuperCoolEndpoint2) {
             this.MySuperCoolEndpoint2 = callbacks.MySuperCoolEndpoint2
+        }
+
+        if (callbacks?.ImportedClass) {
+            this.ImportedClass = callbacks.ImportedClass
+        } else {
+            this.ImportedClass = this.ImportedClass
+        }
+
+        if (callbacks?.ImportedClass2) {
+            this.ImportedClass2 = callbacks.ImportedClass2
+        } else {
+            this.ImportedClass2 = this.ImportedClass2
         }
 
     }
@@ -98,6 +130,23 @@ mod tests {
     }
     get MySuperCoolEndpoint2() {
         return this._MySuperCoolEndpoint2
+    }
+
+    private _ImportedClass = new ImportedClass()
+    set ImportedClass(value: ImportedClass) {
+        this._ImportedClass = value
+        (value as any).setERPCServer(this.server)
+    }
+    get ImportedClass() {
+        return this._ImportedClass
+    }
+    private _ImportedClass2 = new ImportedClass2()
+    set ImportedClass2(value: ImportedClass2) {
+        this._ImportedClass2 = value
+        (value as any).setERPCServer(this.server)
+    }
+    get ImportedClass2() {
+        return this._ImportedClass2
     }
 
 }");
@@ -146,13 +195,32 @@ mod tests {
             },
         ];
 
-        let result = generate_class("MyCoolClass", "test/test2", &endpoints, true, None);
+        let result = generate_class("MyCoolClass", "test/test2", &endpoints, true, &vec![
+            ClassImport {
+                folder: "SomeFolder".to_string(),
+                class_name: "ImportedClass".to_string(),
+            },
+            ClassImport {
+                folder: "SomeFolder2".to_string(),
+                class_name: "ImportedClass2".to_string(),
+            },
+        ],);
 
-        assert_eq!(result, "export default class MyCoolClass {
+        assert_eq!(
+            result,
+            "import ImportedClass from \"./SomeFolder/ImportedClass\"
+import ImportedClass2 from \"./SomeFolder2/ImportedClass2\"
+
+export default class MyCoolClass {
+    ImportedClass: ImportedClass
+    ImportedClass2: ImportedClass2
+
     private server: any
 
     constructor(server: any) {
         this.server = server
+        this.ImportedClass = new ImportedClass(server)
+        this.ImportedClass2 = new ImportedClass2(server)
     }
 
 /**some docs*/
@@ -164,6 +232,7 @@ mod tests {
         return this.server.call(\"test/test2/MyCoolClass/MySuperCoolEndpoint2\")
     }
 
-}");
+}"
+        );
     }
 }

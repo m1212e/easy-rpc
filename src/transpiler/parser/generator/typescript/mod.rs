@@ -8,10 +8,10 @@ use crate::transpiler::parser::{
 };
 
 use self::{
-    interface::custom_type_to_interface, class::generate_class,
+    interface::custom_type_to_interface, class::{generate_class},
 };
 
-use super::Translator;
+use super::{Translator, ClassImport};
 
 mod class;
 mod endpoint;
@@ -25,7 +25,7 @@ impl Translator for TypeScriptTranslator {
         custom_type_to_interface(custom_type)
     }
 
-    fn generate_class(class_name: &str, relative_path: &str, endpoints: &Vec<Endpoint>, foreign: bool, imports: Option<Vec<&str>>) -> String {
+    fn generate_class(class_name: &str, relative_path: &str, endpoints: &Vec<Endpoint>, foreign: bool, imports: &Vec<ClassImport>) -> String {
         generate_class(class_name, relative_path, endpoints, foreign, imports)
     }
 }
