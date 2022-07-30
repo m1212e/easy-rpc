@@ -11,7 +11,7 @@ pub fn custom_type_to_interface(custom_type: &CustomType) -> String {
         builder.push_str("*/\n");
     }
 
-    builder.push_str("interface ");
+    builder.push_str("export interface ");
     builder.push_str(&custom_type.identifier);
     builder.push_str(" {\n");
 

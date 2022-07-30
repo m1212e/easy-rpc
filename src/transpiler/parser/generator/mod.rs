@@ -10,11 +10,14 @@ pub trait Translator {
         Translates a defined custom type into an interface of the target language
      */
     fn custom_type_to_interface(custom_type: &CustomType) -> String;
+    
     /**
-        Translates an endpoint to a function for the target language.
-        The foreign parameter indicates if the generated code should be for calling and endpoint
-        on another machine or to provide logic for handling a call on this machine.
-        The url must be a unique identifier for determining this endpoint.
+        Generates a class in the target language.
+        The class name is the name used as classname.
+        The relative path is used to build the endpoint identifier and should be the path of the class relative to the root folder. Path separators should be /.
+        endpoints are all endpoints which the class should implement.
+        foreign indicates if the class should provide callbacks for handling incoming requests or methods for calling foreign endpoints.
+        imports are all imports of sub classes which this class should import
      */
-    fn endpoint_to_function(endpoint: &Endpoint, foreign: bool, url: &str) -> String;
+    fn generate_class(class_name: &str, relative_path: &str, endpoints: &Vec<Endpoint>, foreign: bool, imports: Option<Vec<&str>>) -> String;
 }

@@ -161,7 +161,7 @@ mod tests {
         assert_eq!(
             result,
             "/**Some sample*/
-interface MyType {
+export interface MyType {
 /**
 some
 docs

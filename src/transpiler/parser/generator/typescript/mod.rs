@@ -7,10 +7,13 @@ use crate::transpiler::parser::{
     },
 };
 
-use self::{endpoint::endpoint_to_function, interface::custom_type_to_interface};
+use self::{
+    interface::custom_type_to_interface, class::generate_class,
+};
 
 use super::Translator;
 
+mod class;
 mod endpoint;
 mod interface;
 mod tests;
@@ -22,8 +25,8 @@ impl Translator for TypeScriptTranslator {
         custom_type_to_interface(custom_type)
     }
 
-    fn endpoint_to_function(endpoint: &Endpoint, foreign: bool, url: &str) -> String {
-        endpoint_to_function(endpoint, foreign, url)
+    fn generate_class(class_name: &str, relative_path: &str, endpoints: &Vec<Endpoint>, foreign: bool, imports: Option<Vec<&str>>) -> String {
+        generate_class(class_name, relative_path, endpoints, foreign, imports)
     }
 }
 

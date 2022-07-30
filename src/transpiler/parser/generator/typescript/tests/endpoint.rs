@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
     use crate::transpiler::parser::{
-        generator::{typescript::TypeScriptTranslator, Translator},
+        generator::{typescript::{TypeScriptTranslator, endpoint::endpoint_to_function}, Translator},
         parser::{
             endpoint::{Endpoint, Parameter},
             field_type::{ArrayAmount, Primitive, PrimitiveType, Type},
@@ -41,7 +41,7 @@ mod tests {
             ],
         };
 
-        let result = TypeScriptTranslator::endpoint_to_function(&ep, true, "ABC123");
+        let result = endpoint_to_function(&ep, true, "ABC123");
 
         assert_eq!(
             result,
@@ -85,20 +85,23 @@ return this.server.call(\"ABC123\", [p1, p2])
             ],
         };
 
-        let result = TypeScriptTranslator::endpoint_to_function(&ep, false, "ABC123");
+        let result = endpoint_to_function(&ep, false, "ABC123");
 
         assert_eq!(
             result,
             "/**some docs*/
-private _MySuperCoolEndpoint: (p1?: string[], p2: number) => Promise<string[]> = undefined as any
-set MySuperCoolEndpoint(value: (p1?: string[], p2: number) => Promise<string[]>) {
-this._MySuperCoolEndpoint = value
-this.server?.registerERPCCallbackFunction(value, \"ABC123\")
-}
-get MySuperCoolEndpoint() {
-return this._MySuperCoolEndpoint
-}
+    private _MySuperCoolEndpoint: (p1?: string[], p2: number) => Promise<string[]> = undefined as any
+    set MySuperCoolEndpoint(value: (p1?: string[], p2: number) => Promise<string[]>) {
+        this._MySuperCoolEndpoint = value
+        this.server?.registerERPCCallbackFunction(value, \"ABC123\")
+    }
+    get MySuperCoolEndpoint() {
+        return this._MySuperCoolEndpoint
+    }
+
 "
         )
     }
 }
+
+//TODO write some tests whith variation (no docs, no return type etc.)

@@ -2,6 +2,12 @@ use crate::transpiler::parser::parser::endpoint::Endpoint;
 
 use super::stringify_field_type;
 
+/**
+   Translates an endpoint to a function for the target language.
+   The foreign parameter indicates if the generated code should be for calling and endpoint
+   on another machine or to provide logic for handling a call on this machine.
+   The url must be a unique identifier for determining this endpoint.
+*/
 pub fn endpoint_to_function(endpoint: &Endpoint, foreign: bool, url: &str) -> String {
     if foreign {
         make_foreign_endpoint(endpoint, url)
@@ -19,6 +25,7 @@ fn make_foreign_endpoint(endpoint: &Endpoint, url: &str) -> String {
         ret.push_str("*/\n");
     }
 
+    ret.push_str("    ");
     ret.push_str(&endpoint.identifier);
     ret.push_str("(");
 
@@ -49,7 +56,7 @@ fn make_foreign_endpoint(endpoint: &Endpoint, url: &str) -> String {
         ret.push_str("void");
     }
 
-    ret.push_str("> {\nreturn this.server.call(\"");
+    ret.push_str("> {\n        return this.server.call(\"");
     ret.push_str(&url);
     ret.push_str("\"");
 
@@ -66,7 +73,7 @@ fn make_foreign_endpoint(endpoint: &Endpoint, url: &str) -> String {
         ret.push_str("]");
     }
 
-    ret.push_str(")\n}\n");
+    ret.push_str(")\n    }\n\n");
 
     ret
 }
@@ -80,14 +87,14 @@ fn make_callback_endpoint(endpoint: &Endpoint, url: &str) -> String {
         ret.push_str("*/\n");
     }
 
-    ret.push_str("private _");
+    ret.push_str("    private _");
     ret.push_str(&endpoint.identifier);
     ret.push_str(": (");
 
     let mut params_string = String::new();
     for i in 0..endpoint.parameters.len() {
         params_string.push_str(&endpoint.parameters[i].identifier);
-        
+
         if endpoint.parameters[i].optional {
             params_string.push_str("?");
         }
@@ -113,7 +120,7 @@ fn make_callback_endpoint(endpoint: &Endpoint, url: &str) -> String {
         ret.push_str("void");
     }
 
-    ret.push_str("> = undefined as any\nset ");
+    ret.push_str("> = undefined as any\n    set ");
     ret.push_str(&endpoint.identifier);
     ret.push_str("(value: (");
     ret.push_str(&params_string);
@@ -127,15 +134,15 @@ fn make_callback_endpoint(endpoint: &Endpoint, url: &str) -> String {
         ret.push_str("void");
     }
 
-    ret.push_str(">) {\nthis._");
+    ret.push_str(">) {\n        this._");
     ret.push_str(&endpoint.identifier);
-    ret.push_str(" = value\nthis.server?.registerERPCCallbackFunction(value, \"");
+    ret.push_str(" = value\n        this.server?.registerERPCCallbackFunction(value, \"");
     ret.push_str(&url);
-    ret.push_str("\")\n}\nget ");
+    ret.push_str("\")\n    }\n    get ");
     ret.push_str(&endpoint.identifier);
-    ret.push_str("() {\nreturn this._");
+    ret.push_str("() {\n        return this._");
     ret.push_str(&endpoint.identifier);
-    ret.push_str("\n}\n");
+    ret.push_str("\n    }\n\n");
 
     ret
 }
