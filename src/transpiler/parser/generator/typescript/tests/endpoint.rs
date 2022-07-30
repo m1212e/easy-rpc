@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
     use crate::transpiler::parser::{
-        generator::{typescript::{TypeScriptTranslator, endpoint::endpoint_to_function}, Translator},
+        generator::{typescript::{endpoint::endpoint_to_function}},
         parser::{
             endpoint::{Endpoint, Parameter},
             field_type::{ArrayAmount, Primitive, PrimitiveType, Type},
@@ -46,9 +46,10 @@ mod tests {
         assert_eq!(
             result,
             "/**some docs*/
-MySuperCoolEndpoint(p1?: string[], p2: number): Promise<string[]> {
-return this.server.call(\"ABC123\", [p1, p2])
-}
+    MySuperCoolEndpoint(p1?: string[], p2: number): Promise<string[]> {
+        return this.server.call(\"ABC123\", [p1, p2])
+    }
+
 "
         )
     }
