@@ -1,5 +1,7 @@
 use super::parser::{custom_type::CustomType, endpoint::Endpoint};
+use std::collections::{hash_map::Entry, HashMap};
 
+mod tests;
 mod typescript;
 
 /**
@@ -39,4 +41,45 @@ pub trait Translator {
 pub struct Import {
     source: String,
     name: String,
+}
+
+pub fn endpoints_to_classes_per_role<T: Translator>(
+    class_name: &str,
+    relative_path: &str,
+    endpoints: Vec<Endpoint>,
+    selected_role: &str,
+    type_imports: &Vec<Import>,
+    subclasses_to_import_per_role: HashMap<String, Vec<Import>>,
+) -> HashMap<String, String> {
+    let mut endpoints_per_role: HashMap<String, Vec<Endpoint>> = HashMap::new();
+
+    for endpoint in endpoints {
+        match endpoints_per_role.entry(endpoint.role.clone()) {
+            Entry::Occupied(mut e) => {
+                e.get_mut().push(endpoint);
+            }
+            Entry::Vacant(e) => {
+                e.insert(vec![endpoint]);
+            }
+        }
+    }
+
+    let mut classes_by_role: HashMap<String, String> = HashMap::new();
+
+    for (current_role, value) in endpoints_per_role.iter() {
+        classes_by_role.insert(
+            current_role.to_owned(),
+            T::generate_class(
+                class_name,
+                relative_path,
+                value,
+                selected_role != current_role,
+                subclasses_to_import_per_role
+                    .get(current_role)
+                    .unwrap_or(&vec![]),
+                type_imports,
+            ),
+        );
+    }
+    classes_by_role
 }
