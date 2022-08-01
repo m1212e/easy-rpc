@@ -1,12 +1,15 @@
 #[cfg(test)]
 mod tests {
-    use crate::transpiler::parser::{
-        generator::{typescript::class::generate_class, Import},
+    use crate::transpiler::{
+        generator::{typescript::class::generate_class},
         parser::{
-            endpoint::{Endpoint, Parameter},
-            field_type::{ArrayAmount, Primitive, PrimitiveType, Type},
+            parser::{
+                custom_type::CustomType,
+                endpoint::{Endpoint, Parameter},
+                field_type::{ArrayAmount, Primitive, PrimitiveType, Type},
+            },
+            CodePosition,
         },
-        CodePosition,
     };
 
     #[test]
@@ -57,32 +60,33 @@ mod tests {
             "test/test2",
             &endpoints,
             false,
+            &vec!["ImportedClass".to_string(), "ImportedClass2".to_string()],
             &vec![
-                Import {
-                    source: "SomeFolder".to_string(),
-                    name: "ImportedClass".to_string(),
+                CustomType {
+                    documentation: None,
+                    start: CodePosition::zero_initialized(),
+                    end: CodePosition::zero_initialized(),
+                    fields: vec![],
+                    identifier: "MyCoolType1".to_string(),
                 },
-                Import {
-                    source: "SomeFolder2".to_string(),
-                    name: "ImportedClass2".to_string(),
-                },
-            ],
-            &vec![
-                Import {
-                    source: "SomeSource".to_string(),
-                    name: "ImportedType".to_string(),
-                },
-                Import {
-                    source: "SomeSource2".to_string(),
-                    name: "ImportedType2".to_string(),
+                CustomType {
+                    documentation: None,
+                    start: CodePosition::zero_initialized(),
+                    end: CodePosition::zero_initialized(),
+                    fields: vec![],
+                    identifier: "MyCoolType2".to_string(),
                 },
             ],
         );
 
-        assert_eq!(result, "import { ImportedType } from \"./SomeSource\"
-import { ImportedType2 } from \"./SomeSource2\"
-import ImportedClass from \"./SomeFolder/ImportedClass\"
-import ImportedClass2 from \"./SomeFolder2/ImportedClass2\"
+        assert_eq!(result, "import ImportedClass from \"./MyCoolClass/ImportedClass\"
+import ImportedClass2 from \"./MyCoolClass/ImportedClass2\"
+
+export interface MyCoolType1 {
+}
+
+export interface MyCoolType2 {
+}
 
 export default class MyCoolClass {
     private server: any
@@ -212,34 +216,35 @@ export default class MyCoolClass {
             "test/test2",
             &endpoints,
             true,
+            &vec!["ImportedClass".to_string(), "ImportedClass2".to_string()],
             &vec![
-                Import {
-                    source: "SomeFolder".to_string(),
-                    name: "ImportedClass".to_string(),
+                CustomType {
+                    documentation: None,
+                    start: CodePosition::zero_initialized(),
+                    end: CodePosition::zero_initialized(),
+                    fields: vec![],
+                    identifier: "MyCoolType1".to_string(),
                 },
-                Import {
-                    source: "SomeFolder2".to_string(),
-                    name: "ImportedClass2".to_string(),
-                },
-            ],
-            &vec![
-                Import {
-                    source: "SomeSource".to_string(),
-                    name: "ImportedType".to_string(),
-                },
-                Import {
-                    source: "SomeSource2".to_string(),
-                    name: "ImportedType2".to_string(),
+                CustomType {
+                    documentation: None,
+                    start: CodePosition::zero_initialized(),
+                    end: CodePosition::zero_initialized(),
+                    fields: vec![],
+                    identifier: "MyCoolType2".to_string(),
                 },
             ],
         );
 
         assert_eq!(
             result,
-            "import { ImportedType } from \"./SomeSource\"
-import { ImportedType2 } from \"./SomeSource2\"
-import ImportedClass from \"./SomeFolder/ImportedClass\"
-import ImportedClass2 from \"./SomeFolder2/ImportedClass2\"
+            "import ImportedClass from \"./MyCoolClass/ImportedClass\"
+import ImportedClass2 from \"./MyCoolClass/ImportedClass2\"
+
+export interface MyCoolType1 {
+}
+
+export interface MyCoolType2 {
+}
 
 export default class MyCoolClass {
     ImportedClass: ImportedClass

@@ -2,15 +2,14 @@
 mod tests {
     use std::{collections::HashMap, vec};
 
-    use crate::transpiler::parser::{
-        generator::{endpoints_to_classes_per_role, typescript::TypeScriptTranslator, Import},
-        parser::endpoint::Endpoint,
-        CodePosition,
+    use crate::transpiler::{
+        generator::{generate_classes_per_role, typescript::TypeScriptTranslator},
+        parser::{parser::endpoint::Endpoint, CodePosition},
     };
 
     #[test]
     fn test_success() {
-        let result = endpoints_to_classes_per_role::<TypeScriptTranslator>(
+        let result = generate_classes_per_role::<TypeScriptTranslator>(
             "TestClass",
             "test/test2",
             vec![
@@ -32,28 +31,31 @@ mod tests {
                     return_type: None,
                     parameters: vec![],
                 },
+                Endpoint {
+                    documentation: None,
+                    end: CodePosition::zero_initialized(),
+                    start: CodePosition::zero_initialized(),
+                    identifier: "MySuperCoolEndpoint3".to_string(),
+                    role: "Client".to_string(),
+                    return_type: None,
+                    parameters: vec![],
+                },
             ],
             "Server",
             &vec![],
-            HashMap::from([
+            &HashMap::from([
                 (
                     "Server".to_string(),
-                    vec![Import {
-                        name: "someName".to_string(),
-                        source: "someSource".to_string(),
-                    }],
+                    vec!["someName".to_string(),],
                 ),
                 (
                     "Client".to_string(),
-                    vec![Import {
-                        name: "someName2".to_string(),
-                        source: "someSource2".to_string(),
-                    }],
+                    vec!["someName2".to_string(),],
                 ),
             ]),
         );
 
-        assert_eq!(result.get("Server").unwrap(), "import someName from \"./someSource/someName\"
+        assert_eq!(result.get("Server").unwrap(), "import someName from \"./TestClass/someName\"
 
 export default class TestClass {
     private server: any
@@ -103,7 +105,9 @@ export default class TestClass {
 
 }");
 
-        assert_eq!(result.get("Client").unwrap(), "import someName2 from \"./someSource2/someName2\"
+        assert_eq!(
+            result.get("Client").unwrap(),
+            "import someName2 from \"./TestClass/someName2\"
 
 export default class TestClass {
     someName2: someName2
@@ -119,6 +123,11 @@ export default class TestClass {
         return this.server.call(\"test/test2/TestClass/MySuperCoolEndpoint2\")
     }
 
-}");
+    MySuperCoolEndpoint3(): Promise<void> {
+        return this.server.call(\"test/test2/TestClass/MySuperCoolEndpoint3\")
+    }
+
+}"
+        );
     }
 }

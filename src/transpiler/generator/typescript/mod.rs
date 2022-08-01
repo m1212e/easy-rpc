@@ -1,3 +1,5 @@
+use std::path::Path;
+
 use crate::transpiler::parser::{
     lexer::literal::LiteralType,
     parser::{
@@ -9,7 +11,7 @@ use crate::transpiler::parser::{
 
 use self::{class::generate_class, interface::custom_type_to_interface};
 
-use super::{Import, Translator};
+use super::{Translator};
 
 mod class;
 mod endpoint;
@@ -28,11 +30,23 @@ impl Translator for TypeScriptTranslator {
         relative_path: &str,
         endpoints: &Vec<Endpoint>,
         foreign: bool,
-        class_imports: &Vec<Import>,
-        type_imports: &Vec<Import>,
+        class_imports: &Vec<String>,
+        custom_types: &Vec<CustomType>,
     ) -> String {
-        generate_class(class_name, relative_path, endpoints, foreign, class_imports, type_imports)
+        generate_class(
+            class_name,
+            relative_path,
+            endpoints,
+            foreign,
+            class_imports,
+            custom_types,
+        )
     }
+
+    fn file_suffix() -> String {
+        String::from("ts")
+    }
+    
 }
 
 fn stringify_field_type(field_type: &Type) -> String {

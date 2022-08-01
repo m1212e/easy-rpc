@@ -1,13 +1,7 @@
 #[cfg(test)]
 mod tests {
-    use crate::transpiler::parser::{
-        generator::{typescript::{endpoint::endpoint_to_function}},
-        parser::{
-            endpoint::{Endpoint, Parameter},
-            field_type::{ArrayAmount, Primitive, PrimitiveType, Type},
-        },
-        CodePosition,
-    };
+    use crate::transpiler::{parser::{parser::{endpoint::{Endpoint, Parameter}, field_type::{Type, Primitive, ArrayAmount, PrimitiveType}}, CodePosition}, generator::typescript::endpoint::endpoint_to_function};
+
 
     #[test]
     fn test_success_foreign() {

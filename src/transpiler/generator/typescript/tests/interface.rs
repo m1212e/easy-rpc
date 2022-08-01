@@ -1,14 +1,7 @@
 #[cfg(test)]
 mod tests {
-    use crate::transpiler::parser::{
-        generator::{typescript::TypeScriptTranslator, Translator},
-        lexer::literal::{Literal, LiteralType},
-        parser::{
-            custom_type::{CustomType, Field},
-            field_type::{ArrayAmount, Custom, Enum, Primitive, PrimitiveType, Type},
-        },
-        CodePosition,
-    };
+    use crate::transpiler::{parser::{parser::{custom_type::{CustomType, Field}, field_type::{Type, Primitive, ArrayAmount, PrimitiveType, Enum, Custom}}, CodePosition, lexer::literal::{Literal, LiteralType}}, generator::{typescript::TypeScriptTranslator, Translator}};
+
 
     #[test]
     fn test_success() {

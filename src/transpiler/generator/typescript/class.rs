@@ -1,19 +1,33 @@
-use crate::transpiler::parser::{generator::Import, parser::endpoint::Endpoint};
+use crate::transpiler::parser::parser::{custom_type::CustomType, endpoint::Endpoint};
 
-use super::{endpoint::endpoint_to_function, stringify_field_type};
+use super::{
+    endpoint::endpoint_to_function, interface::custom_type_to_interface, stringify_field_type,
+};
 
 pub fn generate_class(
     class_name: &str,
     relative_path: &str,
     endpoints: &Vec<Endpoint>,
     foreign: bool,
-    class_imports: &Vec<Import>,
-    type_imports: &Vec<Import>,
+    class_imports: &Vec<String>,
+    custom_types: &Vec<CustomType>,
 ) -> String {
     if foreign {
-        generate_foreign_class(class_name, relative_path, endpoints, class_imports, type_imports)
+        generate_foreign_class(
+            class_name,
+            relative_path,
+            endpoints,
+            class_imports,
+            custom_types,
+        )
     } else {
-        generate_callback_class(class_name, relative_path, endpoints, class_imports, type_imports)
+        generate_callback_class(
+            class_name,
+            relative_path,
+            endpoints,
+            class_imports,
+            custom_types,
+        )
     }
 }
 
@@ -21,29 +35,26 @@ fn generate_callback_class(
     class_name: &str,
     relative_path: &str,
     endpoints: &Vec<Endpoint>,
-    class_imports: &Vec<Import>,
-    type_imports: &Vec<Import>,
+    class_imports: &Vec<String>,
+    custom_types: &Vec<CustomType>,
 ) -> String {
     let mut ret = String::new();
 
-    for imp in type_imports {
-        ret.push_str("import { ");
-        ret.push_str(&imp.name);
-        ret.push_str(" } from \"./");
-        ret.push_str(&imp.source);
-        ret.push_str("\"\n");
-    }
-
     for imp in class_imports {
         ret.push_str("import ");
-        ret.push_str(&imp.name);
+        ret.push_str(&imp);
         ret.push_str(" from \"./");
-        ret.push_str(&imp.source);
+        ret.push_str(&class_name);
         ret.push_str("/");
-        ret.push_str(&imp.name);
+        ret.push_str(&imp);
         ret.push_str("\"\n");
     }
     ret.push_str("\n");
+
+    for t in custom_types {
+        ret.push_str(&custom_type_to_interface(t));
+        ret.push_str("\n");
+    }
 
     ret.push_str("export default class ");
     ret.push_str(class_name);
@@ -103,9 +114,9 @@ fn generate_callback_class(
 
     for imp in class_imports {
         ret.push_str("        ");
-        ret.push_str(&imp.name);
+        ret.push_str(&imp);
         ret.push_str(": ");
-        ret.push_str(&imp.name);
+        ret.push_str(&imp);
         ret.push_str("\n");
     }
 
@@ -123,15 +134,15 @@ fn generate_callback_class(
 
     for imp in class_imports {
         ret.push_str("        if (callbacks?.");
-        ret.push_str(&imp.name);
+        ret.push_str(&imp);
         ret.push_str(") {\n            this.");
-        ret.push_str(&imp.name);
+        ret.push_str(&imp);
         ret.push_str(" = callbacks.");
-        ret.push_str(&imp.name);
+        ret.push_str(&imp);
         ret.push_str("\n        } else {\n            this.");
-        ret.push_str(&imp.name);
+        ret.push_str(&imp);
         ret.push_str(" = this.");
-        ret.push_str(&imp.name);
+        ret.push_str(&imp);
         ret.push_str("\n        }\n\n");
     }
 
@@ -147,21 +158,21 @@ fn generate_callback_class(
 
     for imp in class_imports {
         ret.push_str("    private _");
-        ret.push_str(&imp.name);
+        ret.push_str(&imp);
         ret.push_str(" = new ");
-        ret.push_str(&imp.name);
+        ret.push_str(&imp);
         ret.push_str("()\n    set ");
-        ret.push_str(&imp.name);
+        ret.push_str(&imp);
         ret.push_str("(value: ");
-        ret.push_str(&imp.name);
+        ret.push_str(&imp);
         ret.push_str(") {\n        this._");
-        ret.push_str(&imp.name);
+        ret.push_str(&imp);
         ret.push_str(
             " = value\n        (value as any).setERPCServer(this.server)\n    }\n    get ",
         );
-        ret.push_str(&imp.name);
+        ret.push_str(&imp);
         ret.push_str("() {\n        return this._");
-        ret.push_str(&imp.name);
+        ret.push_str(&imp);
         ret.push_str("\n    }\n");
     }
     ret.push_str("\n");
@@ -175,39 +186,36 @@ fn generate_foreign_class(
     class_name: &str,
     relative_path: &str,
     endpoints: &Vec<Endpoint>,
-    class_imports: &Vec<Import>,
-    type_imports: &Vec<Import>,
+    class_imports: &Vec<String>,
+    custom_types: &Vec<CustomType>,
 ) -> String {
     let mut ret = String::new();
 
-    for imp in type_imports {
-        ret.push_str("import { ");
-        ret.push_str(&imp.name);
-        ret.push_str(" } from \"./");
-        ret.push_str(&imp.source);
-        ret.push_str("\"\n");
-    }
-
     for imp in class_imports {
         ret.push_str("import ");
-        ret.push_str(&imp.name);
+        ret.push_str(&imp);
         ret.push_str(" from \"./");
-        ret.push_str(&imp.source);
+        ret.push_str(&class_name);
         ret.push_str("/");
-        ret.push_str(&imp.name);
+        ret.push_str(&imp);
         ret.push_str("\"\n");
     }
-
     ret.push_str("\n");
+
+    for t in custom_types {
+        ret.push_str(&custom_type_to_interface(t));
+        ret.push_str("\n");
+    }
+
     ret.push_str("export default class ");
     ret.push_str(class_name);
     ret.push_str(" {\n");
 
     for imp in class_imports {
         ret.push_str("    ");
-        ret.push_str(&imp.name);
+        ret.push_str(&imp);
         ret.push_str(": ");
-        ret.push_str(&imp.name);
+        ret.push_str(&imp);
         ret.push_str("\n");
     }
     ret.push_str("\n");
@@ -218,9 +226,9 @@ fn generate_foreign_class(
 
     for imp in class_imports {
         ret.push_str("        this.");
-        ret.push_str(&imp.name);
+        ret.push_str(&imp);
         ret.push_str(" = new ");
-        ret.push_str(&imp.name);
+        ret.push_str(&imp);
         ret.push_str("(server)\n");
     }
 
