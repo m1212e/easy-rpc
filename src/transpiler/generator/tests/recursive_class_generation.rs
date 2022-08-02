@@ -3,7 +3,7 @@ mod tests {
     use std::{
         collections::hash_map::DefaultHasher,
         hash::{Hash, Hasher},
-        path::Path,
+        path::Path, fs,
     };
 
     use crate::transpiler::generator::{
@@ -20,6 +20,9 @@ mod tests {
             test_files = test_files.join(dir);
         }
 
+        fs::remove_dir_all(&test_files.join("output")).unwrap();
+        fs::create_dir_all(&test_files.join("output")).unwrap();
+
         let result = generate_for_directory_recursively::<TypeScriptTranslator>(
             &test_files.join("input"),
             &test_files.join("output"),
@@ -30,7 +33,7 @@ mod tests {
 
         assert_eq!(
             hash_directory(&test_files.join("output")).unwrap(),
-            hash_directory(&test_files.join("output_assert")).unwrap()
+            8986547588040905954
         );
 
         assert_eq!(
@@ -57,8 +60,6 @@ mod tests {
                 hash_directory(&dir.join(entry.file_name()))?.hash(&mut hasher);
             } else {
                 let content = std::fs::read_to_string(&entry.path())?;
-                println!("name: {}", entry.file_name().to_str().unwrap());
-                println!("content: {}", content);
                 entry.file_name().to_str().unwrap().hash(&mut hasher);
                 content.hash(&mut hasher);
             }
