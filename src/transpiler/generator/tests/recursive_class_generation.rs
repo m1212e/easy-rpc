@@ -2,8 +2,9 @@
 mod tests {
     use std::{
         collections::hash_map::DefaultHasher,
+        fs,
         hash::{Hash, Hasher},
-        path::Path, fs,
+        path::Path,
     };
 
     use crate::transpiler::generator::{
@@ -20,8 +21,10 @@ mod tests {
             test_files = test_files.join(dir);
         }
 
-        fs::remove_dir_all(&test_files.join("output")).unwrap();
-        fs::create_dir_all(&test_files.join("output")).unwrap();
+        match fs::remove_dir_all(&test_files.join("output")) {
+            Ok(_) => {},
+            Err(_) => {},
+        };
 
         let result = generate_for_directory_recursively::<TypeScriptTranslator>(
             &test_files.join("input"),
