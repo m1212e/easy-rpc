@@ -38,13 +38,22 @@ mod tests {
         let h2 = hash_directory(&test_files.join("output_assert")).unwrap();
         assert_eq!(h1, h2);
 
+        let mut v1: Vec<_> = result.get("Server").unwrap().to_owned();
+        let mut v2: Vec<_> = vec!["api".to_string(), "auth".to_string()];
+        v1.sort();
+        v2.sort();
         assert_eq!(
-            result.get("Server").unwrap(),
-            &vec!["api".to_string(), "auth".to_string()]
+            *v1,
+            *v2
         );
+
+        let mut v1: Vec<_> = result.get("Client").unwrap().to_owned();
+        let mut v2: Vec<_> = vec!["api".to_string(), "auth".to_string()];
+        v1.sort();
+        v2.sort();
         assert_eq!(
-            result.get("Client").unwrap(),
-            &vec!["api".to_string(), "auth".to_string()]
+            *v1,
+            *v2
         );
     }
 
