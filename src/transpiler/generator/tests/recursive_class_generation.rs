@@ -22,8 +22,8 @@ mod tests {
         }
 
         match fs::remove_dir_all(&test_files.join("output")) {
-            Ok(_) => {},
-            Err(_) => {},
+            Ok(_) => {}
+            Err(_) => {}
         };
 
         let result = generate_for_directory_recursively::<TypeScriptTranslator>(
@@ -34,10 +34,10 @@ mod tests {
         )
         .unwrap();
 
-        assert_eq!(
-            hash_directory(&test_files.join("output")).unwrap(),
-            hash_directory(&test_files.join("output_assert")).unwrap()
-        );
+        let h1 = hash_directory(&test_files.join("output")).unwrap();
+        println!("\n----------------\n");
+        let h2 = hash_directory(&test_files.join("output_assert")).unwrap();
+        assert_eq!(h1, h2);
 
         assert_eq!(
             result.get("Server").unwrap(),
@@ -61,11 +61,19 @@ mod tests {
         for entry in paths {
             println!("{}", entry.path().to_str().unwrap());
             if entry.file_type()?.is_dir() {
-                hash_directory(&entry.path())?.hash(&mut hasher);
+                let hash = hash_directory(&entry.path())?;
+                print!(" hash: {}\n", hash);
+                hash.hash(&mut hasher);
             } else {
+                let mut tmp = DefaultHasher::new();
+
                 let content = std::fs::read_to_string(&entry.path())?;
-                entry.file_name().to_str().unwrap().hash(&mut hasher);
-                content.hash(&mut hasher);
+                entry.file_name().to_str().unwrap().hash(&mut tmp);
+                content.hash(&mut tmp);
+
+                let hash = tmp.finish();
+                hash.hash(&mut hasher);
+                print!(" hash: {}\n", hash);
             }
         }
 
