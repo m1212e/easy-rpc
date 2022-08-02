@@ -59,8 +59,9 @@ mod tests {
         let mut hasher = DefaultHasher::new();
 
         for entry in paths {
+            println!("{}", entry.path().to_str().unwrap());
             if entry.file_type()?.is_dir() {
-                hash_directory(&dir.join(entry.file_name()))?.hash(&mut hasher);
+                hash_directory(&entry.path())?.hash(&mut hasher);
             } else {
                 let content = std::fs::read_to_string(&entry.path())?;
                 entry.file_name().to_str().unwrap().hash(&mut hasher);
