@@ -57,6 +57,8 @@ mod tests {
                 hash_directory(&dir.join(entry.file_name()))?.hash(&mut hasher);
             } else {
                 let content = std::fs::read_to_string(&entry.path())?;
+                println!("name: {}", entry.file_name().to_str().unwrap());
+                println!("content: {}", content);
                 entry.file_name().to_str().unwrap().hash(&mut hasher);
                 content.hash(&mut hasher);
             }
