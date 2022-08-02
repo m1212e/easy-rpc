@@ -36,7 +36,7 @@ mod tests {
 
         assert_eq!(
             hash_directory(&test_files.join("output")).unwrap(),
-            8986547588040905954
+            hash_directory(&test_files.join("output_assert")).unwrap()
         );
 
         assert_eq!(
