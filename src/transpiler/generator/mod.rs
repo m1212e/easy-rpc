@@ -11,7 +11,7 @@ use super::{
         lexer::TokenReader,
         parser::{custom_type::CustomType, endpoint::Endpoint, parse},
     },
-    ERPCError,
+    ERPCError, Role,
 };
 
 mod tests;
@@ -59,6 +59,16 @@ pub trait Translator {
        E.g. Rust -> rs
     */
     fn file_suffix() -> String;
+
+    /**
+       Generate the client class actually used by the user
+    */
+    fn generate_client(
+        foreign: bool,
+        class_imports: &Vec<String>,
+        role: Role,
+        socket_enabled_browser_roles: &Vec<String>
+    ) -> String;
 }
 
 pub fn generate_for_directory_recursively<T: Translator>(

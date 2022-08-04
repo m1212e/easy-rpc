@@ -10,8 +10,7 @@ mod tests {
             "[
     {
         \"name\": \"Server\",
-        \"types\": [\"http-server\", \"tcp-server\"],
-        \"documentation\": \"This is the main backend api\"
+        \"types\": [\"http-server\", \"tcp-server\"]
     },
     {
         \"name\": \"Client\",
@@ -29,14 +28,14 @@ mod tests {
         );
         assert_eq!(
             result[0].documentation,
-            "This is the main backend api".to_string()
+            None
         );
 
         assert_eq!(result[1].name, "Client".to_string());
         assert_eq!(result[1].types, vec!["browser".to_string()]);
         assert_eq!(
-            result[1].documentation,
-            "This is the browser client".to_string()
+            result[1].documentation.as_ref().unwrap(),
+            "This is the browser client"
         );
 
         Ok(())

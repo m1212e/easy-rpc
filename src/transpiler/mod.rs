@@ -17,10 +17,10 @@ use self::{
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
-struct Role {
+pub struct Role {
     pub name: String,
     pub types: Vec<String>,
-    pub documentation: String,
+    pub documentation: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]

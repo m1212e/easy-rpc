@@ -1,19 +1,23 @@
 use std::path::Path;
 
-use crate::transpiler::parser::{
-    lexer::literal::LiteralType,
+use crate::transpiler::{
     parser::{
-        custom_type::CustomType,
-        endpoint::Endpoint,
-        field_type::{ArrayAmount, PrimitiveType, Type},
+        lexer::literal::LiteralType,
+        parser::{
+            custom_type::CustomType,
+            endpoint::Endpoint,
+            field_type::{ArrayAmount, PrimitiveType, Type},
+        },
     },
+    Role,
 };
 
-use self::{class::generate_class, interface::custom_type_to_interface};
+use self::{class::generate_class, client::generate_client, interface::custom_type_to_interface};
 
-use super::{Translator};
+use super::Translator;
 
 mod class;
+mod client;
 mod endpoint;
 mod interface;
 mod tests;
@@ -46,7 +50,10 @@ impl Translator for TypeScriptTranslator {
     fn file_suffix() -> String {
         String::from("ts")
     }
-    
+
+    fn generate_client(foreign: bool, class_imports: &Vec<String>, role: Role, socket_enabled_browser_roles: &Vec<String>) -> String {
+        generate_client(foreign, class_imports, role, socket_enabled_browser_roles)
+    }
 }
 
 fn stringify_field_type(field_type: &Type) -> String {
