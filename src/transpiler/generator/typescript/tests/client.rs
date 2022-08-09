@@ -18,7 +18,64 @@ mod tests {
             &vec!["Client".to_string()],
         );
 
-        assert_eq!(result, "");
+        assert_eq!(result, "import { ERPCServer, ServerOptions } from \"@easy-rpc/node\"
+import Client from \"./Client\"
+import api from \"./Server/api\"
+import tracks from \"./Server/tracks\"
+
+/**Example docs*/
+export default class Server extends ERPCServer {
+    private _api = undefined as any
+    set api(value: api) {
+        this._api = value
+        (value as any).setERPCServer(this)
+    }
+    get api() {
+        return this._api
+    }
+    private _tracks = undefined as any
+    set tracks(value: tracks) {
+        this._tracks = value
+        (value as any).setERPCServer(this)
+    }
+    get tracks() {
+        return this._tracks
+    }
+    /**
+        @param options The options to set for the easy-rpc object
+        @param callbacks Callbacks to register for this server
+    */
+    constructor(options: ServerOptions, callbacks: {
+        api: api
+        tracks: tracks
+    }) {
+        super(options, [\"http-server\", ], true, \"Server\")
+        if (callbacks.api) {
+            this.api = callbacks.api
+        } else {
+            this.api = new api()
+        }
+        if (callbacks.tracks) {
+            this.tracks = callbacks.tracks
+        } else {
+            this.tracks = new tracks()
+        }
+    }
+
+    onConnection(callback: (target: Client) => void) {
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
+        super.onSocketConnection(({ role, client}) => {
+            if (role == \"Client\") {
+                const ret = new Client()
+                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                // @ts-ignore
+                ret.setERPCSocket(client)
+                callback(ret)
+            }
+        })
+    }
+}");
     }
 }
 

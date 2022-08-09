@@ -7,17 +7,9 @@ pub fn generate_client(
     socket_enabled_browser_roles: &Vec<String>,
 ) -> String {
     if foreign {
-        generate_foreign_client(
-            class_imports,
-            role,
-            socket_enabled_browser_roles,
-        )
+        generate_foreign_client(class_imports, role, socket_enabled_browser_roles)
     } else {
-        generate_callback_client(
-            class_imports,
-            role,
-            socket_enabled_browser_roles,
-        )
+        generate_callback_client(class_imports, role, socket_enabled_browser_roles)
     }
 }
 
@@ -52,23 +44,23 @@ fn generate_callback_client(
 
     match role.documentation {
         Some(doc) => {
-            ret.push_str(&format!("/**{doc}*/"));
+            ret.push_str(&format!("/**{doc}*/\n"));
         }
         None => {}
     }
 
     ret.push_str(&format!(
         "export default class {class_name} extends ERPCServer {{\n",
-        class_name=role.name
+        class_name = role.name
     ));
 
     for imp in class_imports {
         ret.push_str(&format!(
             "    private _{imp} = undefined as any
-        set {imp}(value: {imp}) {{
-            this._ {imp} = value
-            (value as any).setERPCServer(this)
-        }}
+    set {imp}(value: {imp}) {{
+        this._{imp} = value
+        (value as any).setERPCServer(this)
+    }}
     get {imp}() {{
         return this._{imp}
     }}
@@ -84,7 +76,7 @@ fn generate_callback_client(
 ",
     );
 
-    ret.push_str("    constructor(options: ServerOptions, callbacks: {");
+    ret.push_str("    constructor(options: ServerOptions, callbacks: {\n");
     for imp in class_imports {
         ret.push_str(&format!("        {imp}: {imp}\n"))
     }
@@ -101,17 +93,14 @@ fn generate_callback_client(
 
     for imp in class_imports {
         ret.push_str(&format!(
-            "        if (callbacks.{imp}) {{
-                this.{imp} = callbacks.{imp}
-            }} else {{
-            this.{imp} = new {imp}()
-        }}
-        "
+        "        if (callbacks.{imp}) {{\n            this.{imp} = callbacks.{imp}\n        }} else {{\n            this.{imp} = new {imp}()\n        }}\n"
         ));
     }
 
+    ret.push_str("    }\n");
+
     if enable_websockets {
-        ret.push_str("    onConnection(callback: (target: ");
+        ret.push_str("\n    onConnection(callback: (target: ");
         for i in 0..socket_enabled_browser_roles.len() {
             ret.push_str(&socket_enabled_browser_roles[i]);
             if i < socket_enabled_browser_roles.len() - 1 {
@@ -119,21 +108,20 @@ fn generate_callback_client(
             }
         }
         ret.push_str(
-            ") => void) {\n        (super as any).onSocketConnection(({ role, client}) => {\n",
+            ") => void) {
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
+        super.onSocketConnection(({ role, client}) => {\n",
         );
         for role in socket_enabled_browser_roles {
             ret.push_str(&format!(
-                "if (role == \"{role}\") {{
-            const ret = new {role}()
-            (ret as any).setERPCSocket(client)
-            callback(ret)
-        }}"
+                "            if (role == \"{role}\") {{\n                const ret = new {role}()\n                // eslint-disable-next-line @typescript-eslint/ban-ts-comment\n                // @ts-ignore\n                ret.setERPCSocket(client)\n                callback(ret)\n            }}"
             ));
         }
-        ret.push_str("    })\n}");
+        ret.push_str("\n        })\n    }");
     }
 
-    ret.push_str("}");
+    ret.push_str("\n}");
 
     ret
 }
