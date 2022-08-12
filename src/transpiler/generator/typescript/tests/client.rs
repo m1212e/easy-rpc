@@ -3,7 +3,35 @@ mod tests {
     use crate::transpiler::{generator::typescript::client::generate_client, Role};
 
     #[test]
-    fn test_success_foreign() {}
+    fn test_success_foreign() {
+        let result = generate_client(
+            true,
+            &vec!["api".to_string(), "tracks".to_string()],
+            Role {
+                documentation: Some("Example docs".to_string()),
+                name: "Client".to_string(),
+                types: vec!["browser".to_string()],
+            },
+            &vec!["Client".to_string()],
+        );
+
+        assert_eq!(result, "import { ERPCTarget, TargetOptions } from \"@easy-rpc/browser\"
+import Client from \"./Client\"
+import api from \"./Client/api\"
+import tracks from \"./Client/tracks\"
+
+/**Example docs*/
+export default class Client extends ERPCTarget {
+    api = new api(this)
+    tracks = new tracks(this)
+    /**
+        @param options The options to set for the easy-rpc object
+    */
+    constructor(options: TargetOptions) {
+        super(options, [\"browser\", ])
+    }
+}");
+    }
 
     #[test]
     fn test_success_callback() {

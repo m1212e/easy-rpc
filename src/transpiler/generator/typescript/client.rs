@@ -133,5 +133,60 @@ fn generate_foreign_client(
 ) -> String {
     let mut ret = String::new();
 
+    // in case this is a browser, the length of the types vec will always be exactly 1
+    let source = if role.types[0] == "browser" {
+        "@easy-rpc/browser"
+    } else {
+        "@easy-rpc/node" // currently only supports node
+    };
+    ret.push_str(&format!(
+        "import {{ ERPCTarget, TargetOptions }} from \"{source}\"\n"
+    ));
+
+    for role in socket_enabled_browser_roles {
+        ret.push_str(&format!("import {role} from \"./{role}\"\n"));
+    }
+
+    for imp in class_imports {
+        ret.push_str(&format!(
+            "import {imp} from \"./{rolename}/{imp}\"\n",
+            rolename = role.name
+        ));
+    }
+    ret.push_str("\n");
+
+    match role.documentation {
+        Some(doc) => {
+            ret.push_str(&format!("/**{doc}*/\n"));
+        }
+        None => {}
+    }
+
+    ret.push_str(&format!(
+        "export default class {class_name} extends ERPCTarget {{\n",
+        class_name = role.name
+    ));
+
+    for imp in class_imports {
+        ret.push_str(&format!(
+            "    {imp} = new {imp}(this)\n"
+        ));
+    }
+
+    ret.push_str(
+        "    /**
+        @param options The options to set for the easy-rpc object
+    */
+",
+    );
+
+    ret.push_str("    constructor(options: TargetOptions) {\n");
+    ret.push_str("        super(options, [");
+    for typ in role.types {
+        ret.push_str(&format!("\"{typ}\", "));
+    }
+
+    ret.push_str("])\n    }\n}");
+
     ret
 }
