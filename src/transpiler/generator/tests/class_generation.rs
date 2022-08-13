@@ -35,8 +35,8 @@ mod tests {
         .unwrap();
 
         assert_equal_directories(
-            &test_files.join("output"),
             &test_files.join("output_assert"),
+            &test_files.join("output"),
         );
 
         let mut v1: Vec<_> = result.get("server").unwrap().to_owned();
@@ -88,11 +88,14 @@ mod tests {
         .unwrap();
 
         assert_equal_directories(
-            &test_files.join("output"),
             &test_files.join("output_assert"),
+            &test_files.join("output"),
         );
     }
 
+    /*
+        Checks that every file existing in a also exists in b
+    */
     fn assert_equal_directories(a: &std::path::Path, b: &std::path::Path) {
         for entry in std::fs::read_dir(a).unwrap() {
             let entry = entry.unwrap();
