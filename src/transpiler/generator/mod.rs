@@ -1,6 +1,6 @@
 use std::{
     collections::{hash_map::Entry, HashMap},
-    fs::{self, read_dir, File, OpenOptions},
+    fs::{self, read_dir, DirEntry, File, OpenOptions},
     io::Write,
     path::Path,
 };
@@ -87,18 +87,19 @@ pub fn generate_for_directory<T: Translator>(
     )?;
 
     for (role, imports) in result.into_iter() {
-        let generated =
-            T::generate_client(
-                role != selected_role_name,
-                &imports,
-                match all_roles.into_iter().find(|x| x.name == role) {
-                    Some(v) => v,
-                    None => return Err(ERPCError::ConfigurationError(format!(
+        let generated = T::generate_client(
+            role != selected_role_name,
+            &imports,
+            match all_roles.into_iter().find(|x| x.name == role) {
+                Some(v) => v,
+                None => {
+                    return Err(ERPCError::ConfigurationError(format!(
                         "Could not find the specified role '{role}' in the configured role list"
-                    ))),
-                },
-                socket_enabled_browser_roles,
-            );
+                    )))
+                }
+            },
+            socket_enabled_browser_roles,
+        );
 
         let mut generated_file_name = String::from(role);
         generated_file_name.push_str(".");
@@ -122,105 +123,94 @@ fn generate_for_directory_recursively<T: Translator>(
     relative_path: &str,
     selected_role: &str,
 ) -> Result<HashMap<String, Vec<String>>, ERPCError> {
-    let paths = read_dir(input_directory.join(relative_path))?;
     let mut generated_classnames_per_role_per_filename: HashMap<
         String,
         HashMap<String, Vec<String>>,
     > = HashMap::new();
 
-    for entry in paths {
-        match entry {
-            Ok(entry) => {
-                if entry.file_type()?.is_dir() {
-                    let fi_na = entry.file_name();
-                    let file_name = match fi_na.to_str() {
-                        Some(val) => val,
-                        None => {
-                            return Err(String::from("Directory name is not valid UTF-8").into())
-                        }
-                    };
+    // to achieve consistency when testing, sort the directory entries when not in production build
+    let mut paths = read_dir(input_directory.join(relative_path))?
+        .collect::<Result<Vec<DirEntry>, std::io::Error>>()?;
+    if cfg!(test) {
+        paths.sort_by_key(|dir| dir.path());
+    }
 
-                    let mut new_rel_path = relative_path.to_string();
-                    new_rel_path.push_str(file_name);
-                    new_rel_path.push('/');
+    for entry in &paths {
+        if entry.file_type()?.is_dir() {
+            let fi_na = entry.file_name();
+            let file_name = match fi_na.to_str() {
+                Some(val) => val,
+                None => return Err(String::from("Directory name is not valid UTF-8").into()),
+            };
 
-                    let generated_classes_per_role = generate_for_directory_recursively::<T>(
-                        input_directory,
-                        output_directory,
-                        &new_rel_path,
-                        selected_role,
-                    )?;
+            let mut new_rel_path = relative_path.to_string();
+            new_rel_path.push_str(file_name);
+            new_rel_path.push('/');
 
-                    generated_classnames_per_role_per_filename
-                        .insert(file_name.to_string(), generated_classes_per_role);
-                }
-            }
-            Err(err) => {
-                return Err(err.into());
-            }
+            let generated_classes_per_role = generate_for_directory_recursively::<T>(
+                input_directory,
+                output_directory,
+                &new_rel_path,
+                selected_role,
+            )?;
+
+            generated_classnames_per_role_per_filename
+                .insert(file_name.to_string(), generated_classes_per_role);
         }
     }
 
-    let paths = read_dir(input_directory.join(relative_path))?;
     let mut generated_classnames_per_role: HashMap<String, Vec<String>> = HashMap::new();
 
-    for entry in paths {
-        match entry {
-            Ok(entry) => {
-                if entry.file_type()?.is_file() {
-                    let fi_na = entry.file_name();
-                    let file_name = match fi_na.to_str() {
-                        Some(val) => match val.strip_suffix(".erpc") {
-                            Some(v) => v,
-                            None => continue,
-                        },
-                        None => return Err(String::from("Filename name is not valid UTF-8").into()),
-                    };
+    for entry in &paths {
+        if entry.file_type()?.is_file() {
+            let fi_na = entry.file_name();
+            let file_name = match fi_na.to_str() {
+                Some(val) => match val.strip_suffix(".erpc") {
+                    Some(v) => v,
+                    None => continue,
+                },
+                None => return Err(String::from("Filename name is not valid UTF-8").into()),
+            };
 
-                    let mut reader = TokenReader::new(InputReader::new(File::open(entry.path())?))?;
-                    let result = parse(&mut reader)?;
+            let mut reader = TokenReader::new(InputReader::new(File::open(entry.path())?))?;
+            let result = parse(&mut reader)?;
 
-                    let generated_class_content_per_role = generate_classes_per_role::<T>(
-                        file_name,
-                        relative_path,
-                        result.endpoints,
-                        selected_role,
-                        &result.custom_types,
-                        generated_classnames_per_role_per_filename
-                            .get(file_name)
-                            .unwrap_or(&HashMap::new()),
-                    );
+            let generated_class_content_per_role = generate_classes_per_role::<T>(
+                file_name,
+                relative_path,
+                result.endpoints,
+                selected_role,
+                &result.custom_types,
+                generated_classnames_per_role_per_filename
+                    .get(file_name)
+                    .unwrap_or(&HashMap::new()),
+            );
 
-                    for (role, class_content) in generated_class_content_per_role {
-                        let mut generated_file_name = file_name.to_string();
-                        generated_file_name.push_str(".");
-                        generated_file_name.push_str(T::file_suffix().as_str());
+            for (role, class_content) in generated_class_content_per_role {
+                let mut generated_file_name = file_name.to_string();
+                generated_file_name.push_str(".");
+                generated_file_name.push_str(T::file_suffix().as_str());
 
-                        let parent = output_directory.join(role.clone()).join(relative_path);
-                        fs::create_dir_all(&parent)?;
+                let parent = output_directory.join(role.clone()).join(relative_path);
+                fs::create_dir_all(&parent)?;
 
-                        let mut file = OpenOptions::new()
-                            .write(true)
-                            .create(true)
-                            .open(parent.join(generated_file_name))?;
-                        file.write_all(&class_content.as_bytes())?;
+                let mut file = OpenOptions::new()
+                    .write(true)
+                    .create(true)
+                    .open(parent.join(generated_file_name))?;
+                file.write_all(&class_content.as_bytes())?;
 
-                        match generated_classnames_per_role.entry(role) {
-                            Entry::Occupied(mut entry) => {
-                                entry.get_mut().push(file_name.to_string());
-                            }
-                            Entry::Vacant(entry) => {
-                                entry.insert(vec![file_name.to_string()]);
-                            }
-                        }
+                match generated_classnames_per_role.entry(role) {
+                    Entry::Occupied(mut entry) => {
+                        entry.get_mut().push(file_name.to_string());
                     }
-
-                    generated_classnames_per_role_per_filename.remove(file_name);
+                    Entry::Vacant(entry) => {
+                        entry.insert(vec![file_name.to_string()]);
+                    }
                 }
             }
-            Err(err) => {
-                return Err(err.into());
-            }
+
+            generated_classnames_per_role_per_filename.remove(file_name);
         }
     }
 
