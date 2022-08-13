@@ -7,7 +7,7 @@ mod tests {
         let result = generate_client(
             true,
             &vec!["api".to_string(), "tracks".to_string()],
-            Role {
+            &Role {
                 documentation: Some("Example docs".to_string()),
                 name: "Client".to_string(),
                 types: vec!["browser".to_string()],
@@ -16,7 +16,6 @@ mod tests {
         );
 
         assert_eq!(result, "import { ERPCTarget, TargetOptions } from \"@easy-rpc/browser\"
-import Client from \"./Client\"
 import api from \"./Client/api\"
 import tracks from \"./Client/tracks\"
 
@@ -38,7 +37,7 @@ export default class Client extends ERPCTarget {
         let result = generate_client(
             false,
             &vec!["api".to_string(), "tracks".to_string()],
-            Role {
+            &Role {
                 documentation: Some("Example docs".to_string()),
                 name: "Server".to_string(),
                 types: vec!["http-server".to_string()],
@@ -55,7 +54,7 @@ import tracks from \"./Server/tracks\"
 export default class Server extends ERPCServer {
     private _api = undefined as any
     set api(value: api) {
-        this._api = value
+        this._api = value;
         (value as any).setERPCServer(this)
     }
     get api() {
@@ -63,7 +62,7 @@ export default class Server extends ERPCServer {
     }
     private _tracks = undefined as any
     set tracks(value: tracks) {
-        this._tracks = value
+        this._tracks = value;
         (value as any).setERPCServer(this)
     }
     get tracks() {
@@ -95,7 +94,7 @@ export default class Server extends ERPCServer {
         // @ts-ignore
         super.onSocketConnection(({ role, client}) => {
             if (role == \"Client\") {
-                const ret = new Client()
+                const ret = new Client({} as any)
                 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
                 // @ts-ignore
                 ret.setERPCSocket(client)

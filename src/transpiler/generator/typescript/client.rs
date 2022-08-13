@@ -3,7 +3,7 @@ use crate::transpiler::Role;
 pub fn generate_client(
     foreign: bool,
     class_imports: &Vec<String>,
-    role: Role,
+    role: &Role,
     socket_enabled_browser_roles: &Vec<String>,
 ) -> String {
     if foreign {
@@ -15,7 +15,7 @@ pub fn generate_client(
 
 fn generate_callback_client(
     class_imports: &Vec<String>,
-    role: Role,
+    role: &Role,
     socket_enabled_browser_roles: &Vec<String>,
 ) -> String {
     let mut ret = String::new();
@@ -30,8 +30,10 @@ fn generate_callback_client(
         "import {{ ERPCServer, ServerOptions }} from \"{source}\"\n"
     ));
 
-    for role in socket_enabled_browser_roles {
-        ret.push_str(&format!("import {role} from \"./{role}\"\n"));
+    for browser_role in socket_enabled_browser_roles {
+        if browser_role != &role.name {
+            ret.push_str(&format!("import {browser_role} from \"./{browser_role}\"\n"));
+        }
     }
 
     for imp in class_imports {
@@ -42,7 +44,7 @@ fn generate_callback_client(
     }
     ret.push_str("\n");
 
-    match role.documentation {
+    match &role.documentation {
         Some(doc) => {
             ret.push_str(&format!("/**{doc}*/\n"));
         }
@@ -58,7 +60,7 @@ fn generate_callback_client(
         ret.push_str(&format!(
             "    private _{imp} = undefined as any
     set {imp}(value: {imp}) {{
-        this._{imp} = value
+        this._{imp} = value;
         (value as any).setERPCServer(this)
     }}
     get {imp}() {{
@@ -81,7 +83,7 @@ fn generate_callback_client(
         ret.push_str(&format!("        {imp}: {imp}\n"))
     }
     ret.push_str("    }) {\n        super(options, [");
-    for typ in role.types {
+    for typ in &role.types {
         ret.push_str(&format!("\"{typ}\", "));
     }
 
@@ -115,7 +117,7 @@ fn generate_callback_client(
         );
         for role in socket_enabled_browser_roles {
             ret.push_str(&format!(
-                "            if (role == \"{role}\") {{\n                const ret = new {role}()\n                // eslint-disable-next-line @typescript-eslint/ban-ts-comment\n                // @ts-ignore\n                ret.setERPCSocket(client)\n                callback(ret)\n            }}"
+                "            if (role == \"{role}\") {{\n                const ret = new {role}({{}} as any)\n                // eslint-disable-next-line @typescript-eslint/ban-ts-comment\n                // @ts-ignore\n                ret.setERPCSocket(client)\n                callback(ret)\n            }}"
             ));
         }
         ret.push_str("\n        })\n    }");
@@ -128,7 +130,7 @@ fn generate_callback_client(
 
 fn generate_foreign_client(
     class_imports: &Vec<String>,
-    role: Role,
+    role: &Role,
     socket_enabled_browser_roles: &Vec<String>,
 ) -> String {
     let mut ret = String::new();
@@ -143,8 +145,10 @@ fn generate_foreign_client(
         "import {{ ERPCTarget, TargetOptions }} from \"{source}\"\n"
     ));
 
-    for role in socket_enabled_browser_roles {
-        ret.push_str(&format!("import {role} from \"./{role}\"\n"));
+    for browser_role in socket_enabled_browser_roles {
+        if browser_role != &role.name {
+            ret.push_str(&format!("import {browser_role} from \"./{browser_role}\"\n"));
+        }
     }
 
     for imp in class_imports {
@@ -155,7 +159,7 @@ fn generate_foreign_client(
     }
     ret.push_str("\n");
 
-    match role.documentation {
+    match &role.documentation {
         Some(doc) => {
             ret.push_str(&format!("/**{doc}*/\n"));
         }
@@ -168,9 +172,7 @@ fn generate_foreign_client(
     ));
 
     for imp in class_imports {
-        ret.push_str(&format!(
-            "    {imp} = new {imp}(this)\n"
-        ));
+        ret.push_str(&format!("    {imp} = new {imp}(this)\n"));
     }
 
     ret.push_str(
@@ -182,7 +184,7 @@ fn generate_foreign_client(
 
     ret.push_str("    constructor(options: TargetOptions) {\n");
     ret.push_str("        super(options, [");
-    for typ in role.types {
+    for typ in &role.types {
         ret.push_str(&format!("\"{typ}\", "));
     }
 

@@ -96,7 +96,7 @@ export default class TestClass {
 
     private _someName = new someName()
     set someName(value: someName) {
-        this._someName = value
+        this._someName = value;
         (value as any).setERPCServer(this.server)
     }
     get someName() {

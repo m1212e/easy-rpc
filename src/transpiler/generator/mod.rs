@@ -52,6 +52,7 @@ pub trait Translator {
         custom_types: &Vec<CustomType>,
     ) -> String;
 
+    //TODO: make the file suffix return a slice instead of a string object
     /**
        Returns the file suffix for the generated language.
 
@@ -66,12 +67,56 @@ pub trait Translator {
     fn generate_client(
         foreign: bool,
         class_imports: &Vec<String>,
-        role: Role,
-        socket_enabled_browser_roles: &Vec<String>
+        role: &Role,
+        socket_enabled_browser_roles: &Vec<String>,
     ) -> String;
 }
 
-pub fn generate_for_directory_recursively<T: Translator>(
+pub fn generate_for_directory<T: Translator>(
+    input_directory: &Path,
+    output_directory: &Path,
+    selected_role_name: &str,
+    all_roles: &Vec<Role>,
+    socket_enabled_browser_roles: &Vec<String>,
+) -> Result<(), ERPCError> {
+    let result = generate_for_directory_recursively::<T>(
+        input_directory,
+        output_directory,
+        "",
+        &selected_role_name,
+    )?;
+
+    for (role, imports) in result.into_iter() {
+        let generated =
+            T::generate_client(
+                role != selected_role_name,
+                &imports,
+                match all_roles.into_iter().find(|x| x.name == role) {
+                    Some(v) => v,
+                    None => return Err(ERPCError::ConfigurationError(format!(
+                        "Could not find the specified role '{role}' in the configured role list"
+                    ))),
+                },
+                socket_enabled_browser_roles,
+            );
+
+        let mut generated_file_name = String::from(role);
+        generated_file_name.push_str(".");
+        generated_file_name.push_str(&T::file_suffix());
+
+        fs::create_dir_all(&output_directory)?;
+
+        let mut file = OpenOptions::new()
+            .write(true)
+            .create(true)
+            .open(output_directory.join(generated_file_name))?;
+        file.write_all(&generated.as_bytes())?;
+    }
+
+    Ok(())
+}
+
+fn generate_for_directory_recursively<T: Translator>(
     input_directory: &Path,
     output_directory: &Path,
     relative_path: &str,

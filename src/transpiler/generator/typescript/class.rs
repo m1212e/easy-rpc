@@ -168,7 +168,7 @@ fn generate_callback_class(
         ret.push_str(") {\n        this._");
         ret.push_str(&imp);
         ret.push_str(
-            " = value\n        (value as any).setERPCServer(this.server)\n    }\n    get ",
+            " = value;\n        (value as any).setERPCServer(this.server)\n    }\n    get ",
         );
         ret.push_str(&imp);
         ret.push_str("() {\n        return this._");

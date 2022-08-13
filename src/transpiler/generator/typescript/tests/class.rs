@@ -150,7 +150,7 @@ export default class MyCoolClass {
 
     private _ImportedClass = new ImportedClass()
     set ImportedClass(value: ImportedClass) {
-        this._ImportedClass = value
+        this._ImportedClass = value;
         (value as any).setERPCServer(this.server)
     }
     get ImportedClass() {
@@ -158,7 +158,7 @@ export default class MyCoolClass {
     }
     private _ImportedClass2 = new ImportedClass2()
     set ImportedClass2(value: ImportedClass2) {
-        this._ImportedClass2 = value
+        this._ImportedClass2 = value;
         (value as any).setERPCServer(this.server)
     }
     get ImportedClass2() {
