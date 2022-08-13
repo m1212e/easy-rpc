@@ -51,8 +51,8 @@ impl Translator for TypeScriptTranslator {
         String::from("ts")
     }
 
-    fn generate_client(foreign: bool, class_imports: &Vec<String>, role: &Role, socket_enabled_browser_roles: &Vec<String>) -> String {
-        generate_client(foreign, class_imports, role, socket_enabled_browser_roles)
+    fn generate_client(foreign: bool, class_imports: &Vec<String>, role: &Role, socket_enabled_browser_roles: &Vec<String>, library_source: &str) -> String {
+        generate_client(foreign, class_imports, role, socket_enabled_browser_roles, library_source)
     }
 }
 

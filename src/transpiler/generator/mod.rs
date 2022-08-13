@@ -69,6 +69,7 @@ pub trait Translator {
         class_imports: &Vec<String>,
         role: &Role,
         socket_enabled_browser_roles: &Vec<String>,
+        library_source: &str
     ) -> String;
 }
 
@@ -86,6 +87,14 @@ pub fn generate_for_directory<T: Translator>(
         &selected_role_name,
     )?;
 
+    //TODO make enums for configuration stuff like types?
+
+    let source = if all_roles.into_iter().find(|x| x.name == selected_role_name).unwrap().types.contains(&"browser".to_string()) {
+        "@easy-rpc/browser"
+    } else {
+        "@easy-rpc/node" // currently only supports node
+    };
+
     for (role, imports) in result.into_iter() {
         let generated = T::generate_client(
             role != selected_role_name,
@@ -99,6 +108,7 @@ pub fn generate_for_directory<T: Translator>(
                 }
             },
             socket_enabled_browser_roles,
+            source
         );
 
         let mut generated_file_name = String::from(role);

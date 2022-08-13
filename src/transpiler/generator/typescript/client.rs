@@ -5,11 +5,12 @@ pub fn generate_client(
     class_imports: &Vec<String>,
     role: &Role,
     socket_enabled_browser_roles: &Vec<String>,
+    library_source: &str
 ) -> String {
     if foreign {
-        generate_foreign_client(class_imports, role, socket_enabled_browser_roles)
+        generate_foreign_client(class_imports, role, socket_enabled_browser_roles, library_source)
     } else {
-        generate_callback_client(class_imports, role, socket_enabled_browser_roles)
+        generate_callback_client(class_imports, role, socket_enabled_browser_roles, library_source)
     }
 }
 
@@ -17,17 +18,12 @@ fn generate_callback_client(
     class_imports: &Vec<String>,
     role: &Role,
     socket_enabled_browser_roles: &Vec<String>,
+    library_source: &str
 ) -> String {
     let mut ret = String::new();
 
-    // in case this is a browser, the length of the types vec will always be exactly 1
-    let source = if role.types[0] == "browser" {
-        "@easy-rpc/browser"
-    } else {
-        "@easy-rpc/node" // currently only supports node
-    };
     ret.push_str(&format!(
-        "import {{ ERPCServer, ServerOptions }} from \"{source}\"\n"
+        "import {{ ERPCServer, ServerOptions }} from \"{library_source}\"\n"
     ));
 
     for browser_role in socket_enabled_browser_roles {
@@ -132,17 +128,12 @@ fn generate_foreign_client(
     class_imports: &Vec<String>,
     role: &Role,
     socket_enabled_browser_roles: &Vec<String>,
+    library_source: &str
 ) -> String {
     let mut ret = String::new();
 
-    // in case this is a browser, the length of the types vec will always be exactly 1
-    let source = if role.types[0] == "browser" {
-        "@easy-rpc/browser"
-    } else {
-        "@easy-rpc/node" // currently only supports node
-    };
     ret.push_str(&format!(
-        "import {{ ERPCTarget, TargetOptions }} from \"{source}\"\n"
+        "import {{ ERPCTarget, TargetOptions }} from \"{library_source}\"\n"
     ));
 
     for browser_role in socket_enabled_browser_roles {

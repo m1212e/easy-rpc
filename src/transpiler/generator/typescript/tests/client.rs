@@ -13,6 +13,7 @@ mod tests {
                 types: vec!["browser".to_string()],
             },
             &vec!["Client".to_string()],
+            "@easy-rpc/browser"
         );
 
         assert_eq!(result, "import { ERPCTarget, TargetOptions } from \"@easy-rpc/browser\"
@@ -43,6 +44,7 @@ export default class Client extends ERPCTarget {
                 types: vec!["http-server".to_string()],
             },
             &vec!["Client".to_string()],
+            "@easy-rpc/node"
         );
 
         assert_eq!(result, "import { ERPCServer, ServerOptions } from \"@easy-rpc/node\"

@@ -1,4 +1,4 @@
-import { ERPCTarget, TargetOptions } from "@easy-rpc/browser"
+import { ERPCTarget, TargetOptions } from "@easy-rpc/node"
 import api from "./Client/api"
 import auth from "./Client/auth"
 
