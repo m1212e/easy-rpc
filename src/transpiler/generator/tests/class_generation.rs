@@ -30,7 +30,7 @@ mod tests {
             &test_files.join("input"),
             &test_files.join("output"),
             &"",
-            "server",
+            "Server",
         )
         .unwrap();
 
@@ -39,13 +39,13 @@ mod tests {
             &test_files.join("output"),
         );
 
-        let mut v1: Vec<_> = result.get("server").unwrap().to_owned();
+        let mut v1: Vec<_> = result.get("Server").unwrap().to_owned();
         let mut v2: Vec<_> = vec!["api".to_string(), "auth".to_string()];
         v1.sort();
         v2.sort();
         assert_eq!(*v1, *v2);
 
-        let mut v1: Vec<_> = result.get("client").unwrap().to_owned();
+        let mut v1: Vec<_> = result.get("Client").unwrap().to_owned();
         let mut v2: Vec<_> = vec!["api".to_string(), "auth".to_string()];
         v1.sort();
         v2.sort();
