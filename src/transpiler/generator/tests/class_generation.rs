@@ -20,6 +20,8 @@ mod tests {
             test_files = test_files.join(dir);
         }
 
+        println!("\n{}\n", test_files.as_os_str().to_str().unwrap());
+
         match fs::remove_dir_all(&test_files.join("output")) {
             Ok(_) => {}
             Err(_) => {}
