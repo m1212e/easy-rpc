@@ -99,7 +99,12 @@ mod tests {
             if entry.file_type().unwrap().is_dir() {
                 assert_equal_directories(&a.join(entry.file_name()), &b.join(entry.file_name()));
             } else {
-                assert!(std::path::Path::exists(&b.join(entry.file_name())));
+                if !std::path::Path::exists(&b.join(entry.file_name())) {
+                    panic!(
+                        "Could not find file {}",
+                        &b.join(entry.file_name()).to_str().unwrap()
+                    )
+                }
 
                 assert_eq!(
                     std::fs::read_to_string(&a.join(entry.file_name())).unwrap(),
