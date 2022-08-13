@@ -8,7 +8,7 @@ export default class time {
     }
 
     test7(): Promise<void> {
-        return this.server.call("api\/time/test7")
+        return this.server.call("api/time/test7")
     }
 
 }

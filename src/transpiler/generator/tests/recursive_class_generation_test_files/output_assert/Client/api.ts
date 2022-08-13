@@ -11,7 +11,7 @@ export default class api {
     }
 
     test5(): Promise<void> {
-        return this.server.call("/api/test5")
+        return this.server.call("api/test5")
     }
 
 }

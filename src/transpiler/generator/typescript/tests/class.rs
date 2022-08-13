@@ -57,7 +57,7 @@ mod tests {
 
         let result = generate_class(
             "MyCoolClass",
-            "test/test2",
+            "test/test2/",
             &endpoints,
             false,
             &vec!["ImportedClass".to_string(), "ImportedClass2".to_string()],
@@ -213,7 +213,7 @@ export default class MyCoolClass {
 
         let result = generate_class(
             "MyCoolClass",
-            "test/test2",
+            "test/test2/",
             &endpoints,
             true,
             &vec!["ImportedClass".to_string(), "ImportedClass2".to_string()],

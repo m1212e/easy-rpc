@@ -11,7 +11,7 @@ mod tests {
     fn test_success() {
         let result = generate_classes_per_role::<TypeScriptTranslator>(
             "TestClass",
-            "test/test2",
+            "test/test2/",
             vec![
                 Endpoint {
                     documentation: None,

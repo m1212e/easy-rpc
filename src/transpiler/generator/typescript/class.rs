@@ -152,32 +152,25 @@ fn generate_callback_class(
         ret.push_str(&endpoint_to_function(
             endpoint,
             false,
-            &format!("{}/{}/{}", relative_path, class_name, endpoint.identifier),
+            &format!("{relative_path}{class_name}/{}", endpoint.identifier),
         ));
     }
 
     for imp in class_imports {
-        ret.push_str("    private _");
-        ret.push_str(&imp);
-        ret.push_str(" = new ");
-        ret.push_str(&imp);
-        ret.push_str("()\n    set ");
-        ret.push_str(&imp);
-        ret.push_str("(value: ");
-        ret.push_str(&imp);
-        ret.push_str(") {\n        this._");
-        ret.push_str(&imp);
-        ret.push_str(
-            " = value;\n        (value as any).setERPCServer(this.server)\n    }\n    get ",
-        );
-        ret.push_str(&imp);
-        ret.push_str("() {\n        return this._");
-        ret.push_str(&imp);
-        ret.push_str("\n    }\n");
+        ret.push_str(&format!(
+            "    private _{imp} = new {imp}()
+    set {imp}(value: {imp}) {{
+        this._{imp} = value;
+        (value as any).setERPCServer(this.server)
+    }}
+    get {imp}() {{
+        return this._{imp}
+    }}
+"
+        ));
     }
-    ret.push_str("\n");
 
-    ret.push_str("}");
+    ret.push_str("\n}");
 
     ret
 }
@@ -238,7 +231,7 @@ fn generate_foreign_class(
         ret.push_str(&endpoint_to_function(
             endpoint,
             true,
-            &format!("{}/{}/{}", relative_path, class_name, endpoint.identifier),
+            &format!("{}{}/{}", relative_path, class_name, endpoint.identifier),
         ))
     }
 

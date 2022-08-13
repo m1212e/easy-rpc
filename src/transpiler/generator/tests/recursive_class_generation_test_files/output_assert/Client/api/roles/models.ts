@@ -8,7 +8,7 @@ export default class models {
     }
 
     test8(): Promise<void> {
-        return this.server.call("api\roles\/models/test8")
+        return this.server.call("api/roles/models/test8")
     }
 
 }

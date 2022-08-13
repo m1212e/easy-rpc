@@ -8,7 +8,7 @@ export default class auth {
     }
 
     test2(): Promise<void> {
-        return this.server.call("/auth/test2")
+        return this.server.call("auth/test2")
     }
 
 }

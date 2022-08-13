@@ -19,15 +19,14 @@ pub fn endpoint_to_function(endpoint: &Endpoint, foreign: bool, url: &str) -> St
 fn make_foreign_endpoint(endpoint: &Endpoint, url: &str) -> String {
     let mut ret = String::new();
 
-    if endpoint.documentation.is_some() {
-        ret.push_str("/**");
-        ret.push_str(&endpoint.documentation.as_ref().unwrap());
-        ret.push_str("*/\n");
+    match &endpoint.documentation {
+        Some(val) => {
+            ret.push_str(&format!("/**{val}*/\n"));
+        },
+        None => {},
     }
 
-    ret.push_str("    ");
-    ret.push_str(&endpoint.identifier);
-    ret.push_str("(");
+    ret.push_str(&format!("    {identifier}(", identifier=&endpoint.identifier));
 
     for i in 0..endpoint.parameters.len() {
         ret.push_str(&endpoint.parameters[i].identifier);
@@ -56,9 +55,8 @@ fn make_foreign_endpoint(endpoint: &Endpoint, url: &str) -> String {
         ret.push_str("void");
     }
 
-    ret.push_str("> {\n        return this.server.call(\"");
-    ret.push_str(&url);
-    ret.push_str("\"");
+    ret.push_str(&format!("> {{
+        return this.server.call(\"{url}\""));
 
     if endpoint.parameters.len() > 0 {
         ret.push_str(", [");

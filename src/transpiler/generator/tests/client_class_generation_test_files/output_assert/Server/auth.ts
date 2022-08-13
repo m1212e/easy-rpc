@@ -23,7 +23,7 @@ export default class auth {
     private _test1: () => Promise<void> = undefined as any
     set test1(value: () => Promise<void>) {
         this._test1 = value
-        this.server?.registerERPCCallbackFunction(value, "/auth/test1")
+        this.server?.registerERPCCallbackFunction(value, "auth/test1")
     }
     get test1() {
         return this._test1

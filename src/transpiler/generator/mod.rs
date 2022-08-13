@@ -142,7 +142,7 @@ fn generate_for_directory_recursively<T: Translator>(
 
                     let mut new_rel_path = relative_path.to_string();
                     new_rel_path.push_str(file_name);
-                    new_rel_path.push(std::path::MAIN_SEPARATOR);
+                    new_rel_path.push('/');
 
                     let generated_classes_per_role = generate_for_directory_recursively::<T>(
                         input_directory,
