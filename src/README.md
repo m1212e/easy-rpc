@@ -1,4 +1,4 @@
-The source directory contains all sourcecode. Files providing configuration, scripts or similar do not belong here. Since this is a binary rust application the main entry into the program is located inside the [main.rs](./main.rs) file.
+The src directory contains all sourcecode. Files providing configuration, scripts or similar do not belong here. Since this is a binary rust application the main entry into the program is located inside the [main.rs](./main.rs) file.
 
 ### util
 The [util module](./util/) contains various util/helper functions, macros etc. which are not clearly assignable to a specific module and have a more general use.
