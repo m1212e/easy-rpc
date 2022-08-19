@@ -1,0 +1,1 @@
+The util module is a collection of functions and macros which are general purpose and not assigned to a specific module. Please make sure to provide a good and self explainatory name.

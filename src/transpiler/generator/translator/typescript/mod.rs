@@ -8,8 +8,7 @@ use crate::transpiler::{
             endpoint::Endpoint,
             field_type::{ArrayAmount, PrimitiveType, Type},
         },
-    },
-    Role,
+    }, config::Role,
 };
 
 use self::{class::generate_class, client::generate_client, interface::custom_type_to_interface};

@@ -1,4 +1,5 @@
-use crate::transpiler::Role;
+use crate::transpiler::config::Role;
+
 
 pub fn generate_client(
     foreign: bool,

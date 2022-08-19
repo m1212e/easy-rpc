@@ -4,3 +4,5 @@
 
 Web requests made easy.
 See the docs at https://m1212e.github.io/easy-rpc-docs/
+
+This repository contains README.md files to explain the important parts and modules throughout the repository. If you want to dive into the sourcecode, take a look at the [src](./src/) directory.

@@ -1,42 +1,20 @@
+mod config;
 mod generator;
 mod parser;
 mod tests;
 
 use std::{
-    fs::{self, read_dir, File},
-    io::{self, Read},
+    fs::File,
+    io::{self},
     path::Path,
 };
 
-use serde::Deserialize;
 use serde_json;
 
 use self::{
+    config::parse_config,
     parser::{input_reader::InputReaderError, parser::ParseError},
 };
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Role {
-    pub name: String,
-    pub types: Vec<String>,
-    pub documentation: Option<String>,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct Config {
-    pub sources: Vec<String>,
-    pub role: String,
-}
-
-fn parse_roles<T: Read>(input: T) -> Result<Vec<Role>, serde_json::Error> {
-    serde_json::from_reader(input)
-}
-
-fn parse_config<T: Read>(input: T) -> Result<Config, serde_json::Error> {
-    serde_json::from_reader(input)
-}
 
 #[derive(Debug)]
 pub enum ERPCError {

@@ -2,7 +2,7 @@
 mod tests {
     use serde_json::Error;
 
-    use crate::transpiler::{parse_config, parse_roles};
+    use crate::transpiler::{config::parse_roles, parse_config};
 
     #[test]
     fn test_roles() -> Result<(), Error> {
@@ -26,10 +26,7 @@ mod tests {
             result[0].types,
             vec!["http-server".to_string(), "tcp-server".to_string()]
         );
-        assert_eq!(
-            result[0].documentation,
-            None
-        );
+        assert_eq!(result[0].documentation, None);
 
         assert_eq!(result[1].name, "Client".to_string());
         assert_eq!(result[1].types, vec!["browser".to_string()]);

@@ -1,7 +1,6 @@
 #[cfg(test)]
 mod tests {
     use crate::transpiler::{
-        generator::{typescript::class::generate_class},
         parser::{
             parser::{
                 custom_type::CustomType,
@@ -9,7 +8,7 @@ mod tests {
                 field_type::{ArrayAmount, Primitive, PrimitiveType, Type},
             },
             CodePosition,
-        },
+        }, generator::translator::typescript::class::generate_class,
     };
 
     #[test]

@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use crate::transpiler::{generator::typescript::client::generate_client, Role};
+    use crate::transpiler::{generator::translator::typescript::client::generate_client, config::Role};
 
     #[test]
     fn test_success_foreign() {
@@ -13,10 +13,12 @@ mod tests {
                 types: vec!["browser".to_string()],
             },
             &vec!["Client".to_string()],
-            "@easy-rpc/browser"
+            "@easy-rpc/browser",
         );
 
-        assert_eq!(result, "import { ERPCTarget, TargetOptions } from \"@easy-rpc/browser\"
+        assert_eq!(
+            result,
+            "import { ERPCTarget, TargetOptions } from \"@easy-rpc/browser\"
 import api from \"./Client/api\"
 import tracks from \"./Client/tracks\"
 
@@ -30,7 +32,8 @@ export default class Client extends ERPCTarget {
     constructor(options: TargetOptions) {
         super(options, [\"browser\", ])
     }
-}");
+}"
+        );
     }
 
     #[test]
@@ -44,10 +47,12 @@ export default class Client extends ERPCTarget {
                 types: vec!["http-server".to_string()],
             },
             &vec!["Client".to_string()],
-            "@easy-rpc/node"
+            "@easy-rpc/node",
         );
 
-        assert_eq!(result, "import { ERPCServer, ServerOptions } from \"@easy-rpc/node\"
+        assert_eq!(
+            result,
+            "import { ERPCServer, ServerOptions } from \"@easy-rpc/node\"
 import Client from \"./Client\"
 import api from \"./Server/api\"
 import tracks from \"./Server/tracks\"
@@ -104,7 +109,8 @@ export default class Server extends ERPCServer {
             }
         })
     }
-}");
+}"
+        );
     }
 }
 

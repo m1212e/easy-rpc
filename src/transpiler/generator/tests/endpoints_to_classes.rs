@@ -3,7 +3,7 @@ mod tests {
     use std::{collections::HashMap, vec};
 
     use crate::transpiler::{
-        generator::{generate_classes_per_role, typescript::TypeScriptTranslator},
+        generator::{generate_classes_per_role, translator::typescript::TypeScriptTranslator},
         parser::{parser::endpoint::Endpoint, CodePosition},
     };
 

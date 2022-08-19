@@ -5,10 +5,8 @@ mod tests {
 
     use crate::transpiler::{
         generator::{
-            generate_for_directory, generate_for_directory_recursively,
-            typescript::TypeScriptTranslator,
-        },
-        Role,
+            generate_for_directory, generate_for_directory_recursively, translator::typescript::TypeScriptTranslator,
+        }, config::Role,
     };
 
     #[test]
