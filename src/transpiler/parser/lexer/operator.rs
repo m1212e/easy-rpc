@@ -8,7 +8,6 @@ use crate::{
         input_reader::{InputReader, InputReaderError},
         CodePosition,
     },
-    unwrap_result_option,
 };
 
 /**
@@ -56,9 +55,9 @@ impl Operator {
             let peeked = peeked.unwrap();
 
             if peeked == operator_type.to_string() {
-                let start = reader.current_position.clone();
+                let start = reader.current_position;
                 reader.consume(peeked.len())?;
-                let end = reader.current_position.clone();
+                let end = reader.current_position;
 
                 return Ok(Some(Operator {
                     operator_type,

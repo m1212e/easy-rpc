@@ -52,6 +52,9 @@ pub struct Custom {
     pub identifier: String,
 }
 
+/**
+    Parses a field type. Expects the first type token, not the : operator
+ */
 pub fn parse_field_type(reader: &mut TokenReader) -> Result<Type, ParseError> {
     let peeked = reader.peek(1);
 
@@ -182,6 +185,9 @@ fn parse_custom_type(reader: &mut TokenReader) -> Result<Type, ParseError> {
     }));
 }
 
+/**
+    Parses an array length specification which can occur after some types
+ */
 fn parse_array_length(reader: &mut TokenReader) -> Result<ArrayAmount, ParseError> {
     let peeked = reader.peek(2);
 

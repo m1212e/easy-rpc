@@ -156,7 +156,7 @@ fn process_number<T: Read>(
         return Ok(None);
     }
 
-    let potential_number = unwrap_result_option!(reader.peek_until(|current, total| {
+    let potential_number = unwrap_result_option!(reader.peek_until(|current, _| {
         return MATCH_NUMBER.is_match(current.to_string().as_str());
     }));
 

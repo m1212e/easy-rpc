@@ -8,7 +8,6 @@ use crate::{
         input_reader::{InputReader, InputReaderError},
         CodePosition,
     },
-    unwrap_result_option,
 };
 
 /**

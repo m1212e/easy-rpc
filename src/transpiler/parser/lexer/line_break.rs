@@ -21,39 +21,27 @@ impl LineBreak {
     pub fn lex_line_break<T: Read>(
         reader: &mut InputReader<T>,
     ) -> Result<Option<LineBreak>, InputReaderError> {
+        let peek = unwrap_result_option!(reader.peek(1));
 
-        //TODO: This should group multiple linebreaks to one token in the future:
-
-        /*
-            //example comment
-            /n                            <- one Linebreak token
-            Server someEndpoint()
-        */
-
-
-        /*
-            //example comment
-            /n                          ╗
-            /n                          ║
-            /n                          ║ <- one Linebreak token
-            /n                          ║
-            /n                          ╝
-            Server someEndpoint()
-        */
-
-        let peek = unwrap_result_option!(reader.peek(2));
-
-        if peek.starts_with("\n") {
+        if peek == "\n" || peek == "\r" {
             let start = reader.current_position.clone();
             reader.consume(1)?;
-            let end = reader.current_position.clone();
-            return Ok(Some(LineBreak { start, end }));
-        }
 
-        if peek == "\r\n" {
-            let start = reader.current_position.clone();
-            reader.consume(2)?;
+            loop {
+                let peek = reader.peek(1)?;
+
+                match peek {
+                    Some(val) => {
+                        if val != "\n" && val != "\r" {
+                            break;
+                        }
+                        reader.consume(1)?;
+                    }
+                    None => break,
+                }
+            }
             let end = reader.current_position.clone();
+
             return Ok(Some(LineBreak { start, end }));
         }
 

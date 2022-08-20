@@ -21,6 +21,19 @@ mod tests;
 mod translator;
 //TODO: some refactoring and documentation would be nice
 
+/**
+   Generates code in the required directory structure at the target location.
+
+   input_directory is the dir where the sources (.erpc files) live. It's structure is used to generate the output accordingly.
+
+   output_directory is the target dir where the output will be generated.
+
+   selected_role_name is a string which contains the name of the role which is selected through the config.json
+
+   all_roles is a vec of all roles existing in the current setup
+
+   socket_enabled_browser_roles is a vec of all roles which have the type browser and offer endpoints (and therefore need to support websockets)
+*/
 pub fn generate_for_directory<T: Translator>(
     input_directory: &Path,
     output_directory: &Path,
@@ -81,17 +94,17 @@ pub fn generate_for_directory<T: Translator>(
     Ok(())
 }
 
+/**
+   Internal recursive function to process a directory of erpc sources. Input/Output directory and selected role stay the same.
+   The relative path specifies at which level relative of the root input dir this function should run.
+   Returns which classes were generated for what role.
+*/
 fn generate_for_directory_recursively<T: Translator>(
     input_directory: &Path,
     output_directory: &Path,
     relative_path: &str,
     selected_role: &str,
 ) -> Result<HashMap<String, Vec<String>>, ERPCError> {
-    let mut generated_classnames_per_role_per_filename: HashMap<
-        String,
-        HashMap<String, Vec<String>>,
-    > = HashMap::new();
-
     // to achieve consistency when testing, sort the directory entries when not in production build
     let mut paths = read_dir(input_directory.join(relative_path))?
         .collect::<Result<Vec<DirEntry>, std::io::Error>>()?;
@@ -99,6 +112,19 @@ fn generate_for_directory_recursively<T: Translator>(
         paths.sort_by_key(|dir| dir.path());
     }
 
+    /*
+        for each processed file we store which classes were generated for what role
+        we store them per filename to potentially merge classes from subdirectories and source files on this dir level which have an identical name to hybrid classes
+    */
+    let mut generated_classnames_per_role_per_filename: HashMap<
+        String,
+        HashMap<String, Vec<String>>,
+    > = HashMap::new();
+
+    /*
+       first, iterate over all subdirectories and process them
+       this needs to be done before processing files on the current dir level because we potentially need to import subclasses
+    */
     for entry in &paths {
         if entry.file_type()?.is_dir() {
             let fi_na = entry.file_name();
@@ -111,6 +137,7 @@ fn generate_for_directory_recursively<T: Translator>(
             new_rel_path.push_str(file_name);
             new_rel_path.push('/');
 
+            // for the directory, just run this function recursively, but with an adjusted relative path
             let generated_classes_per_role = generate_for_directory_recursively::<T>(
                 input_directory,
                 output_directory,
@@ -118,13 +145,16 @@ fn generate_for_directory_recursively<T: Translator>(
                 selected_role,
             )?;
 
+            // insert for the currently processed dir, all generated classes names per role
             generated_classnames_per_role_per_filename
                 .insert(file_name.to_string(), generated_classes_per_role);
         }
     }
 
+    // tracks which classes per role were generated on the current dir level
     let mut generated_classnames_per_role: HashMap<String, Vec<String>> = HashMap::new();
 
+    // now iterate the .erpc files
     for entry in &paths {
         if entry.file_type()?.is_file() {
             let fi_na = entry.file_name();
@@ -139,6 +169,7 @@ fn generate_for_directory_recursively<T: Translator>(
             let mut reader = TokenReader::new(InputReader::new(File::open(entry.path())?))?;
             let result = parse(&mut reader)?;
 
+            // generate class strings per role
             let generated_class_content_per_role = generate_classes_per_role::<T>(
                 file_name,
                 relative_path,
@@ -151,6 +182,7 @@ fn generate_for_directory_recursively<T: Translator>(
             );
 
             for (role, class_content) in generated_class_content_per_role {
+                // write all generated files to the disk
                 let mut generated_file_name = file_name.to_string();
                 generated_file_name.push_str(".");
                 generated_file_name.push_str(T::file_suffix().as_str());
@@ -164,6 +196,7 @@ fn generate_for_directory_recursively<T: Translator>(
                     .open(parent.join(generated_file_name))?;
                 file.write_all(&class_content.as_bytes())?;
 
+                // and store that the class has been generated
                 match generated_classnames_per_role.entry(role) {
                     Entry::Occupied(mut entry) => {
                         entry.get_mut().push(file_name.to_string());
@@ -174,10 +207,12 @@ fn generate_for_directory_recursively<T: Translator>(
                 }
             }
 
+            // if a class with the exact same name of a subclass has been generated, remove it from the map since it is now already imported
             generated_classnames_per_role_per_filename.remove(file_name);
         }
     }
 
+    // for the remaining classes, create import wrappers which do nothing but import the subclasses
     for (file_name, classnames_per_role) in generated_classnames_per_role_per_filename {
         let generated_class_content_per_role = generate_classes_per_role::<T>(
             &file_name,
@@ -215,6 +250,10 @@ fn generate_for_directory_recursively<T: Translator>(
     Ok(generated_classnames_per_role)
 }
 
+/**
+   Generates various classes from one erpc source input. The classes are separated according to the role they belong to.
+   Returns a map of classes generated per role.
+*/
 fn generate_classes_per_role<T: Translator>(
     class_name: &str,
     relative_path: &str,
@@ -223,8 +262,9 @@ fn generate_classes_per_role<T: Translator>(
     custom_types: &Vec<CustomType>,
     classes_to_import_per_role: &HashMap<String, Vec<String>>,
 ) -> HashMap<String, String> {
+    
+    // sort endpoints by their role
     let mut endpoints_per_role: HashMap<String, Vec<Endpoint>> = HashMap::new();
-
     for endpoint in endpoints {
         match endpoints_per_role.entry(endpoint.role.clone()) {
             Entry::Occupied(mut e) => {

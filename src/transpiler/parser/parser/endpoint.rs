@@ -28,11 +28,6 @@ pub struct Endpoint {
 }
 
 impl Endpoint {
-    /**
-       Parses an endpoint and consumes the reader accordingly. Only returns some if the function is confident that the currently
-       parsed tokens are meant to be an endpoint. Returns either a correctly parsed endpoint or an error which describes
-       what cancelled the process.
-    */
     pub fn parse_endpoint(reader: &mut TokenReader) -> Option<Result<Endpoint, ParseError>> {
         /*
             Endpoints always consist of at least 4 tokens:
@@ -93,10 +88,10 @@ impl Endpoint {
         // at this point it's pretty safe that the currently parsed tokens are meant to build an endpoint, therefore we can start consuming
         // we also checked the types/order of the following tokens and can consume them directly, without re-checking
 
-        let mut start: CodePosition;
+        let start: CodePosition;
         let mut documentation: Option<String> = None;
-        let mut role: String;
-        let mut identifier: String;
+        let role: String;
+        let identifier: String;
 
         if newline_after_doc {
             let mut consumed = reader.consume(5)?;

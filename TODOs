@@ -4,3 +4,4 @@ TODO: convert old project todos into new one
 TODO: check where a string could be replaced by a string slice
 TODO: in validator, ensure that a browser role never has multiple types, since a browser never can also be http-server
 TODO: refactor all string buildings to use format!() macro
+TODO: custom_type_to_interface still neccessary?
