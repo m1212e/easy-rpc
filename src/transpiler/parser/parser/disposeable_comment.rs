@@ -1,4 +1,4 @@
-use crate::transpiler::parser::lexer::{operator::OperatorType, token::Token, TokenReader};
+use crate::transpiler::parser::lexer::{token::Token, TokenReader};
 
 pub struct DisposeableComment;
 

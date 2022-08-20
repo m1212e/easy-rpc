@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
     use crate::transpiler::{
-        generator::{translator::typescript::TypeScriptTranslator, Translator},
+        generator::{translator::typescript::{interface::custom_type_to_interface}},
         parser::{
             lexer::literal::{Literal, LiteralType},
             parser::{
@@ -158,7 +158,7 @@ mod tests {
             ],
         };
 
-        let result = TypeScriptTranslator::custom_type_to_interface(&t);
+        let result = custom_type_to_interface(&t);
 
         assert_eq!(
             result,

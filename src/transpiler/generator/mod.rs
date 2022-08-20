@@ -19,7 +19,6 @@ use super::{
 
 mod tests;
 mod translator;
-//TODO: some refactoring and documentation would be nice
 
 /**
    Generates code in the required directory structure at the target location.

@@ -38,7 +38,7 @@ impl Endpoint {
         */
         let mut peeked = reader.peek(4)?;
         let has_docs = match &peeked[0] {
-            Token::DocumentationalComment(value) => true,
+            Token::DocumentationalComment(_) => true,
             _ => false,
         };
 

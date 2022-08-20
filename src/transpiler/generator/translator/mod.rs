@@ -9,11 +9,6 @@ pub mod typescript;
 */
 pub trait Translator {
     /**
-       Translates a defined custom type into an interface of the target language
-    */
-    fn custom_type_to_interface(custom_type: &CustomType) -> String;
-
-    /**
        Generates a class in the target language.
 
        The class name is the name used as classname.

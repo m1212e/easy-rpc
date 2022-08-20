@@ -3,7 +3,7 @@ mod tests {
     use crate::transpiler::parser::{
         input_reader::{InputReader, InputReaderError},
         lexer::{
-            operator::{Operator, OperatorType},
+            operator::{OperatorType},
             token::Token,
             TokenReader,
         },

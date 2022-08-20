@@ -1,5 +1,3 @@
-use std::path::Path;
-
 use crate::transpiler::{
     parser::{
         lexer::literal::LiteralType,
@@ -11,7 +9,7 @@ use crate::transpiler::{
     }, config::Role,
 };
 
-use self::{class::generate_class, client::generate_client, interface::custom_type_to_interface};
+use self::{class::generate_class, client::generate_client};
 
 use super::Translator;
 
@@ -24,10 +22,6 @@ mod tests;
 pub struct TypeScriptTranslator;
 
 impl Translator for TypeScriptTranslator {
-    fn custom_type_to_interface(custom_type: &CustomType) -> String {
-        custom_type_to_interface(custom_type)
-    }
-
     fn generate_class(
         class_name: &str,
         relative_path: &str,

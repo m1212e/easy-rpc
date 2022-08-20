@@ -21,7 +21,7 @@ mod tests {
         assert_eq!(reader.current_position.character, 0);
 
         let ret = reader
-            .peek_until(|current, total| {
+            .peek_until(|current, _| {
                 return current != '_';
             })?
             .unwrap();
@@ -29,7 +29,7 @@ mod tests {
         assert_eq!(reader.current_position.character, 0);
 
         let ret = reader
-            .peek_until(|current, total| {
+            .peek_until(|current, _| {
                 return current != '!';
             })?
             .unwrap();
@@ -38,7 +38,7 @@ mod tests {
 
         let mut reader = InputReader::new("!".as_bytes());
         let ret = reader
-            .peek_until(|current, total| {
+            .peek_until(|current, _| {
                 return current != '?';
             })?
             .unwrap();
@@ -47,7 +47,7 @@ mod tests {
 
         let mut reader = InputReader::new("Hello//".as_bytes());
         let ret = reader
-            .peek_until(|current, total| {
+            .peek_until(|current, _| {
                 return current != 'o';
             })?
             .unwrap();
@@ -64,7 +64,7 @@ mod tests {
         assert_eq!(reader.current_position.character, 0);
 
         assert!(reader
-            .peek_until(|current, total| {
+            .peek_until(|current, _| {
                 return current != '❎';
             })?
             .is_none());

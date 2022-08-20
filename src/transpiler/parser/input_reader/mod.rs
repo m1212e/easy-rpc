@@ -120,7 +120,7 @@ impl<T: Read> InputReader<T> {
        Returns a given amount of characters from the input source without consuming them.
        Returns none when the amount requested can't be provided.
     */
-    pub fn peek(&mut self, mut amount: usize) -> Result<Option<String>, InputReaderError> {
+    pub fn peek(&mut self, amount: usize) -> Result<Option<String>, InputReaderError> {
         if self.is_done() {
             return Ok(None);
         }

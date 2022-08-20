@@ -27,7 +27,7 @@ mod tests {
     }
 
     #[test]
-    fn test_consume__to_delimeter_only_nonexistent() -> Result<(), InputReaderError> {
+    fn test_consume_to_delimeter_only_nonexistent() -> Result<(), InputReaderError> {
         let mut reader = InputReader::new("This is a ❎ unicode 👶 symbol!".as_bytes());
 
         assert_eq!(
@@ -39,7 +39,7 @@ mod tests {
     }
 
     #[test]
-    fn test_consume__to_delimeter_empty() -> Result<(), InputReaderError> {
+    fn test_consume_to_delimeter_empty() -> Result<(), InputReaderError> {
         let mut reader = InputReader::new("".as_bytes());
 
         assert!(reader.consume_to_delimeter_or_end("\n")?.is_none());
