@@ -16,7 +16,6 @@ use crate::{
 #[derive(Display, EnumIter, Clone)]
 pub enum KeywordType {
     Type,
-    Import,
     Boolean,
     Int8,
     Int16,

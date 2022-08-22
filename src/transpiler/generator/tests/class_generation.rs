@@ -29,6 +29,16 @@ mod tests {
             &test_files.join("output"),
             &"",
             "Server",
+            &vec![Role{
+                documentation: None,
+                name: "Client".to_string(),
+                types: vec!["browser".to_string()]
+            },
+            Role{
+                documentation: None,
+                name: "Server".to_string(),
+                types: vec!["http-server".to_string()]
+            }]
         )
         .unwrap();
 

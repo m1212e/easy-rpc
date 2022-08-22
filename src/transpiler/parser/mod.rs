@@ -7,8 +7,8 @@ pub mod parser;
 */
 #[derive(Copy, Clone, Debug)]
 pub struct CodePosition {
-    line: u16,
-    character: u16,
+    pub line: u16,
+    pub character: u16,
 }
 
 impl CodePosition {

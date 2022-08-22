@@ -1,6 +1,7 @@
 mod config;
 mod generator;
 mod parser;
+mod validator;
 mod tests;
 
 use std::{
@@ -13,7 +14,7 @@ use serde_json;
 
 use self::{
     config::parse_config,
-    parser::{input_reader::InputReaderError, parser::ParseError},
+    parser::{input_reader::InputReaderError, parser::ParseError}, validator::ValidationError,
 };
 
 #[derive(Debug)]
@@ -35,9 +36,13 @@ pub enum ERPCError {
     */
     ConfigurationError(String),
     /**
-       An IO error while processing non .erpc files
-    */
+     An IO error while processing non .erpc files
+     */
     IO(io::Error),
+    /**
+       Error indicating a mistake in the logical structure of the file. E.g. unknown or double defined types
+    */
+    ValidationError(ValidationError),
 }
 
 impl From<InputReaderError> for ERPCError {
@@ -63,6 +68,11 @@ impl From<io::Error> for ERPCError {
 impl From<String> for ERPCError {
     fn from(err: String) -> Self {
         ERPCError::ConfigurationError(err)
+    }
+}
+impl From<ValidationError> for ERPCError {
+    fn from(err: ValidationError) -> Self {
+        ERPCError::ValidationError(err)
     }
 }
 

@@ -14,6 +14,7 @@ use super::{
         lexer::TokenReader,
         parser::{custom_type::CustomType, endpoint::Endpoint, parse},
     },
+    validator::validate,
     ERPCError,
 };
 
@@ -45,6 +46,7 @@ pub fn generate_for_directory<T: Translator>(
         output_directory,
         "",
         &selected_role_name,
+        all_roles,
     )?;
 
     //TODO make enums for configuration stuff like types?
@@ -103,6 +105,7 @@ fn generate_for_directory_recursively<T: Translator>(
     output_directory: &Path,
     relative_path: &str,
     selected_role: &str,
+    all_roles: &Vec<Role>,
 ) -> Result<HashMap<String, Vec<String>>, ERPCError> {
     // to achieve consistency when testing, sort the directory entries when not in production build
     let mut paths = read_dir(input_directory.join(relative_path))?
@@ -142,6 +145,7 @@ fn generate_for_directory_recursively<T: Translator>(
                 output_directory,
                 &new_rel_path,
                 selected_role,
+                all_roles,
             )?;
 
             // insert for the currently processed dir, all generated classes names per role
@@ -167,6 +171,7 @@ fn generate_for_directory_recursively<T: Translator>(
 
             let mut reader = TokenReader::new(InputReader::new(File::open(entry.path())?))?;
             let result = parse(&mut reader)?;
+            validate(&result.endpoints, &result.custom_types, all_roles)?;
 
             // generate class strings per role
             let generated_class_content_per_role = generate_classes_per_role::<T>(
@@ -261,7 +266,6 @@ fn generate_classes_per_role<T: Translator>(
     custom_types: &Vec<CustomType>,
     classes_to_import_per_role: &HashMap<String, Vec<String>>,
 ) -> HashMap<String, String> {
-    
     // sort endpoints by their role
     let mut endpoints_per_role: HashMap<String, Vec<Endpoint>> = HashMap::new();
     for endpoint in endpoints {

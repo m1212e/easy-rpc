@@ -49,22 +49,6 @@ mod tests {
     }
 
     #[test]
-    fn test_import_success() -> Result<(), InputReaderError> {
-        let mut reader = InputReader::new("import".as_bytes());
-        let output = Keyword::lex_keyword(&mut reader)?;
-
-        assert_eq!(output.is_some(), true);
-        let output = output.unwrap();
-        assert_eq!(output.start.character, 0);
-        assert_eq!(output.start.line, 0);
-        assert_eq!(output.end.character, 6);
-        assert_eq!(output.end.line, 0);
-        assert_eq!(matches!(output.keyword_type, KeywordType::Import), true);
-
-        Ok(())
-    }
-
-    #[test]
     fn test_boolean_success() -> Result<(), InputReaderError> {
         let mut reader = InputReader::new("boolean".as_bytes());
         let output = Keyword::lex_keyword(&mut reader)?;

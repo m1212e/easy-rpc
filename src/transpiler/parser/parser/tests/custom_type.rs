@@ -4,7 +4,7 @@ mod tests {
         input_reader::{InputReader, InputReaderError},
         lexer::TokenReader,
         parser::{
-            custom_type::{CustomType, Field},
+            custom_type::{CustomType},
             field_type::{PrimitiveType, Type},
         },
     };
