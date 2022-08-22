@@ -1,9 +1,9 @@
 mod transpiler;
 mod util;
-use std::{error::Error};
+use std::{env::current_dir};
 
+use transpiler::run;
 
-fn main() -> Result<(), Box<dyn Error>>  {
-
-    Ok(())
+fn main() {
+    run(&current_dir().unwrap()).unwrap();
 }

@@ -75,7 +75,7 @@ fn generate_callback_client(
 ",
     );
 
-    ret.push_str("    constructor(options: ServerOptions, callbacks: {\n");
+    ret.push_str("    constructor(options: ServerOptions, callbacks?: {\n");
     for imp in class_imports {
         ret.push_str(&format!("        {imp}: {imp}\n"))
     }
@@ -92,7 +92,7 @@ fn generate_callback_client(
 
     for imp in class_imports {
         ret.push_str(&format!(
-        "        if (callbacks.{imp}) {{\n            this.{imp} = callbacks.{imp}\n        }} else {{\n            this.{imp} = new {imp}()\n        }}\n"
+        "        if (callbacks?.{imp}) {{\n            this.{imp} = callbacks.{imp}\n        }} else {{\n            this.{imp} = new {imp}()\n        }}\n"
         ));
     }
 

@@ -8,7 +8,7 @@ use std::{
 use self::translator::Translator;
 
 use super::{
-    config::Role,
+    config::{parse_roles, Role},
     parser::{
         input_reader::InputReader,
         lexer::TokenReader,
@@ -19,7 +19,7 @@ use super::{
 };
 
 mod tests;
-mod translator;
+pub mod translator;
 
 /**
    Generates code in the required directory structure at the target location.
@@ -29,30 +29,35 @@ mod translator;
    output_directory is the target dir where the output will be generated.
 
    selected_role_name is a string which contains the name of the role which is selected through the config.json
-
-   all_roles is a vec of all roles existing in the current setup
-
-   socket_enabled_browser_roles is a vec of all roles which have the type browser and offer endpoints (and therefore need to support websockets)
 */
 pub fn generate_for_directory<T: Translator>(
-    input_directory: &Path,
+    source_directory: &Path,
     output_directory: &Path,
     selected_role_name: &str,
-    all_roles: &Vec<Role>,
-    socket_enabled_browser_roles: &Vec<String>,
 ) -> Result<(), ERPCError> {
-    let result = generate_for_directory_recursively::<T>(
-        input_directory,
+    let all_roles = parse_roles(File::open(source_directory.join("roles.json"))?)?;
+
+    let classes_per_role = generate_for_directory_recursively::<T>(
+        source_directory,
         output_directory,
         "",
         &selected_role_name,
-        all_roles,
+        &all_roles,
     )?;
 
-    //TODO make enums for configuration stuff like types?
+    // all roles which have endpoints and are configured as browser
+    let socket_enabled_browser_roles = &all_roles
+        .iter()
+        .filter_map(|role| {
+            if classes_per_role.contains_key(&role.name) && role.types.contains(&"browser".to_string()) {
+                return Some(role.name.to_owned());
+            }
+            None
+        })
+        .collect();
 
     let source = if all_roles
-        .into_iter()
+        .iter()
         .find(|x| x.name == selected_role_name)
         .unwrap()
         .types
@@ -63,11 +68,11 @@ pub fn generate_for_directory<T: Translator>(
         "@easy-rpc/node" // currently only supports node
     };
 
-    for (role, imports) in result.into_iter() {
+    for (role, imports) in classes_per_role.into_iter() {
         let generated = T::generate_client(
             role != selected_role_name,
             &imports,
-            match all_roles.into_iter().find(|x| x.name == role) {
+            match all_roles.iter().find(|x| x.name == role) {
                 Some(v) => v,
                 None => {
                     return Err(ERPCError::ConfigurationError(format!(

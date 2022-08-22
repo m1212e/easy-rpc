@@ -79,17 +79,17 @@ export default class Server extends ERPCServer {
         @param options The options to set for the easy-rpc object
         @param callbacks Callbacks to register for this server
     */
-    constructor(options: ServerOptions, callbacks: {
+    constructor(options: ServerOptions, callbacks?: {
         api: api
         tracks: tracks
     }) {
         super(options, [\"http-server\", ], true, \"Server\")
-        if (callbacks.api) {
+        if (callbacks?.api) {
             this.api = callbacks.api
         } else {
             this.api = new api()
         }
-        if (callbacks.tracks) {
+        if (callbacks?.tracks) {
             this.tracks = callbacks.tracks
         } else {
             this.tracks = new tracks()

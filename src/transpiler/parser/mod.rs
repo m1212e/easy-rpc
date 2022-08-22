@@ -12,6 +12,8 @@ pub struct CodePosition {
 }
 
 impl CodePosition {
+    // this is used as convenience func for tests which quickly want a null initialized position
+    #[allow(dead_code)]
     pub fn zero_initialized() -> CodePosition {
         CodePosition { line: 0, character: 0 }
     }

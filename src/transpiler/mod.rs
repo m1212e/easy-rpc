@@ -1,20 +1,24 @@
 mod config;
 mod generator;
 mod parser;
-mod validator;
 mod tests;
+mod validator;
 
 use std::{
     fs::File,
     io::{self},
-    path::Path,
+    path::{Path, PathBuf},
 };
 
 use serde_json;
 
+use crate::util::normalize_path::normalize_path;
+
 use self::{
     config::parse_config,
-    parser::{input_reader::InputReaderError, parser::ParseError}, validator::ValidationError,
+    generator::{generate_for_directory, translator::typescript::TypeScriptTranslator},
+    parser::{input_reader::InputReaderError, parser::ParseError},
+    validator::ValidationError,
 };
 
 #[derive(Debug)]
@@ -36,8 +40,8 @@ pub enum ERPCError {
     */
     ConfigurationError(String),
     /**
-     An IO error while processing non .erpc files
-     */
+    An IO error while processing non .erpc files
+    */
     IO(io::Error),
     /**
        Error indicating a mistake in the logical structure of the file. E.g. unknown or double defined types
@@ -76,17 +80,19 @@ impl From<ValidationError> for ERPCError {
     }
 }
 
-fn run(input_directory: &Path) -> Result<(), ERPCError> {
+/**
+   Runs the transpiler on an input directory. Expects a erpc.json to parse in the specified directory.
+*/
+pub fn run(input_directory: &Path) -> Result<(), ERPCError> {
     let config = parse_config(File::open(input_directory.join("erpc.json"))?)?;
 
-    // for source in config.sources {
-    //     generate_for_directory_recursively(
-    //         &input_directory.join("erpc.json").join(source),
-    //         &input_directory.join(".erpc").join("generated"),
-    //         &Path::new("/"),
-    //         &config.role,
-    //     )?
-    // }
+    for source in config.sources {
+        generate_for_directory::<TypeScriptTranslator>(
+            &normalize_path(&input_directory.join(source)),
+            &input_directory.join(".erpc").join("generated"),
+            &config.role,
+        )?;
+    }
 
     Ok(())
 }
