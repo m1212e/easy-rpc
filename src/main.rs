@@ -1,9 +1,10 @@
 mod transpiler;
 mod util;
-use std::{env::current_dir};
+use std::env::{self, current_dir};
 
 use transpiler::run;
 
 fn main() {
-    run(&current_dir().unwrap()).unwrap();
+    let args: Vec<String> = env::args().collect();
+    run(&current_dir().unwrap(), args.contains(&"-w".to_string())).unwrap();
 }

@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use std::{fs, path::Path};
+    use std::{fs, io::Write, path::Path, time::Duration};
 
     use crate::{
         transpiler::{run, ERPCError},
@@ -15,18 +15,50 @@ mod tests {
             test_files = test_files.join(dir);
         }
 
-        match fs::remove_dir_all(&test_files.join("output")) {
-            Ok(_) => {}
-            Err(_) => {}
-        };
-
         let backend_path = test_files.join("target").join("backend");
         let frontend_path = test_files.join("target").join("frontend");
 
-        run(&backend_path)?;
-        run(&frontend_path)?;
+        run(&backend_path, false)?;
+        run(&frontend_path, false)?;
 
         assert_equal_directories(&test_files.join("target"), &test_files.join("assert"));
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_run_watch() -> Result<(), ERPCError> {
+        std::thread::spawn(|| {
+            let mut path = Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
+            path.extend("transpiler/tests/run_watch_test_files/frontend".split_terminator('/'));
+            run(&path, true).unwrap();
+        });
+
+        let mut source_path = Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
+        source_path.extend("transpiler/tests/run_watch_test_files/sources/api.erpc".split_terminator('/'));
+
+        let mut assert_path = Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
+        assert_path.extend("transpiler/tests/run_watch_test_files/frontend/.erpc/generated/Frontend/api.ts".split_terminator('/'));
+        let original_source_content = std::fs::read_to_string(&source_path).unwrap();
+
+        for n in 7..10 {
+            fs::OpenOptions::new()
+                .write(true)
+                .append(true)
+                .open(&source_path)
+                .unwrap()
+                .write_all(format!("\nFrontend test{n}()\n").as_bytes())
+                .unwrap();
+
+            std::thread::sleep(Duration::from_secs(2));
+            let assert_content = std::fs::read_to_string(&assert_path).unwrap();
+            let assert_search = format!("this.test{n}");
+            if !assert_content.contains(&assert_search) {
+                panic!("\nCould not find \n\"{assert_search}\"\n in \n \"{assert_content}\"",)
+            }
+        }
+
+        fs::write(source_path, original_source_content).unwrap();
 
         Ok(())
     }
