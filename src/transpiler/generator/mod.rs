@@ -35,7 +35,17 @@ pub fn generate_for_directory<T: Translator>(
     output_directory: &Path,
     selected_role_name: &str,
 ) -> Result<(), ERPCError> {
-    let all_roles = parse_roles(File::open(source_directory.join("roles.json"))?)?;
+    let path = source_directory.join("roles.json");
+    if !path.exists() {
+        return Err(ERPCError::ConfigurationError(format!(
+            "Could not find roles.json at {path_str}",
+            path_str = path
+                .as_os_str()
+                .to_str()
+                .unwrap_or("<Unable to unwrap path>")
+        )));
+    }
+    let all_roles = parse_roles(File::open(path)?)?;
 
     let classes_per_role = generate_for_directory_recursively::<T>(
         source_directory,
@@ -49,7 +59,9 @@ pub fn generate_for_directory<T: Translator>(
     let socket_enabled_browser_roles = &all_roles
         .iter()
         .filter_map(|role| {
-            if classes_per_role.contains_key(&role.name) && role.types.contains(&"browser".to_string()) {
+            if classes_per_role.contains_key(&role.name)
+                && role.types.contains(&"browser".to_string())
+            {
                 return Some(role.name.to_owned());
             }
             None

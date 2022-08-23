@@ -1,6 +1,9 @@
+// only used in tests
+
 /*
     Checks that every file existing in a also exists in b
 */
+#[allow(dead_code)]
 pub fn assert_equal_directories(a: &std::path::Path, b: &std::path::Path) {
     for entry in std::fs::read_dir(a).unwrap() {
         let entry = entry.unwrap();

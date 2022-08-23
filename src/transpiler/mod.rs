@@ -7,7 +7,7 @@ mod validator;
 use std::{
     fs::File,
     io::{self},
-    path::{Path, PathBuf},
+    path::Path,
 };
 
 use serde_json;
@@ -84,7 +84,14 @@ impl From<ValidationError> for ERPCError {
    Runs the transpiler on an input directory. Expects a erpc.json to parse in the specified directory.
 */
 pub fn run(input_directory: &Path) -> Result<(), ERPCError> {
-    let config = parse_config(File::open(input_directory.join("erpc.json"))?)?;
+    let path = input_directory.join("erpc.json");
+    if !path.exists() {
+        return Err(ERPCError::ConfigurationError(format!(
+            "Could not find erpc.json at {path_str}",
+            path_str = path.as_os_str().to_str().unwrap_or("<Unable to unwrap path>")
+        )));
+    }
+    let config = parse_config(File::open(path)?)?;
 
     for source in config.sources {
         generate_for_directory::<TypeScriptTranslator>(

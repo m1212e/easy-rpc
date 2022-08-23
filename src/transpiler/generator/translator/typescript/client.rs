@@ -1,17 +1,26 @@
 use crate::transpiler::config::Role;
 
-
 pub fn generate_client(
     foreign: bool,
     class_imports: &Vec<String>,
     role: &Role,
     socket_enabled_browser_roles: &Vec<String>,
-    library_source: &str
+    library_source: &str,
 ) -> String {
     if foreign {
-        generate_foreign_client(class_imports, role, socket_enabled_browser_roles, library_source)
+        generate_foreign_client(
+            class_imports,
+            role,
+            socket_enabled_browser_roles,
+            library_source,
+        )
     } else {
-        generate_callback_client(class_imports, role, socket_enabled_browser_roles, library_source)
+        generate_callback_client(
+            class_imports,
+            role,
+            socket_enabled_browser_roles,
+            library_source,
+        )
     }
 }
 
@@ -19,7 +28,7 @@ fn generate_callback_client(
     class_imports: &Vec<String>,
     role: &Role,
     socket_enabled_browser_roles: &Vec<String>,
-    library_source: &str
+    library_source: &str,
 ) -> String {
     let mut ret = String::new();
 
@@ -29,9 +38,19 @@ fn generate_callback_client(
 
     for browser_role in socket_enabled_browser_roles {
         if browser_role != &role.name {
-            ret.push_str(&format!("import {browser_role} from \"./{browser_role}\"\n"));
+            ret.push_str(&format!(
+                "import {browser_role} from \"./{browser_role}\"\n"
+            ));
         }
     }
+
+    // websockets can be enabled in two cases:
+    // 1: the client belongs to a server and there is at least one browser which has endpoints (socket_enabled_browser_roles.len() > 0)
+    // 2: the client belongs to a browser and the role has endpoints (socket_enabled_browser_roles.contains(&role.name))
+    let enable_websockets = (socket_enabled_browser_roles.len() > 0
+        && role.types.contains(&"http-server".to_string()))
+        || (socket_enabled_browser_roles.contains(&role.name)
+            && role.types.contains(&"browser".to_string()));
 
     for imp in class_imports {
         ret.push_str(&format!(
@@ -84,7 +103,6 @@ fn generate_callback_client(
         ret.push_str(&format!("\"{typ}\", "));
     }
 
-    let enable_websockets = socket_enabled_browser_roles.len() > 0;
     ret.push_str(&format!(
         "], {enable_websockets}, \"{role_name}\")\n",
         role_name = role.name
@@ -98,7 +116,8 @@ fn generate_callback_client(
 
     ret.push_str("    }\n");
 
-    if enable_websockets {
+    // browsers are not able to accept web socket connections, therefore we dont need to add the onConnection method to ws enabled browsers
+    if enable_websockets && !role.types.contains(&"browser".to_string()) {
         ret.push_str("\n    onConnection(callback: (target: ");
         for i in 0..socket_enabled_browser_roles.len() {
             ret.push_str(&socket_enabled_browser_roles[i]);
@@ -129,7 +148,7 @@ fn generate_foreign_client(
     class_imports: &Vec<String>,
     role: &Role,
     socket_enabled_browser_roles: &Vec<String>,
-    library_source: &str
+    library_source: &str,
 ) -> String {
     let mut ret = String::new();
 
@@ -139,7 +158,9 @@ fn generate_foreign_client(
 
     for browser_role in socket_enabled_browser_roles {
         if browser_role != &role.name {
-            ret.push_str(&format!("import {browser_role} from \"./{browser_role}\"\n"));
+            ret.push_str(&format!(
+                "import {browser_role} from \"./{browser_role}\"\n"
+            ));
         }
     }
 
