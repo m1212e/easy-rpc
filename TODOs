@@ -7,3 +7,4 @@ TODO: refactor all string buildings to use format!() macro
 TODO make enums for configuration stuff like types, filenames etc.
 TODO: CLA/code of conduct
 TODO: remove all .unwrap() calls
+TODO: delete generated folder before generation to clear old files
