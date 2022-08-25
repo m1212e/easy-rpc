@@ -104,6 +104,7 @@ pub fn generate_for_directory<T: Translator>(
 
         let mut file = OpenOptions::new()
             .write(true)
+            .truncate(true)
             .create(true)
             .open(output_directory.join(generated_file_name))?;
         file.write_all(&generated.as_bytes())?;
@@ -214,6 +215,7 @@ fn generate_for_directory_recursively<T: Translator>(
                 let mut file = OpenOptions::new()
                     .write(true)
                     .create(true)
+                    .truncate(true)
                     .open(parent.join(generated_file_name))?;
                 file.write_all(&class_content.as_bytes())?;
 
@@ -249,12 +251,16 @@ fn generate_for_directory_recursively<T: Translator>(
             generated_file_name.push_str(".");
             generated_file_name.push_str(T::file_suffix().as_str());
 
-            let mut file = OpenOptions::new().write(true).create(true).open(
-                output_directory
-                    .join(role.clone())
-                    .join(relative_path)
-                    .join(generated_file_name),
-            )?;
+            let mut file = OpenOptions::new()
+                .write(true)
+                .create(true)
+                .truncate(true)
+                .open(
+                    output_directory
+                        .join(role.clone())
+                        .join(relative_path)
+                        .join(generated_file_name),
+                )?;
             file.write_all(&class_content.as_bytes())?;
 
             match generated_classnames_per_role.entry(role) {
