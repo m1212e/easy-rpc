@@ -68,6 +68,14 @@ pub fn parse(reader: &mut TokenReader) -> Result<ParseResult, ParseError> {
         if reader.done {
             break;
         }
+
+        let token = reader.consume(1).unwrap();
+        let err = token.get(0).unwrap();
+        return Err(ParseError {
+            start: err.start(),
+            end: err.end(),
+            message: format!("Unexpected token")
+        });
     }
 
     return Ok(ret);

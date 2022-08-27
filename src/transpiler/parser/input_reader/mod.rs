@@ -1,7 +1,9 @@
 mod tests;
 
+use strum_macros::Display;
+
 use super::CodePosition;
-use std::io::{BufRead, BufReader, Read};
+use std::{io::{BufRead, BufReader, Read}};
 
 /*
     Wrapper around an input which provides methods and functionality for processing text.
@@ -17,7 +19,7 @@ pub struct InputReader<T: Read> {
 /**
    An error which can occur while using the input reader.
 */
-#[derive(Debug)]
+#[derive(Debug, Display)]
 pub enum InputReaderError {
     Io(std::io::Error),
     Utf8(std::str::Utf8Error),

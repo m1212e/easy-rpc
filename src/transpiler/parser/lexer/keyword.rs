@@ -13,7 +13,7 @@ use crate::{
 /**
    Keywords are predefined words which the parser knows.
 */
-#[derive(Display, EnumIter, Clone)]
+#[derive(Display, EnumIter, Clone, Debug)]
 pub enum KeywordType {
     Type,
     Boolean,
@@ -28,7 +28,7 @@ pub enum KeywordType {
     Float,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Keyword {
     pub keyword_type: KeywordType,
     pub start: CodePosition,

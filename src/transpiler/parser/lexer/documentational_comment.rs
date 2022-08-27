@@ -11,7 +11,7 @@ use crate::{
 /**
    A documentational comment which can be used to document something.
 */
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct DocumentationalComment {
     pub content: String,
     pub start: CodePosition,

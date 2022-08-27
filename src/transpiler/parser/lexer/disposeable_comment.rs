@@ -11,7 +11,7 @@ use crate::{
 /**
    A comment which can be ignored.
 */
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct DisposeableComment {
     pub content: String,
     pub start: CodePosition,

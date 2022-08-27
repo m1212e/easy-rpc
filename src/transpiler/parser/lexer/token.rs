@@ -9,7 +9,7 @@ use super::{
 /**
     A token is a lexer result element and represents a specific piece of code which has a meaning.
  */
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum Token {
     DisposeableComment(DisposeableComment),
     DocumentationalComment(DocumentationalComment),

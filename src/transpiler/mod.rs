@@ -27,13 +27,19 @@ use self::{
 #[derive(Debug)]
 pub enum ERPCError {
     /**
-       Error which occured on the input reader while parsing erpc source files
+    Error which occured on the input reader while parsing erpc source files
     */
     InputReaderError(InputReaderError),
     /**
-       Error which occured while parsing the erpc inputs. Mostly logical/syntactical.
+       Error indicating a mistake in the logical structure of the file. E.g. unknown or double defined types.
+       Second value is the path to the file on which the error occured
     */
-    ParseError(ParseError),
+    ValidationError((ValidationError, String)),
+    /**
+       Error which occured while parsing the erpc inputs. Mostly logical/syntactical.
+       Second value is the path to the file on which the error occured
+    */
+    ParseError((ParseError, String)),
     /**
        Error which occured while parsing JSON config files.
     */
@@ -46,10 +52,6 @@ pub enum ERPCError {
     An IO error while processing non .erpc files
     */
     IO(io::Error),
-    /**
-       Error indicating a mistake in the logical structure of the file. E.g. unknown or double defined types
-    */
-    ValidationError(ValidationError),
     /**
        Error occuring in the watcher channel
     */
@@ -65,8 +67,8 @@ impl From<InputReaderError> for ERPCError {
         ERPCError::InputReaderError(err)
     }
 }
-impl From<ParseError> for ERPCError {
-    fn from(err: ParseError) -> Self {
+impl From<(ParseError, String)> for ERPCError {
+    fn from(err: (ParseError, String)) -> Self {
         ERPCError::ParseError(err)
     }
 }
@@ -85,8 +87,8 @@ impl From<String> for ERPCError {
         ERPCError::ConfigurationError(err)
     }
 }
-impl From<ValidationError> for ERPCError {
-    fn from(err: ValidationError) -> Self {
+impl From<(ValidationError, String)> for ERPCError {
+    fn from(err: (ValidationError, String)) -> Self {
         ERPCError::ValidationError(err)
     }
 }
@@ -101,6 +103,37 @@ impl From<notify::Error> for ERPCError {
     }
 }
 
+impl ERPCError {
+    pub fn to_string(&self) -> String {
+        match self {
+            ERPCError::InputReaderError(val) => {
+                format!("InputReaderError:\n{}", val)
+            }
+            ERPCError::ValidationError(val) => {
+                format!("ValidationError in {}:\n{:#?}", val.1, val.0)
+            }
+            ERPCError::ParseError(val) => {
+                format!("ParseError in {}:\n{:#?}", val.1, val.0)
+            }
+            ERPCError::JSONError(val) => {
+                format!("JSONError:\n{}", val)
+            }
+            ERPCError::ConfigurationError(val) => {
+                format!("ConfigurationError:\n{}", val)
+            }
+            ERPCError::IO(val) => {
+                format!("IOError:\n{}", val)
+            }
+            ERPCError::RecvError(val) => {
+                format!("RecvError:\n{}", val)
+            }
+            ERPCError::NotifyError(val) => {
+                format!("NotifyError:\n{}", val)
+            }
+        }
+    }
+}
+
 /**
    Runs the transpiler on an input directory. Expects a erpc.json to parse in the specified directory.
 */
@@ -110,29 +143,29 @@ pub fn run(input_directory: &Path, watch: bool) -> Result<(), ERPCError> {
         return Err(ERPCError::ConfigurationError(format!(
             "Could not find erpc.json at {path_str}",
             path_str = path
-            .as_os_str()
-            .to_str()
-            .unwrap_or("<Unable to unwrap path>")
+                .as_os_str()
+                .to_str()
+                .unwrap_or("<Unable to unwrap path>")
         )));
     }
     let config = parse_config(File::open(path)?)?;
-    
+
     let (tx, rx) = channel();
     let mut watcher = watcher(tx, Duration::from_secs(1)).unwrap();
-    
+
     for source in &config.sources {
         let path = normalize_path(&input_directory.join(source));
         if watch {
             watcher.watch(&path, RecursiveMode::Recursive).unwrap();
+        } else {
+            generate_for_directory::<TypeScriptTranslator>(
+                &path,
+                &input_directory.join(".erpc").join("generated"),
+                &config.role,
+            )?;
         }
-        
-        generate_for_directory::<TypeScriptTranslator>(
-            &path,
-            &input_directory.join(".erpc").join("generated"),
-            &config.role,
-        )?;
     }
-    
+
     if watch {
         loop {
             match rx.recv()? {

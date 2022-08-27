@@ -11,7 +11,7 @@ use crate::{
 /**
    Line breaks are all kinds of newline chars. They are lexed seperately to improve parser quality.
 */
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct LineBreak {
     pub start: CodePosition,
     pub end: CodePosition,

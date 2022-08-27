@@ -188,8 +188,24 @@ fn generate_for_directory_recursively<T: Translator>(
             };
 
             let mut reader = TokenReader::new(InputReader::new(File::open(entry.path())?))?;
-            let result = parse(&mut reader)?;
-            validate(&result.endpoints, &result.custom_types, all_roles)?;
+            let result = match parse(&mut reader) {
+                Ok(val) => val,
+                Err(err) => {
+                    return Err(ERPCError::ParseError((
+                        err,
+                        entry.path().to_str().unwrap().to_string(),
+                    )))
+                }
+            };
+            match validate(&result.endpoints, &result.custom_types, all_roles) {
+                Ok(_) => {}
+                Err(err) => {
+                    return Err(ERPCError::ValidationError((
+                        err,
+                        entry.path().to_str().unwrap().to_string(),
+                    )))
+                }
+            };
 
             // generate class strings per role
             let generated_class_content_per_role = generate_classes_per_role::<T>(

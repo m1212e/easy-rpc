@@ -13,7 +13,7 @@ use crate::{
 /**
    Operators are mostly single chars inside the source code used to syntactically indicate various things.
 */
-#[derive(Display, EnumIter, Clone)]
+#[derive(Display, EnumIter, Clone, Debug)]
 pub enum OperatorType {
     #[strum(serialize = "|")]
     Pipe,
@@ -34,7 +34,7 @@ pub enum OperatorType {
     #[strum(serialize = "?")]
     QuestionMark,
 }
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Operator {
     pub operator_type: OperatorType,
     pub start: CodePosition,

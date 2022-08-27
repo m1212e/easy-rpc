@@ -35,10 +35,14 @@ mod tests {
         });
 
         let mut source_path = Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
-        source_path.extend("transpiler/tests/run_watch_test_files/sources/api.erpc".split_terminator('/'));
+        source_path
+            .extend("transpiler/tests/run_watch_test_files/sources/api.erpc".split_terminator('/'));
 
         let mut assert_path = Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
-        assert_path.extend("transpiler/tests/run_watch_test_files/frontend/.erpc/generated/Frontend/api.ts".split_terminator('/'));
+        assert_path.extend(
+            "transpiler/tests/run_watch_test_files/frontend/.erpc/generated/Frontend/api.ts"
+                .split_terminator('/'),
+        );
         let original_source_content = std::fs::read_to_string(&source_path).unwrap();
 
         for n in 7..10 {
