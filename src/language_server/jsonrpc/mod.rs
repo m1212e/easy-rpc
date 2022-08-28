@@ -142,7 +142,7 @@ where
 
         self.output
             .write_all(&format!("{prefix}{serialized}").as_bytes())
-            .await;
+            .await?;
 
         if is_notification {
             return Ok(Response {
@@ -273,7 +273,7 @@ where
 
         let prefix = format!("Content-Length: {}\r\n\r\n", response.as_bytes().len());
 
-        output.write(format!("{}{}", prefix, response).as_bytes());
+        output.write(format!("{}{}", prefix, response).as_bytes()).await?;
     }
 
     Ok(())
