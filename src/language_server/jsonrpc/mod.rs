@@ -2,7 +2,6 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::{
     collections::HashMap,
-    future::Future,
     num::ParseIntError,
     str::Utf8Error,
     sync::{Arc, RwLock},
@@ -34,9 +33,9 @@ pub struct Response {
 
 #[derive(Serialize, Deserialize)]
 pub struct Error {
-    code: i32,
-    message: String,
-    data: Option<serde_json::Value>,
+    pub code: i32,
+    pub message: String,
+    pub data: Option<serde_json::Value>,
 }
 
 impl From<serde_json::Error> for Error {
@@ -99,10 +98,9 @@ impl From<ParseIntError> for Error {
     }
 }
 
-pub struct JSONRPCServer<F, Fut>
+pub struct JSONRPCServer<F>
 where
-    F: Fn(String, serde_json::Value) -> Fut,
-    Fut: Future<Output = (Option<serde_json::Value>, Option<Error>)>,
+    F: Fn(String, serde_json::Value) -> Result<serde_json::Value, Error>,
 {
     input: tokio::io::Stdin,
     output: tokio::io::Stdout,
@@ -112,10 +110,9 @@ where
     on_request_callback: F,
 }
 
-impl<F, Fut> JSONRPCServer<F, Fut>
+impl<F> JSONRPCServer<F>
 where
-    F: Fn(String, serde_json::Value) -> Fut,
-    Fut: Future<Output = (Option<serde_json::Value>, Option<Error>)>,
+    F: Fn(String, serde_json::Value) -> Result<serde_json::Value, Error>,
 {
     pub async fn send_request(
         &mut self,
@@ -172,7 +169,7 @@ where
         input: tokio::io::Stdin,
         output: tokio::io::Stdout,
         on_request: F,
-    ) -> JSONRPCServer<F, Fut> {
+    ) -> JSONRPCServer<F> {
         JSONRPCServer {
             input,
             output,
@@ -184,14 +181,16 @@ where
     }
 
     pub async fn run(&mut self) -> Result<(), Error> {
-        tokio::select! {
+        let err = tokio::select! {
             err = incoming(&mut self.input, &mut self.incoming_requests.0) => {
                 err
             }
             err = responder(&mut self.output, &mut self.incoming_requests.1, &self.on_request_callback) => {
                 err
             }
-        }
+        };
+
+        err
     }
 }
 
@@ -248,14 +247,13 @@ async fn incoming(
     Ok(())
 }
 
-async fn responder<F, Fut>(
+async fn responder<F>(
     output: &mut tokio::io::Stdout,
     incoming_request_reciever: &mut mpsc::Receiver<Request>,
-    onRequest: &F,
+    on_request: &F,
 ) -> Result<(), Error>
 where
-    F: Fn(String, serde_json::Value) -> Fut,
-    Fut: Future<Output = (Option<serde_json::Value>, Option<Error>)>,
+    F: Fn(String, serde_json::Value) -> Result<serde_json::Value, Error>,
 {
     loop {
         let request = match incoming_request_reciever.recv().await {
@@ -263,17 +261,26 @@ where
             None => break,
         };
 
-        let result = onRequest(request.method, request.params).await;
+        let result = on_request(request.method, request.params);
 
-        let response = serde_json::to_string(&Response {
-            id: request.id.unwrap(), // this is guaranteed
-            result: result.0,
-            error: result.1,
-        })?;
+        let response = match result {
+            Ok(result) => serde_json::to_string(&Response {
+                id: request.id.unwrap(), // this is guaranteed
+                result: Some(result),
+                error: None,
+            })?,
+            Err(error) => serde_json::to_string(&Response {
+                id: request.id.unwrap(), // this is guaranteed
+                result: None,
+                error: Some(error),
+            })?,
+        };
 
         let prefix = format!("Content-Length: {}\r\n\r\n", response.as_bytes().len());
 
-        output.write(format!("{}{}", prefix, response).as_bytes()).await?;
+        output
+            .write(format!("{}{}", prefix, response).as_bytes())
+            .await?;
     }
 
     Ok(())
