@@ -1,8 +1,9 @@
+mod initialize;
 mod jsonrpc;
 
 use std::collections::HashMap;
 
-use tokio::sync::mpsc;
+use tokio::{io::AsyncWriteExt, sync::mpsc};
 
 use crate::transpiler::ERPCError;
 
@@ -37,7 +38,7 @@ impl LanguageServer {
         .await
     }
 
-    pub fn register_handler<F: Fn(serde_json::Value) -> Result<serde_json::Value, Error>>(
+    fn register_handler<F: Fn(serde_json::Value) -> Result<serde_json::Value, Error> + 'static>(
         &mut self,
         method: String,
         handler: F,
@@ -47,7 +48,9 @@ impl LanguageServer {
 }
 
 pub async fn start_language_server(rec: mpsc::Receiver<ERPCError>) {
-    let ls = LanguageServer::new();
+    let mut ls = LanguageServer::new();
 
-    ls.register_handler("something".to_string(), |param| {});
+    ls.on_initialize(|_| Ok(initialize::Response {}));
+
+    ls.run().await.unwrap();
 }

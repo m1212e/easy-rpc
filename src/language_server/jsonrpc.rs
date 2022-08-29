@@ -16,7 +16,7 @@ use tokio::{
     time::{error::Elapsed, timeout},
 };
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Request {
     jsonrpc: String,
     method: String,
@@ -31,7 +31,7 @@ pub struct Response {
     error: Option<Error>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Error {
     pub code: i32,
     pub message: String,
@@ -224,10 +224,11 @@ async fn incoming(
 
         read.retain(|c| !c.is_whitespace());
 
-        let length = read.parse::<usize>()?;
+        let length = read.parse::<usize>()? - 1; // -1 for the { which is already consumed
 
         let mut buffer: Vec<u8> = Vec::new();
-        if input.read(&mut buffer[..]).await? != length - 1 {
+        buffer.resize(length, 0);
+        if input.read(&mut buffer[..]).await? != length {
             return Err(Error {
                 code: -32700,
                 data: None,
@@ -239,7 +240,7 @@ async fn incoming(
 
         match serde_json::from_str::<Request>(&raw_message) {
             Ok(request) => {
-                incoming_request_sender.send(request).await;
+                incoming_request_sender.send(request).await.unwrap();
             }
             Err(_) => {}
         }
