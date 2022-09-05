@@ -98,25 +98,18 @@ impl From<ParseIntError> for Error {
     }
 }
 
-pub struct JSONRPCServer<F>
-where
-    F: Fn(String, serde_json::Value) -> Result<serde_json::Value, Error>,
-{
+pub struct JSONRPCServer {
     input: tokio::io::Stdin,
     output: tokio::io::Stdout,
     pending_responses: Arc<RwLock<HashMap<String, oneshot::Sender<Response>>>>,
     incoming_requests: (mpsc::Sender<Request>, mpsc::Receiver<Request>),
     id_counter: u128,
-    on_request_callback: F,
 }
 
-impl<F> JSONRPCServer<F>
-where
-    F: Fn(String, serde_json::Value) -> Result<serde_json::Value, Error>,
-{
+impl JSONRPCServer {
     pub async fn send_request(
         &mut self,
-        method: String,
+        method: &str,
         params: serde_json::Value,
         is_notification: bool,
     ) -> Result<Response, Error> {
@@ -126,7 +119,7 @@ where
                 true => None,
                 false => Some(serde_json::Value::from(self.id_counter.to_string())),
             },
-            method,
+            method: method.to_string(),
             params,
         };
         self.id_counter += 1;
@@ -165,27 +158,28 @@ where
         Ok(ret)
     }
 
-    pub fn new(
-        input: tokio::io::Stdin,
-        output: tokio::io::Stdout,
-        on_request: F,
-    ) -> JSONRPCServer<F> {
+    pub fn new(input: tokio::io::Stdin, output: tokio::io::Stdout) -> JSONRPCServer {
         JSONRPCServer {
             input,
             output,
             pending_responses: Arc::new(RwLock::new(HashMap::new())),
             incoming_requests: mpsc::channel(10),
             id_counter: 0,
-            on_request_callback: on_request,
         }
     }
 
-    pub async fn run(&mut self) -> Result<(), Error> {
+    pub async fn run(
+        &mut self,
+        handlers: &HashMap<
+            String,
+            Box<dyn Fn(serde_json::Value) -> Result<serde_json::Value, Error>>,
+        >,
+    ) -> Result<(), Error> {
         let err = tokio::select! {
             err = incoming(&mut self.input, &mut self.incoming_requests.0) => {
                 err
             }
-            err = responder(&mut self.output, &mut self.incoming_requests.1, &self.on_request_callback) => {
+            err = responder(&mut self.output, &mut self.incoming_requests.1, handlers) => {
                 err
             }
         };
@@ -242,19 +236,19 @@ async fn incoming(
             Ok(request) => {
                 incoming_request_sender.send(request).await.unwrap();
             }
-            Err(_) => {}
+            Err(err) => {
+                return Err(Error::from(err));
+            }
         }
     }
     Ok(())
 }
 
-async fn responder<F>(
+async fn responder(
     output: &mut tokio::io::Stdout,
     incoming_request_reciever: &mut mpsc::Receiver<Request>,
-    on_request: &F,
+    handlers: &HashMap<String, Box<dyn Fn(serde_json::Value) -> Result<serde_json::Value, Error>>>,
 ) -> Result<(), Error>
-where
-    F: Fn(String, serde_json::Value) -> Result<serde_json::Value, Error>,
 {
     loop {
         let request = match incoming_request_reciever.recv().await {
@@ -262,7 +256,14 @@ where
             None => break,
         };
 
-        let result = on_request(request.method, request.params);
+        let result = match handlers.get(&request.method) {
+            Some(handler) => handler(request.params),
+            None => Err(Error {
+                code: -32601,
+                message: "The requested method could not be found".to_string(),
+                data: None,
+            }),
+        };
 
         let response = match result {
             Ok(result) => serde_json::to_string(&Response {
