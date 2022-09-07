@@ -4,11 +4,11 @@ mod util;
 use std::{
     env::{self, current_dir},
     fs::{self, DirEntry},
-    io,
+    io::{self, Write},
     path::{Path, PathBuf},
 };
 
-use tokio::sync::mpsc;
+use tokio::{sync::mpsc, io::AsyncWriteExt};
 use transpiler::{run, ERPCError};
 
 #[tokio::main]
@@ -31,18 +31,16 @@ async fn main() {
         } else {
             for dir in start_dirs {
                 let tx = sender.clone();
-                loop {
-                    let dir = dir.clone();
-                    match tokio::task::spawn_blocking(move || run(&dir, true))
-                        .await
-                        .unwrap()
-                    {
-                        Ok(_) => {}
-                        Err(err) => {
-                            tx.send(err).await.unwrap();
-                        }
-                    };
-                }
+                tokio::spawn(async move {
+                    loop {
+                        match run(&dir, true).await {
+                            Ok(_) => {}
+                            Err(err) => {
+                                tx.send(err).await.unwrap();
+                            }
+                        };
+                    }
+                });
             }
         }
         language_server::start_language_server(reciever).await;
@@ -51,21 +49,24 @@ async fn main() {
             eprintln!("Could not detect any easy-rpc project. Make sure the project contains an erpc.json at its root.");
         }
         if args.contains(&"-w".to_string()) {
+            let mut handles = vec![];
             for dir in start_dirs {
-                println!("Listening for changes in {}", dir.to_str().unwrap());
-                let dir = dir.clone();
-                tokio::task::spawn_blocking(move || loop {
-                    match run(&dir, true) {
-                        Ok(_) => {}
-                        Err(err) => {
-                            eprintln!("{}", err.to_string());
-                        }
-                    };
-                });
+                println!("Listening for {}", dir.to_str().unwrap());
+                handles.push(tokio::task::spawn(async move {
+                    loop {
+                        match run(&dir, true).await {
+                            Ok(_) => {}
+                            Err(err) => {
+                                eprintln!("{}", err.to_string());
+                            }
+                        };
+                    }
+                }));
             }
+            futures::future::join_all(handles).await;
         } else {
             for dir in start_dirs {
-                match run(&dir, false) {
+                match run(&dir, false).await {
                     Ok(_) => {
                         println!("Transpiled {}", dir.to_str().unwrap())
                     }

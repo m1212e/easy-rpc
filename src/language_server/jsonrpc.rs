@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::{
     collections::HashMap,
+    io::Read,
     num::ParseIntError,
     str::Utf8Error,
     sync::{Arc, RwLock},
@@ -16,18 +17,25 @@ use tokio::{
     time::{error::Elapsed, timeout},
 };
 
+use crate::unwrap_oneshot;
+use nanoid::nanoid;
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Request {
     jsonrpc: String,
     method: String,
-    params: serde_json::Value,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    params: Option<serde_json::Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     id: Option<serde_json::Value>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Response {
     id: serde_json::Value,
+    #[serde(skip_serializing_if = "Option::is_none")]
     result: Option<serde_json::Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     error: Option<Error>,
 }
 
@@ -43,7 +51,7 @@ impl From<serde_json::Error> for Error {
         Error {
             code: -32700,
             data: None,
-            message: "Could not serialize JSON message".to_string(),
+            message: format!("Could not serialize JSON message: {}", err),
         }
     }
 }
@@ -59,7 +67,7 @@ impl From<RecvError> for Error {
 }
 
 impl From<Elapsed> for Error {
-    fn from(err: Elapsed) -> Self {
+    fn from(_: Elapsed) -> Self {
         Error {
             code: -32001,
             data: None,
@@ -98,88 +106,108 @@ impl From<ParseIntError> for Error {
     }
 }
 
+#[derive(Clone)]
 pub struct JSONRPCServer {
-    input: tokio::io::Stdin,
-    output: tokio::io::Stdout,
     pending_responses: Arc<RwLock<HashMap<String, oneshot::Sender<Response>>>>,
-    incoming_requests: (mpsc::Sender<Request>, mpsc::Receiver<Request>),
-    id_counter: u128,
 }
 
 impl JSONRPCServer {
-    pub async fn send_request(
-        &mut self,
+    pub fn send_request(
+        &self,
         method: &str,
-        params: serde_json::Value,
+        params: Option<serde_json::Value>,
         is_notification: bool,
-    ) -> Result<Response, Error> {
+    ) -> oneshot::Receiver<Result<Response, Error>> {
         let message = Request {
             jsonrpc: "2.0".to_string(),
             id: match is_notification {
                 true => None,
-                false => Some(serde_json::Value::from(self.id_counter.to_string())),
+                false => Some(serde_json::Value::from(nanoid!())),
             },
             method: method.to_string(),
             params,
         };
-        self.id_counter += 1;
 
-        let serialized = serde_json::to_string(&message)?;
-        let prefix = format!(
+        let (ret_send, ret_recieve) = oneshot::channel::<Result<Response, Error>>();
+
+        let serialized = unwrap_oneshot!(serde_json::to_string(&message), ret_send, ret_recieve);
+        let mut payload = format!(
             "Content-Length: {len}\r\n\r\n",
             len = serialized.as_bytes().len()
         );
 
-        self.output
-            .write_all(&format!("{prefix}{serialized}").as_bytes())
-            .await?;
+        payload.push_str(&serialized);
+        payload.push('\n');
 
-        if is_notification {
-            return Ok(Response {
-                error: None,
-                id: json!(0u32),
-                result: None,
-            });
-        }
+        let pending_responses = self.pending_responses.clone();
+        tokio::spawn(async move {
+            tokio::io::stdout()
+                .write_all(payload.as_bytes())
+                .await
+                .unwrap();
 
-        let (sender, reciever) = oneshot::channel::<Response>();
-        {
-            let mut w = self.pending_responses.write().unwrap();
-            (*w).insert(message.id.as_ref().unwrap().to_string(), sender);
-        }
+            if is_notification {
+                ret_send
+                    .send(Ok(Response {
+                        error: None,
+                        id: json!(0u32),
+                        result: None,
+                    }))
+                    .unwrap();
+                return;
+            }
 
-        let ret = timeout(Duration::from_secs(10), reciever).await??;
+            let (callback_send, callback_recieve) = oneshot::channel::<Response>();
+            {
+                let mut w = pending_responses.write().unwrap();
+                (*w).insert(message.id.as_ref().unwrap().to_string(), callback_send);
+            }
 
-        {
-            let mut w = self.pending_responses.write().unwrap();
-            (*w).remove(&message.id.unwrap().to_string());
-        }
+            match timeout(Duration::from_secs(10), callback_recieve).await {
+                Ok(res) => match res {
+                    Ok(val) => ret_send.send(Ok(val)),
+                    Err(err) => ret_send.send(Err(err.into())),
+                },
+                Err(err) => ret_send.send(Err(err.into())),
+            }
+            .unwrap();
 
-        Ok(ret)
+            {
+                let mut w = pending_responses.write().unwrap();
+                (*w).remove(&message.id.unwrap().to_string());
+            }
+        });
+
+        ret_recieve
     }
 
-    pub fn new(input: tokio::io::Stdin, output: tokio::io::Stdout) -> JSONRPCServer {
+    pub fn new() -> JSONRPCServer {
         JSONRPCServer {
-            input,
-            output,
             pending_responses: Arc::new(RwLock::new(HashMap::new())),
-            incoming_requests: mpsc::channel(10),
-            id_counter: 0,
         }
     }
 
     pub async fn run(
         &mut self,
-        handlers: &HashMap<
-            String,
-            Box<dyn Fn(serde_json::Value) -> Result<serde_json::Value, Error>>,
+        handlers: Arc<
+            RwLock<
+                HashMap<
+                    String,
+                    Box<
+                        dyn Fn(Option<serde_json::Value>) -> Result<serde_json::Value, Error>
+                            + Send
+                            + Sync,
+                    >,
+                >,
+            >,
         >,
     ) -> Result<(), Error> {
+        let (sender, reciever) = mpsc::channel::<Request>(10);
         let err = tokio::select! {
-            err = incoming(&mut self.input, &mut self.incoming_requests.0) => {
+            err = incoming(sender) => {
                 err
             }
-            err = responder(&mut self.output, &mut self.incoming_requests.1, handlers) => {
+            err = responder(reciever, handlers) => {
                 err
             }
         };
@@ -188,15 +216,10 @@ impl JSONRPCServer {
     }
 }
 
-async fn incoming(
-    input: &mut tokio::io::Stdin,
-    incoming_request_sender: &mut mpsc::Sender<Request>,
-) -> Result<(), Error> {
+async fn incoming(incoming_request_sender: mpsc::Sender<Request>) -> Result<(), Error> {
     loop {
-        let mut buffer = [0; 15];
-        if input.read(&mut buffer[..]).await? != 15 {
-            break; // reader ended
-        };
+        let mut buffer = [0u8; 15];
+        tokio::io::stdin().read_exact(&mut buffer).await?;
 
         if std::str::from_utf8(&buffer)?.to_string().to_lowercase() != "content-length:" {
             return Err(Error {
@@ -209,7 +232,7 @@ async fn incoming(
         //TODO: Handle Content-Type header part accordingly
         let mut read = String::new();
         loop {
-            let char = input.read_u8().await? as char;
+            let char = tokio::io::stdin().read_u8().await? as char;
             if char == '{' {
                 break;
             }
@@ -222,7 +245,7 @@ async fn incoming(
 
         let mut buffer: Vec<u8> = Vec::new();
         buffer.resize(length, 0);
-        if input.read(&mut buffer[..]).await? != length {
+        if tokio::io::stdin().read(&mut buffer[..]).await? != length {
             return Err(Error {
                 code: -32700,
                 data: None,
@@ -241,34 +264,56 @@ async fn incoming(
             }
         }
     }
-    Ok(())
 }
 
 async fn responder(
-    output: &mut tokio::io::Stdout,
-    incoming_request_reciever: &mut mpsc::Receiver<Request>,
-    handlers: &HashMap<String, Box<dyn Fn(serde_json::Value) -> Result<serde_json::Value, Error>>>,
-) -> Result<(), Error>
-{
+    mut incoming_request_reciever: mpsc::Receiver<Request>,
+    handlers: Arc<
+        RwLock<
+            HashMap<
+                String,
+                Box<
+                    dyn Fn(Option<serde_json::Value>) -> Result<serde_json::Value, Error>
+                        + Send
+                        + Sync,
+                >,
+            >,
+        >,
+    >,
+) -> Result<(), Error> {
     loop {
         let request = match incoming_request_reciever.recv().await {
             Some(val) => val,
             None => break,
         };
 
-        let result = match handlers.get(&request.method) {
-            Some(handler) => handler(request.params),
-            None => Err(Error {
-                code: -32601,
-                message: "The requested method could not be found".to_string(),
-                data: None,
-            }),
+        let result = {
+            match handlers.read() {
+                Ok(handlers) => match handlers.get(&request.method) {
+                    Some(handler) => handler(request.params),
+                    None => Err(Error {
+                        code: -32601,
+                        message: "The requested method could not be found".to_string(),
+                        data: Some(serde_json::to_value(request.method).unwrap()),
+                    }),
+                },
+                Err(_) => Err(Error {
+                    code: 0,
+                    message: "Handlers RW Lock is poisoned".to_string(),
+                    data: None,
+                }),
+            }
         };
 
+        // a notification doesnÄt need a response
+        if request.id.is_none() {
+            continue;
+        }
+
         let response = match result {
-            Ok(result) => serde_json::to_string(&Response {
+            Ok(val) => serde_json::to_string(&Response {
                 id: request.id.unwrap(), // this is guaranteed
-                result: Some(result),
+                result: Some(val),
                 error: None,
             })?,
             Err(error) => serde_json::to_string(&Response {
@@ -278,11 +323,11 @@ async fn responder(
             })?,
         };
 
-        let prefix = format!("Content-Length: {}\r\n\r\n", response.as_bytes().len());
+        let mut payload = format!("Content-Length: {}\r\n\r\n", response.as_bytes().len());
+        payload.push_str(&response);
+        payload.push('\n');
 
-        output
-            .write(format!("{}{}", prefix, response).as_bytes())
-            .await?;
+        tokio::io::stdout().write_all(payload.as_bytes()).await?;
     }
 
     Ok(())

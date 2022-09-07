@@ -8,12 +8,11 @@ use std::{
     fs::File,
     io::{self},
     path::Path,
-    sync::mpsc::{channel, RecvError},
-    time::Duration,
 };
 
-use notify::{watcher, DebouncedEvent, RecursiveMode, Watcher};
+use notify::{RecommendedWatcher, RecursiveMode, Watcher};
 use serde_json;
+use tokio::{runtime::Handle, sync::mpsc};
 
 use crate::util::normalize_path::normalize_path;
 
@@ -53,10 +52,6 @@ pub enum ERPCError {
     */
     IO(io::Error),
     /**
-       Error occuring in the watcher channel
-    */
-    RecvError(RecvError),
-    /**
        Error occuring while watching a dir
     */
     NotifyError(notify::Error),
@@ -92,11 +87,6 @@ impl From<(ValidationError, String)> for ERPCError {
         ERPCError::ValidationError(err)
     }
 }
-impl From<RecvError> for ERPCError {
-    fn from(err: RecvError) -> Self {
-        ERPCError::RecvError(err)
-    }
-}
 impl From<notify::Error> for ERPCError {
     fn from(err: notify::Error) -> Self {
         ERPCError::NotifyError(err)
@@ -124,9 +114,6 @@ impl ERPCError {
             ERPCError::IO(val) => {
                 format!("IOError:\n{}", val)
             }
-            ERPCError::RecvError(val) => {
-                format!("RecvError:\n{}", val)
-            }
             ERPCError::NotifyError(val) => {
                 format!("NotifyError:\n{}", val)
             }
@@ -137,7 +124,7 @@ impl ERPCError {
 /**
    Runs the transpiler on an input directory. Expects a erpc.json to parse in the specified directory.
 */
-pub fn run(input_directory: &Path, watch: bool) -> Result<(), ERPCError> {
+pub async fn run(input_directory: &Path, watch: bool) -> Result<(), ERPCError> {
     let path = input_directory.join("erpc.json");
     if !path.exists() {
         return Err(ERPCError::ConfigurationError(format!(
@@ -150,8 +137,18 @@ pub fn run(input_directory: &Path, watch: bool) -> Result<(), ERPCError> {
     }
     let config = parse_config(File::open(path)?)?;
 
-    let (tx, rx) = channel();
-    let mut watcher = watcher(tx, Duration::from_secs(1)).unwrap();
+    let (sender, mut reciever) = mpsc::channel(1);
+
+    let handle = Handle::current();
+    let mut watcher = RecommendedWatcher::new(
+        move |res| {
+            let sender = sender.clone();
+            handle.spawn(async move {
+                sender.send(res).await.unwrap();
+            });
+        },
+        notify::Config::default(),
+    )?;
 
     for source in &config.sources {
         let path = normalize_path(&input_directory.join(source));
@@ -167,38 +164,39 @@ pub fn run(input_directory: &Path, watch: bool) -> Result<(), ERPCError> {
     }
 
     if watch {
-        loop {
-            match rx.recv()? {
-                DebouncedEvent::Create(val)
-                | DebouncedEvent::Write(val)
-                | DebouncedEvent::Remove(val)
-                | DebouncedEvent::Rename(val, _) => {
-                    match config.sources.iter().find_map(|source| {
-                        let path = normalize_path(&input_directory.join(source));
-                        if val.starts_with(&path) {
-                            return Some(path);
-                        }
-                        None
-                    }) {
-                        Some(path) => {
-                            generate_for_directory::<TypeScriptTranslator>(
-                                &path,
-                                &input_directory.join(".erpc").join("generated"),
-                                &config.role,
-                            )?;
-                        }
-                        None => {
-                            return Err(ERPCError::ConfigurationError(
-                                "Could not find correct source while processing in watchmode"
-                                    .to_string(),
-                            ));
-                        }
-                    };
-                }
-                DebouncedEvent::Error(err, _) => {
+        while let Some(res) = reciever.recv().await {
+            match res {
+                Ok(event) => match event.kind {
+                    notify::EventKind::Create(_)
+                    | notify::EventKind::Modify(_)
+                    | notify::EventKind::Remove(_) => {
+                        match config.sources.iter().find_map(|source| {
+                            let path = normalize_path(&input_directory.join(source));
+                            if event.paths[0].starts_with(path.to_str().unwrap()) {
+                                return Some(path);
+                            }
+                            None
+                        }) {
+                            Some(path) => {
+                                generate_for_directory::<TypeScriptTranslator>(
+                                    &path,
+                                    &input_directory.join(".erpc").join("generated"),
+                                    &config.role,
+                                )?;
+                            }
+                            None => {
+                                return Err(ERPCError::ConfigurationError(
+                                    "Could not find correct source while processing in watchmode"
+                                        .to_string(),
+                                ));
+                            }
+                        };
+                    }
+                    _ => {}
+                },
+                Err(err) => {
                     return Err(ERPCError::NotifyError(err));
                 }
-                _ => {}
             }
         }
     }

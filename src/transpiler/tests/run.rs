@@ -7,8 +7,8 @@ mod tests {
         util::assert_equal_directories::assert_equal_directories,
     };
 
-    #[test]
-    fn test_run() -> Result<(), ERPCError> {
+    #[tokio::test]
+    async fn test_run() -> Result<(), ERPCError> {
         let mut test_files = Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
 
         for dir in "transpiler/tests/run_test_files".split_terminator('/') {
@@ -18,20 +18,20 @@ mod tests {
         let backend_path = test_files.join("target").join("backend");
         let frontend_path = test_files.join("target").join("frontend");
 
-        run(&backend_path, false)?;
-        run(&frontend_path, false)?;
+        run(&backend_path, false).await?;
+        run(&frontend_path, false).await?;
 
         assert_equal_directories(&test_files.join("target"), &test_files.join("assert"));
 
         Ok(())
     }
 
-    #[test]
-    fn test_run_watch() -> Result<(), ERPCError> {
+    #[tokio::test]
+    async fn test_run_watch() -> Result<(), ERPCError> {
         std::thread::spawn(|| {
             let mut path = Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
             path.extend("transpiler/tests/run_watch_test_files/frontend".split_terminator('/'));
-            run(&path, true).unwrap();
+            run(&path, true).await.unwrap();
         });
 
         let mut source_path = Path::new(env!("CARGO_MANIFEST_DIR")).join("src");

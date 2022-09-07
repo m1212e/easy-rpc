@@ -1,9 +1,11 @@
 use serde::Serialize;
+use tokio::sync::oneshot::{self, Receiver};
 
 use super::{jsonrpc::Error, LanguageServer};
 
 #[derive(Serialize)]
 pub struct Parameters {
+    #[serde(rename = "type")]
     message_type: u8,
     message: String,
 }
@@ -40,25 +42,39 @@ impl From<MessageType> for u8 {
 }
 
 impl LanguageServer {
-    pub async fn show_message(
-        &mut self,
+    pub fn show_message(
+        &self,
         message_type: MessageType,
         message: String,
-    ) -> Result<(), Error> {
-        match self
-            .server
-            .send_request(
-                "window/showMessage",
-                serde_json::to_value(Parameters {
-                    message,
-                    message_type: message_type.into(),
-                })?,
-                true,
-            )
-            .await
-        {
-            Ok(_) => Ok(()),
-            Err(err) => Err(err),
-        }
+    ) -> Receiver<Result<(), Error>> {
+        let (sender, reciever) = oneshot::channel::<Result<(), Error>>();
+
+        let r = self.server.send_request(
+            "window/showMessage",
+            match serde_json::to_value(Parameters {
+                message,
+                message_type: message_type.into(),
+            }) {
+                Ok(val) => Some(val),
+                Err(err) => {
+                    sender.send(Err(err.into())).unwrap();
+                    return reciever;
+                }
+            },
+            true,
+        );
+
+        tokio::spawn(async move {
+            match r.await {
+                Ok(val) => match val {
+                    Ok(_) => sender.send(Ok(())),
+                    Err(err) => sender.send(Err(err.into())),
+                },
+                Err(err) => sender.send(Err(err.into())),
+            }
+            .unwrap();
+        });
+
+        reciever
     }
 }
