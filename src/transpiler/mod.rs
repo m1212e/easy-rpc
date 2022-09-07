@@ -26,7 +26,7 @@ use self::{
 #[derive(Debug)]
 pub enum ERPCError {
     /**
-    Error which occured on the input reader while parsing erpc source files
+        Error which occured on the input reader while parsing erpc source files
     */
     InputReaderError(InputReaderError),
     /**
@@ -48,7 +48,7 @@ pub enum ERPCError {
     */
     ConfigurationError(String),
     /**
-    An IO error while processing non .erpc files
+        An IO error while processing non .erpc files
     */
     IO(io::Error),
     /**

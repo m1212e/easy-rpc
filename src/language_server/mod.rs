@@ -1,5 +1,3 @@
-use tokio::sync::mpsc;
-
 use crate::transpiler::ERPCError;
 
 use serde_json::Value;
@@ -10,6 +8,7 @@ use tower_lsp::{Client, LanguageServer, LspService, Server};
 #[derive(Debug)]
 struct Backend {
     client: Client,
+    error_reciever: async_channel::Receiver<Option<ERPCError>>,
 }
 
 #[tower_lsp::async_trait]
@@ -18,9 +17,6 @@ impl LanguageServer for Backend {
         Ok(InitializeResult {
             server_info: None,
             capabilities: ServerCapabilities {
-                text_document_sync: Some(TextDocumentSyncCapability::Kind(
-                    TextDocumentSyncKind::INCREMENTAL,
-                )),
                 completion_provider: Some(CompletionOptions {
                     resolve_provider: Some(false),
                     trigger_characters: Some(vec![".".to_string()]),
@@ -32,13 +28,6 @@ impl LanguageServer for Backend {
                     commands: vec!["dummy.do_something".to_string()],
                     work_done_progress_options: Default::default(),
                 }),
-                workspace: Some(WorkspaceServerCapabilities {
-                    workspace_folders: Some(WorkspaceFoldersServerCapabilities {
-                        supported: Some(true),
-                        change_notifications: Some(OneOf::Left(true)),
-                    }),
-                    file_operations: None,
-                }),
                 ..ServerCapabilities::default()
             },
             ..Default::default()
@@ -46,35 +35,71 @@ impl LanguageServer for Backend {
     }
 
     async fn initialized(&self, _: InitializedParams) {
-        self.client
-            .log_message(MessageType::INFO, "initialized!")
-            .await;
-
-        self.client
-            .show_message(MessageType::INFO, "initialized lol")
-            .await;
+        let error_reciever = self.error_reciever.clone();
+        let client = self.client.clone();
+        tokio::spawn(async move {
+            loop {
+                let r_err = {
+                    let r_err = match error_reciever.recv().await {
+                        Ok(val) => val,
+                        Err(err) => {
+                            client
+                                .show_message(
+                                    MessageType::ERROR,
+                                    format!("Recv error: {}", err.to_string()),
+                                )
+                                .await;
+                            continue;
+                        }
+                    };
+                    match r_err {
+                        Some(val) => val,
+                        None => continue, //TODO clear errors
+                    }
+                };
+                match r_err {
+                    ERPCError::ValidationError(err) => todo!(),
+                    ERPCError::ParseError(err) => {
+                        client
+                            .publish_diagnostics(
+                                Url::parse(&err.1).unwrap(),
+                                vec![Diagnostic {
+                                    range: Range {
+                                        start: err.0.start.into(),
+                                        end: err.0.end.into(),
+                                    },
+                                    severity: Some(DiagnosticSeverity::ERROR),
+                                    code: None,
+                                    code_description: None,
+                                    source: None,
+                                    message: err.0.message,
+                                    related_information: None,
+                                    tags: None,
+                                    data: None,
+                                }],
+                                None,
+                            )
+                            .await;
+                    }
+                    ERPCError::InputReaderError(_)
+                    | ERPCError::JSONError(_)
+                    | ERPCError::ConfigurationError(_)
+                    | ERPCError::IO(_)
+                    | ERPCError::NotifyError(_) => {
+                        client
+                            .show_message(
+                                MessageType::ERROR,
+                                format!("Error occured: {}", r_err.to_string()),
+                            )
+                            .await
+                    }
+                };
+            }
+        });
     }
 
     async fn shutdown(&self) -> Result<()> {
         Ok(())
-    }
-
-    async fn did_change_workspace_folders(&self, _: DidChangeWorkspaceFoldersParams) {
-        self.client
-            .log_message(MessageType::INFO, "workspace folders changed!")
-            .await;
-    }
-
-    async fn did_change_configuration(&self, _: DidChangeConfigurationParams) {
-        self.client
-            .log_message(MessageType::INFO, "configuration changed!")
-            .await;
-    }
-
-    async fn did_change_watched_files(&self, _: DidChangeWatchedFilesParams) {
-        self.client
-            .log_message(MessageType::INFO, "watched files have changed!")
-            .await;
     }
 
     async fn execute_command(&self, _: ExecuteCommandParams) -> Result<Option<Value>> {
@@ -82,37 +107,7 @@ impl LanguageServer for Backend {
             .log_message(MessageType::INFO, "command executed!")
             .await;
 
-        match self.client.apply_edit(WorkspaceEdit::default()).await {
-            Ok(res) if res.applied => self.client.log_message(MessageType::INFO, "applied").await,
-            Ok(_) => self.client.log_message(MessageType::INFO, "rejected").await,
-            Err(err) => self.client.log_message(MessageType::ERROR, err).await,
-        }
-
         Ok(None)
-    }
-
-    async fn did_open(&self, _: DidOpenTextDocumentParams) {
-        self.client
-            .log_message(MessageType::INFO, "file opened!")
-            .await;
-    }
-
-    async fn did_change(&self, _: DidChangeTextDocumentParams) {
-        self.client
-            .log_message(MessageType::INFO, "file changed!")
-            .await;
-    }
-
-    async fn did_save(&self, _: DidSaveTextDocumentParams) {
-        self.client
-            .log_message(MessageType::INFO, "file saved!")
-            .await;
-    }
-
-    async fn did_close(&self, _: DidCloseTextDocumentParams) {
-        self.client
-            .log_message(MessageType::INFO, "file closed!")
-            .await;
     }
 
     async fn completion(&self, _: CompletionParams) -> Result<Option<CompletionResponse>> {
@@ -123,9 +118,12 @@ impl LanguageServer for Backend {
     }
 }
 
-pub async fn start_language_server(mut rec: mpsc::Receiver<ERPCError>) {
+pub async fn start_language_server(error_reciever: async_channel::Receiver<Option<ERPCError>>) {
     let (stdin, stdout) = (tokio::io::stdin(), tokio::io::stdout());
 
-    let (service, socket) = LspService::new(|client| Backend { client });
+    let (service, socket) = LspService::new(|client| Backend {
+        client,
+        error_reciever,
+    });
     Server::new(stdin, stdout, socket).serve(service).await;
 }

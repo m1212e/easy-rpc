@@ -28,7 +28,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_run_watch() -> Result<(), ERPCError> {
-        std::thread::spawn(|| {
+        tokio::spawn(async move {
             let mut path = Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
             path.extend("transpiler/tests/run_watch_test_files/frontend".split_terminator('/'));
             run(&path, true).await.unwrap();

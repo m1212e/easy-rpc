@@ -4,11 +4,10 @@ mod util;
 use std::{
     env::{self, current_dir},
     fs::{self, DirEntry},
-    io::{self, Write},
+    io::{self},
     path::{Path, PathBuf},
 };
 
-use tokio::{sync::mpsc, io::AsyncWriteExt};
 use transpiler::{run, ERPCError};
 
 #[tokio::main]
@@ -25,18 +24,18 @@ async fn main() {
     let args: Vec<String> = env::args().collect();
 
     if args.contains(&"-ls".to_string()) {
-        let (sender, reciever) = mpsc::channel::<ERPCError>(1);
+        let (sender, reciever) = async_channel::bounded::<Option<ERPCError>>(1);
         if start_dirs.len() == 0 {
-            sender.send(ERPCError::ConfigurationError("Could not detect any easy-rpc project. Make sure the project contains an erpc.json at its root.".to_string())).await.unwrap();
+            sender.send(Some(ERPCError::ConfigurationError("Could not detect any easy-rpc project. Make sure the project contains an erpc.json at its root.".to_string()))).await.unwrap();
         } else {
             for dir in start_dirs {
-                let tx = sender.clone();
+                let sender = sender.clone();
                 tokio::spawn(async move {
                     loop {
                         match run(&dir, true).await {
                             Ok(_) => {}
                             Err(err) => {
-                                tx.send(err).await.unwrap();
+                                sender.send(Some(err)).await.unwrap();
                             }
                         };
                     }
