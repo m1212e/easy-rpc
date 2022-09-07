@@ -28,7 +28,7 @@ impl Into<Position> for CodePosition {
     fn into(self) -> Position {
         Position {
             line: self.line,
-            character: self.character-1,
+            character: self.character,
         }
     }
 }

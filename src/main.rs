@@ -10,6 +10,9 @@ use std::{
 
 use transpiler::{run, ERPCError};
 
+//TODO restructure for cleaner error handling
+//TODO ensure all errors are collected before passing to language server for diagnostics (watch channel?)
+
 #[tokio::main]
 async fn main() {
     let mut start_dirs: Vec<PathBuf> = Vec::new();

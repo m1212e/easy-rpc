@@ -62,7 +62,7 @@ impl LanguageServer for Backend {
                     ERPCError::ParseError(err) => {
                         client
                             .publish_diagnostics(
-                                Url::parse(&err.1).unwrap(),
+                                Url::parse(&format!("file://{}", err.1)).unwrap(),
                                 vec![Diagnostic {
                                     range: Range {
                                         start: err.0.start.into(),
