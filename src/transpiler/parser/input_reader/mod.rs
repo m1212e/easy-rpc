@@ -71,12 +71,12 @@ impl<T: Read> InputReader<T> {
         self.buffer = self.buffer.split_at(read.as_bytes().len()).1.to_string();
 
         let amount_of_newlines = read.as_bytes().iter().filter(|&&c| c == b'\n').count();
-        self.current_position.line += amount_of_newlines as u16;
+        self.current_position.line += amount_of_newlines as u32;
 
         if amount_of_newlines == 0 {
-            self.current_position.character += read.chars().count() as u16;
+            self.current_position.character += read.chars().count() as u32;
         } else {
-            self.current_position.character = read.lines().last().unwrap().chars().count() as u16;
+            self.current_position.character = read.lines().last().unwrap().chars().count() as u32;
         }
 
         return Ok(Some(read));

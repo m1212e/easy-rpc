@@ -10,3 +10,6 @@ TODO: remove all .unwrap() calls
 TODO: delete generated folder before generation to clear old files
 TODO: Show warning when endpoint is unimplemented
 TODO: Goto ERPC definition inside TS files for addon/ls
+TODO: Restructure/organize ERPC error
+TODO: increase rubustness, especially in ls mode
+TODO: (long term) allow multiple errors per file/multiple errors in ls

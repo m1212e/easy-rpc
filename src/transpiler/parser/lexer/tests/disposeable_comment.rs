@@ -12,7 +12,7 @@ mod tests {
         let output = output.unwrap();
         assert_eq!(output.start.character, 0);
         assert_eq!(output.start.line, 0);
-        assert_eq!(output.end.character, input.len() as u16);
+        assert_eq!(output.end.character, input.len() as u32);
         assert_eq!(output.end.line, 0);
         assert_eq!(output.content, "This is a simple test string!");
 
@@ -46,7 +46,7 @@ mod tests {
         let output = output.unwrap();
         assert_eq!(output.start.character, 0);
         assert_eq!(output.start.line, 0);
-        assert_eq!(output.end.character, input.len() as u16);
+        assert_eq!(output.end.character, input.len() as u32);
         assert_eq!(output.end.line, 0);
         assert_eq!(output.content, "This is a simple test string!");
 

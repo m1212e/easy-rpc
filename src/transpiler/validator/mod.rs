@@ -1,4 +1,4 @@
-use std::{collections::HashSet};
+use std::collections::HashSet;
 
 mod tests;
 
@@ -12,9 +12,9 @@ use super::{
 
 #[derive(Debug)]
 pub struct ValidationError {
-    start: CodePosition,
-    end: CodePosition,
-    message: String,
+    pub start: CodePosition,
+    pub end: CodePosition,
+    pub message: String,
 }
 
 /**

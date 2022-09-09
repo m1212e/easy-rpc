@@ -2,7 +2,7 @@
 mod tests {
     use serde_json::Error;
 
-    use crate::transpiler::{config::parse_roles, parse_config};
+    use crate::transpiler::{config::{parse_roles, parse_config}};
 
     #[test]
     fn test_roles() -> Result<(), Error> {

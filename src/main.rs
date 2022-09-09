@@ -3,103 +3,344 @@ mod transpiler;
 mod util;
 use std::{
     env::{self, current_dir},
-    fs::{self, DirEntry},
-    io,
+    fs::{self, DirEntry, File},
+    io::{self},
     path::{Path, PathBuf},
 };
 
-use tokio::sync::mpsc;
+use notify::{RecommendedWatcher, RecursiveMode, Watcher};
+use tokio::{io::AsyncWriteExt, runtime::Handle};
 use transpiler::{run, ERPCError};
+use util::normalize_path::normalize_path;
 
 #[tokio::main]
 async fn main() {
-    let mut start_dirs: Vec<PathBuf> = Vec::new();
-    match add_start_directories(&current_dir().unwrap(), &mut start_dirs, 100) {
-        Ok(_) => {}
-        Err(_) => {
-            //TODO: handle this error ls compatible
-            eprintln!("Could not scan for start dirs");
-        }
-    }
-
     let args: Vec<String> = env::args().collect();
-
     if args.contains(&"-ls".to_string()) {
-        let (sender, reciever) = mpsc::channel::<ERPCError>(1);
-        if start_dirs.len() == 0 {
-            sender.send(ERPCError::ConfigurationError("Could not detect any easy-rpc project. Make sure the project contains an erpc.json at its root.".to_string())).await.unwrap();
-        } else {
-            for dir in start_dirs {
-                let tx = sender.clone();
-                loop {
-                    let dir = dir.clone();
-                    match tokio::task::spawn_blocking(move || run(&dir, true))
-                        .await
-                        .unwrap()
-                    {
-                        Ok(_) => {}
-                        Err(err) => {
-                            tx.send(err).await.unwrap();
-                        }
-                    };
-                }
-            }
-        }
-        language_server::start_language_server(reciever).await;
+        run_ls_mode().await;
+    } else if args.contains(&"-w".to_string()) {
+        run_watch_mode().await;
     } else {
-        if start_dirs.len() == 0 {
-            eprintln!("Could not detect any easy-rpc project. Make sure the project contains an erpc.json at its root.");
-        }
-        if args.contains(&"-w".to_string()) {
-            for dir in start_dirs {
-                println!("Listening for changes in {}", dir.to_str().unwrap());
-                let dir = dir.clone();
-                tokio::task::spawn_blocking(move || loop {
-                    match run(&dir, true) {
-                        Ok(_) => {}
-                        Err(err) => {
-                            eprintln!("{}", err.to_string());
-                        }
-                    };
-                });
-            }
-        } else {
-            for dir in start_dirs {
-                match run(&dir, false) {
-                    Ok(_) => {
-                        println!("Transpiled {}", dir.to_str().unwrap())
-                    }
-                    Err(err) => {
-                        eprintln!("{}", err.to_string())
-                    }
-                }
-            }
-        }
+        run_normal_mode().await;
     }
 }
 
-fn add_start_directories(
-    path: &Path,
-    list: &mut Vec<PathBuf>,
-    depth: usize,
-) -> Result<(), io::Error> {
-    if depth == 0 {
-        return Ok(());
+async fn run_ls_mode() {
+    let (sender, reciever) = async_channel::unbounded::<Vec<ERPCError>>();
+    let ls = tokio::spawn(language_server::run_language_server(reciever));
+    let root_dirs = match get_root_dirs() {
+        Ok(val) => {
+            if val.len() == 0 {
+                sender.send(vec![ERPCError::ConfigurationError("Could not find any easy-rpc project root. Make sure the project contains an erpc.json at its root.".to_string())]).await.unwrap();
+                return;
+            }
+            val
+        }
+        Err(err) => {
+            sender
+                .send(vec![ERPCError::ConfigurationError(format!(
+                    "Could not read root dirs: {}",
+                    err.to_string()
+                ))])
+                .await
+                .unwrap();
+            return;
+        }
+    };
+
+    for root_dir in root_dirs {
+        let config = match read_config(&root_dir) {
+            Ok(val) => val,
+            Err(err) => {
+                sender.send(vec![err]).await.unwrap();
+                return;
+            }
+        };
+
+        for source in config.sources {
+            let root_dir = root_dir.clone();
+            let role = config.role.clone();
+
+            let (watch_sender, watch_reciever) = async_channel::bounded(1);
+
+            let handle = Handle::current();
+            let mut watcher = match RecommendedWatcher::new(
+                move |res| {
+                    let sdr = watch_sender.clone();
+                    handle.spawn(async move {
+                        sdr.send(res).await.unwrap();
+                    });
+                },
+                notify::Config::default(),
+            ) {
+                Ok(val) => val,
+                Err(err) => {
+                    sender
+                        .send(vec![ERPCError::NotifyError(err)])
+                        .await
+                        .unwrap();
+                    return;
+                }
+            };
+
+            let normalized_source_path = normalize_path(&root_dir.join(&source));
+
+            watcher
+                .watch(&normalized_source_path, RecursiveMode::Recursive)
+                .unwrap();
+
+            loop {
+                let event = match watch_reciever.recv().await {
+                    Ok(val) => match val {
+                        Ok(val) => val,
+                        Err(err) => {
+                            sender
+                                .send(vec![ERPCError::NotifyError(err)])
+                                .await
+                                .unwrap();
+                            return;
+                        }
+                    },
+                    Err(err) => {
+                        sender.send(vec![ERPCError::RecvError(err)]).await.unwrap();
+                        return;
+                    }
+                };
+
+                match event.kind {
+                    notify::EventKind::Create(_)
+                    | notify::EventKind::Modify(_)
+                    | notify::EventKind::Remove(_) => {
+                        let res = run(
+                            &normalized_source_path,
+                            &root_dir.join(".erpc").join("generated"),
+                            &role,
+                        )
+                        .await;
+                        sender.send(res).await.unwrap();
+                    }
+                    _ => {}
+                }
+            }
+        }
+    }
+    ls.await.unwrap();
+}
+
+async fn run_watch_mode() {
+    let root_dirs = match get_root_dirs() {
+        Ok(val) => {
+            if val.len() == 0 {
+                eprintln!("Could not find any easy-rpc project root. Make sure the project contains an erpc.json at its root.");
+                return;
+            }
+            val
+        }
+        Err(err) => {
+            eprintln!("Could not read root dirs: {}", err.to_string());
+            return;
+        }
+    };
+
+    let mut handles = vec![];
+    for root_dir in root_dirs {
+        let config = match read_config(&root_dir) {
+            Ok(val) => val,
+            Err(err) => {
+                tokio::io::stderr()
+                    .write(format!("{err}\n").as_bytes())
+                    .await
+                    .unwrap();
+                return;
+            }
+        };
+
+        for source in config.sources {
+            let root_dir = root_dir.clone();
+            let role = config.role.clone();
+
+            handles.push(tokio::spawn(async move {
+                let (sender, reciever) = async_channel::bounded(1);
+
+                let handle = Handle::current();
+                let mut watcher = match RecommendedWatcher::new(
+                    move |res| {
+                        let sender = sender.clone();
+                        handle.spawn(async move {
+                            sender.send(res).await.unwrap();
+                        });
+                    },
+                    notify::Config::default(),
+                ) {
+                    Ok(val) => val,
+                    Err(err) => {
+                        tokio::io::stderr()
+                            .write(format!("{err}\n").as_bytes())
+                            .await
+                            .unwrap();
+                        return;
+                    }
+                };
+
+                let normalized_source_path = normalize_path(&root_dir.join(&source));
+
+                watcher
+                    .watch(&normalized_source_path, RecursiveMode::Recursive)
+                    .unwrap();
+
+                loop {
+                    let event = match reciever.recv().await {
+                        Ok(val) => match val {
+                            Ok(val) => val,
+                            Err(err) => {
+                                tokio::io::stderr()
+                                    .write(format!("{err}\n").as_bytes())
+                                    .await
+                                    .unwrap();
+                                return;
+                            }
+                        },
+                        Err(err) => {
+                            tokio::io::stderr()
+                                .write(format!("{err}\n").as_bytes())
+                                .await
+                                .unwrap();
+                            return;
+                        }
+                    };
+
+                    match event.kind {
+                        notify::EventKind::Create(_)
+                        | notify::EventKind::Modify(_)
+                        | notify::EventKind::Remove(_) => {
+                            let res = run(
+                                &normalized_source_path,
+                                &root_dir.join(".erpc").join("generated"),
+                                &role,
+                            )
+                            .await;
+                            if res.len() > 0 {
+                                tokio::io::stderr()
+                                    .write(format!("{:#?}\n", res).as_bytes())
+                                    .await
+                                    .unwrap();
+                            } else {
+                                tokio::io::stdout()
+                                    .write(
+                                        format!("Processed {}\n", root_dir.to_str().unwrap())
+                                            .as_bytes(),
+                                    )
+                                    .await
+                                    .unwrap();
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+            }))
+        }
+    }
+    futures::future::join_all(handles).await;
+}
+
+async fn run_normal_mode() {
+    let root_dirs = match get_root_dirs() {
+        Ok(val) => {
+            if val.len() == 0 {
+                eprintln!("Could not find any easy-rpc project root. Make sure the project contains an erpc.json at its root.");
+                return;
+            }
+            val
+        }
+        Err(err) => {
+            eprintln!("Could not read root dirs: {}", err.to_string());
+            return;
+        }
+    };
+
+    let mut handles = vec![];
+    for root_dir in root_dirs {
+        let config = match read_config(&root_dir) {
+            Ok(val) => val,
+            Err(err) => {
+                tokio::io::stderr()
+                    .write(format!("{err}\n").as_bytes())
+                    .await
+                    .unwrap();
+                return;
+            }
+        };
+
+        for source in config.sources {
+            let root_dir = root_dir.clone();
+            let role = config.role.clone();
+            handles.push(tokio::task::spawn(async move {
+                let res = run(
+                    &normalize_path(&root_dir.join(source)),
+                    &root_dir.join(".erpc").join("generated"),
+                    &role,
+                )
+                .await;
+                if res.len() > 0 {
+                    tokio::io::stderr()
+                        .write(format!("{:#?}\n", res).as_bytes())
+                        .await
+                        .unwrap();
+                } else {
+                    tokio::io::stdout()
+                        .write(format!("Processed {}\n", root_dir.to_str().unwrap()).as_bytes())
+                        .await
+                        .unwrap();
+                }
+            }));
+        }
+    }
+    futures::future::join_all(handles).await;
+}
+
+fn read_config(root_dir: &Path) -> Result<crate::transpiler::config::Config, ERPCError> {
+    let path = root_dir.join("erpc.json");
+    if !path.exists() {
+        return Err(ERPCError::ConfigurationError(format!(
+            "Could not find erpc.json at {path_str}",
+            path_str = path
+                .as_os_str()
+                .to_str()
+                .unwrap_or("<Unable to unwrap path>")
+        )));
     }
 
-    let paths = fs::read_dir(path)?.collect::<Result<Vec<DirEntry>, std::io::Error>>()?;
-    for entry in &paths {
-        if entry.file_type()?.is_file() && entry.file_name() == "erpc.json" {
-            list.push(path.to_path_buf());
+    Ok(crate::transpiler::config::parse_config(File::open(path)?)?)
+}
+
+fn get_root_dirs() -> Result<Vec<PathBuf>, ERPCError> {
+    fn add_start_directories(
+        path: &Path,
+        list: &mut Vec<PathBuf>,
+        depth: usize,
+    ) -> Result<(), io::Error> {
+        if depth == 0 {
             return Ok(());
         }
-    }
 
-    for entry in &paths {
-        if entry.file_type()?.is_dir() {
-            add_start_directories(&entry.path(), list, depth - 1)?;
+        let paths = fs::read_dir(path)?.collect::<Result<Vec<DirEntry>, std::io::Error>>()?;
+        for entry in &paths {
+            if entry.file_type()?.is_file() && entry.file_name() == "erpc.json" {
+                list.push(path.to_path_buf());
+                return Ok(());
+            }
         }
+
+        for entry in &paths {
+            if entry.file_type()?.is_dir() {
+                add_start_directories(&entry.path(), list, depth - 1)?;
+            }
+        }
+
+        Ok(())
     }
 
-    Ok(())
+    let mut start_dirs: Vec<PathBuf> = Vec::new();
+    add_start_directories(&current_dir().unwrap(), &mut start_dirs, 100)?;
+    Ok(start_dirs)
 }
