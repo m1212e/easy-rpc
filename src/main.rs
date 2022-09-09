@@ -13,11 +13,6 @@ use tokio::{io::AsyncWriteExt, runtime::Handle};
 use transpiler::{run, ERPCError};
 use util::normalize_path::normalize_path;
 
-//TODO erpcerror should be in separate file (errors in separate file generally?)
-//TODO restructure for cleaner error handling
-//TODO ensure all errors are collected before passing to language server for diagnostics (watch channel?)
-//TODO increase rubustness
-
 #[tokio::main]
 async fn main() {
     let args: Vec<String> = env::args().collect();
