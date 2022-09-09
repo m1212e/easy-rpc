@@ -1,23 +1,19 @@
-mod config;
+pub mod config;
 mod generator;
 mod parser;
 mod tests;
-mod validator;
+pub mod validator;
 
 use std::{
-    fs::File,
+    fmt::Display,
     io::{self},
     path::Path,
 };
 
-use notify::{RecommendedWatcher, RecursiveMode, Watcher};
+use async_channel::RecvError;
 use serde_json;
-use tokio::{runtime::Handle, sync::mpsc};
-
-use crate::util::normalize_path::normalize_path;
 
 use self::{
-    config::parse_config,
     generator::{generate_for_directory, translator::typescript::TypeScriptTranslator},
     parser::{input_reader::InputReaderError, parser::ParseError},
     validator::ValidationError,
@@ -55,6 +51,10 @@ pub enum ERPCError {
        Error occuring while watching a dir
     */
     NotifyError(notify::Error),
+    /**
+       Recv Error
+    */
+    RecvError(RecvError),
 }
 
 impl From<InputReaderError> for ERPCError {
@@ -92,6 +92,17 @@ impl From<notify::Error> for ERPCError {
         ERPCError::NotifyError(err)
     }
 }
+impl From<RecvError> for ERPCError {
+    fn from(err: RecvError) -> Self {
+        ERPCError::RecvError(err)
+    }
+}
+
+impl Display for ERPCError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.to_string())
+    }
+}
 
 impl ERPCError {
     pub fn to_string(&self) -> String {
@@ -100,10 +111,10 @@ impl ERPCError {
                 format!("InputReaderError:\n{}", val)
             }
             ERPCError::ValidationError(val) => {
-                format!("ValidationError in {}:\n{:#?}", val.1, val.0)
+                format!("ValidationError:\n{:#?}\n in:{}\n", val.0, val.1)
             }
             ERPCError::ParseError(val) => {
-                format!("ParseError in {}:\n{:#?}", val.1, val.0)
+                format!("ParseError:\n{:#?}\n in: {}\n", val.0, val.1)
             }
             ERPCError::JSONError(val) => {
                 format!("JSONError:\n{}", val)
@@ -117,89 +128,16 @@ impl ERPCError {
             ERPCError::NotifyError(val) => {
                 format!("NotifyError:\n{}", val)
             }
+            ERPCError::RecvError(val) => {
+                format!("RecvError:\n{}", val)
+            }
         }
     }
 }
 
-/**
-   Runs the transpiler on an input directory. Expects a erpc.json to parse in the specified directory.
-*/
-pub async fn run(input_directory: &Path, watch: bool) -> Result<(), ERPCError> {
-    let path = input_directory.join("erpc.json");
-    if !path.exists() {
-        return Err(ERPCError::ConfigurationError(format!(
-            "Could not find erpc.json at {path_str}",
-            path_str = path
-                .as_os_str()
-                .to_str()
-                .unwrap_or("<Unable to unwrap path>")
-        )));
+pub async fn run(source: &Path, output: &Path, selected_role_name: &str) -> Vec<ERPCError> {
+    match generate_for_directory::<TypeScriptTranslator>(source, output, selected_role_name) {
+        Ok(_) => vec![],
+        Err(err) => vec![err],
     }
-    let config = parse_config(File::open(path)?)?;
-
-    let (sender, mut reciever) = mpsc::channel(1);
-
-    let handle = Handle::current();
-    let mut watcher = RecommendedWatcher::new(
-        move |res| {
-            let sender = sender.clone();
-            handle.spawn(async move {
-                sender.send(res).await.unwrap();
-            });
-        },
-        notify::Config::default(),
-    )?;
-
-    for source in &config.sources {
-        let path = normalize_path(&input_directory.join(source));
-        if watch {
-            watcher.watch(&path, RecursiveMode::Recursive).unwrap();
-        } else {
-            generate_for_directory::<TypeScriptTranslator>(
-                &path,
-                &input_directory.join(".erpc").join("generated"),
-                &config.role,
-            )?;
-        }
-    }
-
-    if watch {
-        while let Some(res) = reciever.recv().await {
-            match res {
-                Ok(event) => match event.kind {
-                    notify::EventKind::Create(_)
-                    | notify::EventKind::Modify(_)
-                    | notify::EventKind::Remove(_) => {
-                        match config.sources.iter().find_map(|source| {
-                            let path = normalize_path(&input_directory.join(source));
-                            if event.paths[0].starts_with(path.to_str().unwrap()) {
-                                return Some(path);
-                            }
-                            None
-                        }) {
-                            Some(path) => {
-                                generate_for_directory::<TypeScriptTranslator>(
-                                    &path,
-                                    &input_directory.join(".erpc").join("generated"),
-                                    &config.role,
-                                )?;
-                            }
-                            None => {
-                                return Err(ERPCError::ConfigurationError(
-                                    "Could not find correct source while processing in watchmode"
-                                        .to_string(),
-                                ));
-                            }
-                        };
-                    }
-                    _ => {}
-                },
-                Err(err) => {
-                    return Err(ERPCError::NotifyError(err));
-                }
-            }
-        }
-    }
-
-    Ok(())
 }

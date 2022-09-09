@@ -1,3 +1,6 @@
+use std::collections::hash_map::Entry;
+use std::collections::HashMap;
+
 use crate::transpiler::ERPCError;
 
 use serde_json::Value;
@@ -8,7 +11,7 @@ use tower_lsp::{Client, LanguageServer, LspService, Server};
 #[derive(Debug)]
 struct Backend {
     client: Client,
-    error_reciever: async_channel::Receiver<Option<ERPCError>>,
+    error_reciever: async_channel::Receiver<Vec<ERPCError>>,
 }
 
 #[tower_lsp::async_trait]
@@ -37,63 +40,104 @@ impl LanguageServer for Backend {
     async fn initialized(&self, _: InitializedParams) {
         let error_reciever = self.error_reciever.clone();
         let client = self.client.clone();
+
         tokio::spawn(async move {
+            let mut last: Vec<String> = Vec::new();
             loop {
-                let r_err = {
-                    let r_err = match error_reciever.recv().await {
-                        Ok(val) => val,
-                        Err(err) => {
-                            client
-                                .show_message(
-                                    MessageType::ERROR,
-                                    format!("Recv error: {}", err.to_string()),
-                                )
-                                .await;
-                            continue;
-                        }
-                    };
-                    match r_err {
-                        Some(val) => val,
-                        None => continue, //TODO clear errors
-                    }
-                };
-                match r_err {
-                    ERPCError::ValidationError(err) => todo!(),
-                    ERPCError::ParseError(err) => {
-                        client
-                            .publish_diagnostics(
-                                Url::parse(&format!("file://{}", err.1)).unwrap(),
-                                vec![Diagnostic {
-                                    range: Range {
-                                        start: err.0.start.into(),
-                                        end: err.0.end.into(),
-                                    },
-                                    severity: Some(DiagnosticSeverity::ERROR),
-                                    code: None,
-                                    code_description: None,
-                                    source: None,
-                                    message: err.0.message,
-                                    related_information: None,
-                                    tags: None,
-                                    data: None,
-                                }],
-                                None,
-                            )
-                            .await;
-                    }
-                    ERPCError::InputReaderError(_)
-                    | ERPCError::JSONError(_)
-                    | ERPCError::ConfigurationError(_)
-                    | ERPCError::IO(_)
-                    | ERPCError::NotifyError(_) => {
+                let recieved = match error_reciever.recv().await {
+                    Ok(val) => val,
+                    Err(err) => {
                         client
                             .show_message(
                                 MessageType::ERROR,
-                                format!("Error occured: {}", r_err.to_string()),
+                                format!("Recv error: {}", err.to_string()),
                             )
-                            .await
+                            .await;
+                        continue;
                     }
                 };
+
+                let mut diagnostics_per_origin: HashMap<String, Vec<Diagnostic>> = HashMap::new();
+
+                for origin in &last {
+                    diagnostics_per_origin.insert(origin.to_owned(), vec![]);
+                }
+
+                last.clear();
+
+                for err in recieved {
+                    match err {
+                        ERPCError::ValidationError((err, origin)) => {
+                            let d = Diagnostic {
+                                range: Range {
+                                    start: err.start.into(),
+                                    end: err.end.into(),
+                                },
+                                severity: Some(DiagnosticSeverity::ERROR),
+                                code: None,
+                                code_description: None,
+                                source: None,
+                                message: err.message,
+                                related_information: None,
+                                tags: None,
+                                data: None,
+                            };
+                            match diagnostics_per_origin.entry(origin) {
+                                Entry::Occupied(mut entry) => {
+                                    entry.get_mut().push(d);
+                                }
+                                Entry::Vacant(entry) => {
+                                    entry.insert(vec![d]);
+                                }
+                            }
+                        }
+                        ERPCError::ParseError((err, origin)) => {
+                            let d = Diagnostic {
+                                range: Range {
+                                    start: err.start.into(),
+                                    end: err.end.into(),
+                                },
+                                severity: Some(DiagnosticSeverity::ERROR),
+                                code: None,
+                                code_description: None,
+                                source: None,
+                                message: err.message,
+                                related_information: None,
+                                tags: None,
+                                data: None,
+                            };
+                            match diagnostics_per_origin.entry(origin) {
+                                Entry::Occupied(mut entry) => {
+                                    entry.get_mut().push(d);
+                                }
+                                Entry::Vacant(entry) => {
+                                    entry.insert(vec![d]);
+                                }
+                            }
+                        }
+                        ERPCError::InputReaderError(_)
+                        | ERPCError::JSONError(_)
+                        | ERPCError::ConfigurationError(_)
+                        | ERPCError::IO(_)
+                        | ERPCError::NotifyError(_)
+                        | ERPCError::RecvError(_) => {
+                            client
+                                .show_message(MessageType::ERROR, err.to_string())
+                                .await
+                        }
+                    };
+                }
+
+                for (origin, diagnostics) in diagnostics_per_origin {
+                    last.push(origin.to_owned());
+                    client
+                        .publish_diagnostics(
+                            Url::parse(&format!("file://{}", origin)).unwrap(),
+                            diagnostics,
+                            None,
+                        )
+                        .await;
+                }
             }
         });
     }
@@ -118,7 +162,7 @@ impl LanguageServer for Backend {
     }
 }
 
-pub async fn start_language_server(error_reciever: async_channel::Receiver<Option<ERPCError>>) {
+pub async fn run_language_server(error_reciever: async_channel::Receiver<Vec<ERPCError>>) {
     let (stdin, stdout) = (tokio::io::stdin(), tokio::io::stdout());
 
     let (service, socket) = LspService::new(|client| Backend {
