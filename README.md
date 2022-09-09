@@ -26,4 +26,4 @@ Navigate to an erpc project root (where the erpc.json is located) or any parent 
 | -ls         | runs the transpiler with [-w] and the language server on stdio |
 
 ## License
-easy-rpc is licensed unter (Apache 2.0 with the Commons Clause)[https://github.com/m1212e/easy-rpc/blob/main/LICENSE]. By contributing to easy-rpc you agree that your contribution will be licensed under its license.
+easy-rpc is licensed unter [Apache 2.0 with the Commons Clause](https://github.com/m1212e/easy-rpc/blob/main/LICENSE). By contributing to easy-rpc you agree that your contribution will be licensed under its license.
