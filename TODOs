@@ -13,3 +13,4 @@ TODO: Goto ERPC definition inside TS files for addon/ls
 TODO: Restructure/organize ERPC error
 TODO: increase rubustness, especially in ls mode
 TODO: (long term) allow multiple errors per file/multiple errors in ls
+TODO: update docs & project/module readmes
