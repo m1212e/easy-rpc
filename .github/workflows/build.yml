@@ -50,10 +50,10 @@ jobs:
       - name: Build
         run: cargo build --release
       - name: Rename
-        if: ${{ !matrix.platform.host }} != 'windows-latest'
+        if: matrix.platform.host != 'windows-latest'
         run: mv  target/release/easy-rpc target/release/easy-rpc-${{ matrix.platform.target }}
       - name: Rename WIN
-        if: ${{ !matrix.platform.host }} == 'windows-latest'
+        if: matrix.platform.host == 'windows-latest'
         run: mv  target/release/easy-rpc.exe target/release/easy-rpc-${{ matrix.platform.target }}
       - name: Upload
         uses: softprops/action-gh-release@v1
