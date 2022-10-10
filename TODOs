@@ -1,16 +1,16 @@
-TODO: warn if a comment might be intended as documentational but is a disposeable
 TODO: collect feedback & potentially improve parser error messages
-TODO: convert old project todos into new one
 TODO: check where a string could be replaced by a string slice
 TODO: in validator, ensure that a browser role never has multiple types, since a browser never can also be http-server
 TODO: refactor all string buildings to use format!() macro
 TODO: make enums for configuration stuff like types, filenames etc.
 TODO: CLA/code of conduct
 TODO: remove all .unwrap() calls
-TODO: delete generated folder before generation to clear old files
+    TODO: increase rubustness, especially in ls mode
 TODO: Show warning when endpoint is unimplemented
 TODO: Goto ERPC definition inside TS files for addon/ls
 TODO: Restructure/organize ERPC error
-TODO: increase rubustness, especially in ls mode
 TODO: (long term) allow multiple errors per file/multiple errors in ls
 TODO: update docs & project/module readmes
+TODO: in docs, explain the problem of conflicting names/structures of sources
+TODO: middleware
+TODO: input/parameter validation
