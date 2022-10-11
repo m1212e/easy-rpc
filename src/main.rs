@@ -16,19 +16,31 @@ use util::normalize_path::normalize_path;
 #[tokio::main]
 async fn main() {
     let args: Vec<String> = env::args().collect();
+
+    let entry_path = match args.iter().position(|e| *e == "-p") {
+        Some(index) => match args.get(index + 1) {
+            Some(v) => std::fs::canonicalize(PathBuf::from(v)).unwrap(),
+            None => {
+                eprintln!("Could not find path argument after -p flag");
+                return;
+            }
+        },
+        None => current_dir().unwrap(),
+    };
+
     if args.contains(&"-ls".to_string()) {
-        run_ls_mode().await;
+        run_ls_mode(entry_path).await;
     } else if args.contains(&"-w".to_string()) {
-        run_watch_mode().await;
+        run_watch_mode(entry_path).await;
     } else {
-        run_normal_mode().await;
+        run_normal_mode(entry_path).await;
     }
 }
 
-async fn run_ls_mode() {
+async fn run_ls_mode(entry_path: PathBuf) {
     let (sender, reciever) = async_channel::unbounded::<Vec<ERPCError>>();
     let ls = tokio::spawn(language_server::run_language_server(reciever));
-    let root_dirs = match get_root_dirs() {
+    let root_dirs = match get_root_dirs(entry_path) {
         Ok(val) => {
             if val.len() == 0 {
                 sender.send(vec![ERPCError::ConfigurationError("Could not find any easy-rpc project root. Make sure the project contains an erpc.json at its root.".to_string())]).await.unwrap();
@@ -53,6 +65,14 @@ async fn run_ls_mode() {
             Ok(val) => val,
             Err(err) => {
                 sender.send(vec![err]).await.unwrap();
+                return;
+            }
+        };
+
+        match fs::remove_dir_all(&root_dir.join(".erpc").join("generated")) {
+            Ok(_) => {}
+            Err(err) => {
+                sender.send(vec![err.into()]).await.unwrap();
                 return;
             }
         };
@@ -127,8 +147,8 @@ async fn run_ls_mode() {
     ls.await.unwrap();
 }
 
-async fn run_watch_mode() {
-    let root_dirs = match get_root_dirs() {
+async fn run_watch_mode(entry_path: PathBuf) {
+    let root_dirs = match get_root_dirs(entry_path) {
         Ok(val) => {
             if val.len() == 0 {
                 eprintln!("Could not find any easy-rpc project root. Make sure the project contains an erpc.json at its root.");
@@ -146,6 +166,17 @@ async fn run_watch_mode() {
     for root_dir in root_dirs {
         let config = match read_config(&root_dir) {
             Ok(val) => val,
+            Err(err) => {
+                tokio::io::stderr()
+                    .write(format!("{err}\n").as_bytes())
+                    .await
+                    .unwrap();
+                return;
+            }
+        };
+
+        match fs::remove_dir_all(&root_dir.join(".erpc").join("generated")) {
+            Ok(_) => {}
             Err(err) => {
                 tokio::io::stderr()
                     .write(format!("{err}\n").as_bytes())
@@ -243,8 +274,8 @@ async fn run_watch_mode() {
     futures::future::join_all(handles).await;
 }
 
-async fn run_normal_mode() {
-    let root_dirs = match get_root_dirs() {
+async fn run_normal_mode(entry_path: PathBuf) {
+    let root_dirs = match get_root_dirs(entry_path) {
         Ok(val) => {
             if val.len() == 0 {
                 eprintln!("Could not find any easy-rpc project root. Make sure the project contains an erpc.json at its root.");
@@ -262,6 +293,17 @@ async fn run_normal_mode() {
     for root_dir in root_dirs {
         let config = match read_config(&root_dir) {
             Ok(val) => val,
+            Err(err) => {
+                tokio::io::stderr()
+                    .write(format!("{err}\n").as_bytes())
+                    .await
+                    .unwrap();
+                return;
+            }
+        };
+
+        match fs::remove_dir_all(&root_dir.join(".erpc").join("generated")) {
+            Ok(_) => {}
             Err(err) => {
                 tokio::io::stderr()
                     .write(format!("{err}\n").as_bytes())
@@ -313,7 +355,7 @@ fn read_config(root_dir: &Path) -> Result<crate::transpiler::config::Config, ERP
     Ok(crate::transpiler::config::parse_config(File::open(path)?)?)
 }
 
-fn get_root_dirs() -> Result<Vec<PathBuf>, ERPCError> {
+fn get_root_dirs(start_dir: PathBuf) -> Result<Vec<PathBuf>, ERPCError> {
     fn add_start_directories(
         path: &Path,
         list: &mut Vec<PathBuf>,
@@ -341,6 +383,6 @@ fn get_root_dirs() -> Result<Vec<PathBuf>, ERPCError> {
     }
 
     let mut start_dirs: Vec<PathBuf> = Vec::new();
-    add_start_directories(&current_dir().unwrap(), &mut start_dirs, 100)?;
+    add_start_directories(&start_dir, &mut start_dirs, 100)?;
     Ok(start_dirs)
 }
