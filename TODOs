@@ -15,3 +15,4 @@ TODO: in docs, explain the problem of conflicting names/structures of sources or
 TODO: middleware
 TODO: input/parameter validation
 TODO: improve error messages on crash
+TODO: Refactor main.rs + transpiler/main.rs
