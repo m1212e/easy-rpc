@@ -2,3 +2,4 @@
 src/transpiler/generator/tests/recursive_class_generation_test_files/output
 src/transpiler/generator/tests/client_class_generation_test_files/output
 src/tests/workdir_normal_mode
+src/tests/workdir_watch_mode

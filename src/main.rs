@@ -169,13 +169,15 @@ async fn run_watch_mode(entry_path: PathBuf) -> Result<(), String> {
                 return Err(err.to_string());
             }
         };
-
-        match fs::remove_dir_all(&root_dir.join(".erpc").join("generated")) {
-            Ok(_) => {}
-            Err(err) => {
-                return Err(err.to_string());
-            }
-        };
+        let generated = root_dir.join(".erpc").join("generated");
+        if generated.exists() {
+            match fs::remove_dir_all(&generated) {
+                Ok(_) => {}
+                Err(err) => {
+                    return Err(err.to_string());
+                }
+            };
+        }
 
         for source in config.sources {
             let root_dir = root_dir.clone();
