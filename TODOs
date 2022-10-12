@@ -11,6 +11,7 @@ TODO: Goto ERPC definition inside TS files for addon/ls
 TODO: Restructure/organize ERPC error
 TODO: (long term) allow multiple errors per file/multiple errors in ls
 TODO: update docs & project/module readmes
-TODO: in docs, explain the problem of conflicting names/structures of sources
+TODO: in docs, explain the problem of conflicting names/structures of sources or introduce a merge mechanism
 TODO: middleware
 TODO: input/parameter validation
+TODO: improve error messages on crash

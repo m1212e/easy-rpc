@@ -1,0 +1,2 @@
+Backend login(newUser string) "success" | "fail"
+Frontend login2(newUser string) "success"
