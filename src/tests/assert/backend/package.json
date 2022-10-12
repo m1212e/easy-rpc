@@ -1,9 +1,0 @@
-{
-  "scripts": {
-    "dev": "npx ts-node main.ts"
-  },
-  "dependencies": {
-    "@easy-rpc/node": "^0.1",
-    "ts-node": "^10.9.1"
-  }
-}
