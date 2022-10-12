@@ -26,7 +26,9 @@ async fn main() {
 async fn run_main(args: Vec<String>) -> Result<(), String> {
     let entry_path = match args.iter().position(|e| *e == "-p") {
         Some(index) => match args.get(index + 1) {
-            Some(v) => std::fs::canonicalize(PathBuf::from(v)).unwrap(),
+            Some(v) => {
+                normalize_path(&PathBuf::from(v))
+            }
             None => {
                 return Err("Could not find path argument after -p flag".to_string());
             }
@@ -56,13 +58,10 @@ async fn run_ls_mode(entry_path: PathBuf) -> Result<(), String> {
         }
         Err(err) => {
             sender
-                .send(vec![ERPCError::ConfigurationError(format!(
-                    "Could not read root dirs: {}",
-                    err.to_string()
-                ))])
+                .send(vec![ERPCError::ConfigurationError(err.to_string())])
                 .await
                 .unwrap();
-            return Err(format!("Could not read root dirs: {}", err.to_string()));
+            return Err(err.to_string());
         }
     };
 

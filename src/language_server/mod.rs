@@ -36,7 +36,7 @@ impl LanguageServer for Backend {
             ..Default::default()
         })
     }
-    
+
     async fn initialized(&self, _: InitializedParams) {
         let error_reciever = self.error_reciever.clone();
         let client = self.client.clone();
