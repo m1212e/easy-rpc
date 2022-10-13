@@ -10,7 +10,7 @@ use std::{
 };
 
 use notify::{RecommendedWatcher, RecursiveMode, Watcher};
-use tokio::{runtime::Handle};
+use tokio::runtime::Handle;
 use transpiler::{run, ERPCError};
 use util::normalize_path::normalize_path;
 
@@ -105,7 +105,10 @@ async fn run_watch(
                 ) {
                     Ok(val) => val,
                     Err(err) => {
-                        error_reporter.send(Err(vec![ERPCError::NotifyError(err)])).await.unwrap();
+                        error_reporter
+                            .send(Err(vec![ERPCError::NotifyError(err)]))
+                            .await
+                            .unwrap();
                         return;
                     }
                 };
@@ -121,12 +124,18 @@ async fn run_watch(
                         Ok(val) => match val {
                             Ok(val) => val,
                             Err(err) => {
-                                error_reporter.send(Err(vec![ERPCError::NotifyError(err)])).await.unwrap();
+                                error_reporter
+                                    .send(Err(vec![ERPCError::NotifyError(err)]))
+                                    .await
+                                    .unwrap();
                                 return;
                             }
                         },
                         Err(err) => {
-                            error_reporter.send(Err(vec![ERPCError::RecvError(err)])).await.unwrap();
+                            error_reporter
+                                .send(Err(vec![ERPCError::RecvError(err)]))
+                                .await
+                                .unwrap();
                             return;
                         }
                     };
@@ -144,10 +153,10 @@ async fn run_watch(
                             if res.len() > 0 {
                                 error_reporter.send(Err(res)).await.unwrap();
                             } else {
-                                error_reporter.send(Ok(format!(
-                                    "Processed {}\n",
-                                    root_dir.to_str().unwrap()
-                                ))).await.unwrap();
+                                error_reporter
+                                    .send(Ok(format!("Processed {}\n", root_dir.to_str().unwrap())))
+                                    .await
+                                    .unwrap();
                             }
                         }
                         _ => {}

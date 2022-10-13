@@ -148,5 +148,4 @@ impl TokenReader {
 
         return Some(elements);
     }
-
 }

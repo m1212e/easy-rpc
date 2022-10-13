@@ -1,12 +1,15 @@
-use self::{custom_type::CustomType, disposeable_comment::DisposeableComment, endpoint::Endpoint, line_break::LineBreak};
+use self::{
+    custom_type::CustomType, disposeable_comment::DisposeableComment, endpoint::Endpoint,
+    line_break::LineBreak,
+};
 
 use super::{lexer::TokenReader, CodePosition};
 
 pub mod custom_type;
 mod disposeable_comment;
-mod line_break;
 pub mod endpoint;
 pub mod field_type;
+mod line_break;
 mod tests;
 
 #[derive(Debug)]
@@ -74,7 +77,7 @@ pub fn parse(reader: &mut TokenReader) -> Result<ParseResult, ParseError> {
         return Err(ParseError {
             start: err.start(),
             end: err.end(),
-            message: format!("Unexpected token")
+            message: format!("Unexpected token"),
         });
     }
 

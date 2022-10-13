@@ -47,5 +47,4 @@ impl Identifier {
             start: start,
         }))
     }
-
 }

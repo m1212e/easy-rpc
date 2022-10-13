@@ -7,7 +7,9 @@ mod tests {
 
     #[test]
     fn test_success() -> Result<(), InputReaderError> {
-        let mut reader = InputReader::new("/**\nSome documentational comment\n*/this is not part of the comment".as_bytes());
+        let mut reader = InputReader::new(
+            "/**\nSome documentational comment\n*/this is not part of the comment".as_bytes(),
+        );
         let output = DocumentationalComment::lex_documentational_comment(&mut reader)?;
 
         assert_eq!(output.is_some(), true);

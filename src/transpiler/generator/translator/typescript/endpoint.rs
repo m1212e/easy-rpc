@@ -22,11 +22,14 @@ fn make_foreign_endpoint(endpoint: &Endpoint, url: &str) -> String {
     match &endpoint.documentation {
         Some(val) => {
             ret.push_str(&format!("/**{val}*/\n"));
-        },
-        None => {},
+        }
+        None => {}
     }
 
-    ret.push_str(&format!("    {identifier}(", identifier=&endpoint.identifier));
+    ret.push_str(&format!(
+        "    {identifier}(",
+        identifier = &endpoint.identifier
+    ));
 
     for i in 0..endpoint.parameters.len() {
         ret.push_str(&endpoint.parameters[i].identifier);
@@ -55,8 +58,10 @@ fn make_foreign_endpoint(endpoint: &Endpoint, url: &str) -> String {
         ret.push_str("void");
     }
 
-    ret.push_str(&format!("> {{
-        return this.server.call(\"{url}\""));
+    ret.push_str(&format!(
+        "> {{
+        return this.server.call(\"{url}\""
+    ));
 
     if endpoint.parameters.len() > 0 {
         ret.push_str(", [");
@@ -108,8 +113,16 @@ fn make_callback_endpoint(endpoint: &Endpoint, url: &str) -> String {
     }
 
     ret.push_str(&params_string);
-    ret.push_str(") => Promise<");
+    ret.push_str(") => ");
 
+    if endpoint.return_type.is_some() {
+        ret.push_str(&stringify_field_type(
+            endpoint.return_type.as_ref().unwrap(),
+        ));
+    } else {
+        ret.push_str("void");
+    }
+    ret.push_str(" | Promise<");
     if endpoint.return_type.is_some() {
         ret.push_str(&stringify_field_type(
             endpoint.return_type.as_ref().unwrap(),
@@ -122,8 +135,16 @@ fn make_callback_endpoint(endpoint: &Endpoint, url: &str) -> String {
     ret.push_str(&endpoint.identifier);
     ret.push_str("(value: (");
     ret.push_str(&params_string);
-    ret.push_str(") => Promise<");
+    ret.push_str(") => ");
 
+    if endpoint.return_type.is_some() {
+        ret.push_str(&stringify_field_type(
+            endpoint.return_type.as_ref().unwrap(),
+        ));
+    } else {
+        ret.push_str("void");
+    }
+    ret.push_str(" | Promise<");
     if endpoint.return_type.is_some() {
         ret.push_str(&stringify_field_type(
             endpoint.return_type.as_ref().unwrap(),

@@ -1,6 +1,6 @@
 use std::io::Read;
 
-use crate::{transpiler::parser::input_reader::{InputReader, InputReaderError}};
+use crate::transpiler::parser::input_reader::{InputReader, InputReaderError};
 
 /**
    Spaces are skipped and not stored for parsing.

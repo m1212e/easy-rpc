@@ -29,5 +29,4 @@ impl InvalidCharacters {
             end: reader.current_position.clone(),
         }));
     }
-
 }

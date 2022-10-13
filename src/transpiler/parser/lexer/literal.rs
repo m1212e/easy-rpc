@@ -63,8 +63,7 @@ fn process_boolean<T: Read>(
         let next_char = reader.peek(5)?.unwrap_or(String::new()).chars().nth(4);
 
         // check if the word is over so we can make sure were not detecting a literal
-        if next_char.is_none() || !VALIDATOR.is_match(next_char.unwrap().to_string().as_str())
-        {
+        if next_char.is_none() || !VALIDATOR.is_match(next_char.unwrap().to_string().as_str()) {
             let start = reader.current_position.clone();
             reader.consume(4)?;
             let end = reader.current_position.clone();
@@ -82,8 +81,7 @@ fn process_boolean<T: Read>(
         let next_char = reader.peek(6)?.unwrap_or(String::new()).chars().nth(5);
 
         // check if the word is over so we can make sure were not detecting a literal
-        if next_char.is_none() || !VALIDATOR.is_match(next_char.unwrap().to_string().as_str())
-        {
+        if next_char.is_none() || !VALIDATOR.is_match(next_char.unwrap().to_string().as_str()) {
             let start = reader.current_position.clone();
             reader.consume(5)?;
             let end = reader.current_position.clone();

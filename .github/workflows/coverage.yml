@@ -2,7 +2,7 @@ name: coverage
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
 jobs:
   test:
     name: coverage

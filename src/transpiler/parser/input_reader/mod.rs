@@ -3,7 +3,7 @@ mod tests;
 use strum_macros::Display;
 
 use super::CodePosition;
-use std::{io::{BufRead, BufReader, Read}};
+use std::io::{BufRead, BufReader, Read};
 
 /*
     Wrapper around an input which provides methods and functionality for processing text.
@@ -144,8 +144,7 @@ impl<T: Read> InputReader<T> {
     pub fn peek_until<F: FnMut(char, &String) -> bool>(
         &mut self,
         mut approve: F,
-    ) -> Result<Option<String>, InputReaderError>
-    {
+    ) -> Result<Option<String>, InputReaderError> {
         let mut offset = 0;
 
         let mut peeked = String::new();

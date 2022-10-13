@@ -12,7 +12,7 @@ export default class api {
     }
 
     constructor(callbacks?: {
-        login2: (newUser: string) => Promise<"success">
+        login2: (newUser: string) => "success" | Promise<"success">
     }) {
         if (callbacks?.login2) {
             this.login2 = callbacks.login2
@@ -20,8 +20,8 @@ export default class api {
 
     }
 
-    private _login2: (newUser: string) => Promise<"success"> = undefined as any
-    set login2(value: (newUser: string) => Promise<"success">) {
+    private _login2: (newUser: string) => "success" | Promise<"success"> = undefined as any
+    set login2(value: (newUser: string) => "success" | Promise<"success">) {
         this._login2 = value
         this.server?.registerERPCCallbackFunction(value, "api/login2")
     }

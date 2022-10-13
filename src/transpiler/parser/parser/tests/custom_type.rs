@@ -4,7 +4,7 @@ mod tests {
         input_reader::{InputReader, InputReaderError},
         lexer::TokenReader,
         parser::{
-            custom_type::{CustomType},
+            custom_type::CustomType,
             field_type::{PrimitiveType, Type},
         },
     };
@@ -188,19 +188,15 @@ mod tests {
 
     #[test]
     fn test_invalid_4() -> Result<(), InputReaderError> {
-        let mut reader = TokenReader::new(InputReader::new(
-            "/**hello*/\ntype SomeType |".as_bytes(),
-        ))?;
+        let mut reader =
+            TokenReader::new(InputReader::new("/**hello*/\ntype SomeType |".as_bytes()))?;
 
         let result = CustomType::parse_custom_type(&mut reader).unwrap();
 
         assert!(result.is_err());
 
         unsafe {
-            assert_eq!(
-                result.unwrap_err_unchecked().message,
-                "Expected {"
-            );
+            assert_eq!(result.unwrap_err_unchecked().message, "Expected {");
         }
 
         Ok(())
@@ -217,10 +213,7 @@ mod tests {
         assert!(result.is_err());
 
         unsafe {
-            assert_eq!(
-                result.unwrap_err_unchecked().message,
-                "Expected {"
-            );
+            assert_eq!(result.unwrap_err_unchecked().message, "Expected {");
         }
 
         Ok(())
@@ -248,9 +241,8 @@ mod tests {
 
     #[test]
     fn test_invalid_7() -> Result<(), InputReaderError> {
-        let mut reader = TokenReader::new(InputReader::new(
-            "/**hello*/\ntype SomeType ".as_bytes(),
-        ))?;
+        let mut reader =
+            TokenReader::new(InputReader::new("/**hello*/\ntype SomeType ".as_bytes()))?;
 
         let result = CustomType::parse_custom_type(&mut reader).unwrap();
 
@@ -268,19 +260,15 @@ mod tests {
 
     #[test]
     fn test_invalid_8() -> Result<(), InputReaderError> {
-        let mut reader = TokenReader::new(InputReader::new(
-            "/**hello*/\ntype SomeType {".as_bytes(),
-        ))?;
+        let mut reader =
+            TokenReader::new(InputReader::new("/**hello*/\ntype SomeType {".as_bytes()))?;
 
         let result = CustomType::parse_custom_type(&mut reader).unwrap();
 
         assert!(result.is_err());
 
         unsafe {
-            assert_eq!(
-                result.unwrap_err_unchecked().message,
-                "Expected closing }"
-            );
+            assert_eq!(result.unwrap_err_unchecked().message, "Expected closing }");
         }
 
         Ok(())
@@ -325,5 +313,4 @@ mod tests {
 
         Ok(())
     }
-
 }

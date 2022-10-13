@@ -1,4 +1,4 @@
-use crate::transpiler::parser::{CodePosition};
+use crate::transpiler::parser::CodePosition;
 
 use super::{
     disposeable_comment::DisposeableComment, documentational_comment::DocumentationalComment,
@@ -7,8 +7,8 @@ use super::{
 };
 
 /**
-    A token is a lexer result element and represents a specific piece of code which has a meaning.
- */
+   A token is a lexer result element and represents a specific piece of code which has a meaning.
+*/
 #[derive(Clone, Debug)]
 pub enum Token {
     DisposeableComment(DisposeableComment),

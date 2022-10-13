@@ -1,4 +1,4 @@
 {
-    "thisIsNot": "usedInAnyWay",
-    "andShouldBe": "ignoredByTheTranspiler"
+  "thisIsNot": "usedInAnyWay",
+  "andShouldBe": "ignoredByTheTranspiler"
 }

@@ -28,7 +28,10 @@ mod tests {
         assert_eq!(output.start.line, 0);
         assert_eq!(output.end.character, 1);
         assert_eq!(output.end.line, 0);
-        assert_eq!(matches!(output.operator_type, OperatorType::CurlyOpenBracket), true);
+        assert_eq!(
+            matches!(output.operator_type, OperatorType::CurlyOpenBracket),
+            true
+        );
 
         Ok(())
     }
@@ -42,7 +45,10 @@ mod tests {
         assert_eq!(output.start.line, 0);
         assert_eq!(output.end.character, 1);
         assert_eq!(output.end.line, 0);
-        assert_eq!(matches!(output.operator_type, OperatorType::CurlyCloseBracket), true);
+        assert_eq!(
+            matches!(output.operator_type, OperatorType::CurlyCloseBracket),
+            true
+        );
 
         Ok(())
     }
@@ -56,7 +62,10 @@ mod tests {
         assert_eq!(output.start.line, 0);
         assert_eq!(output.end.character, 1);
         assert_eq!(output.end.line, 0);
-        assert_eq!(matches!(output.operator_type, OperatorType::OpenBracket), true);
+        assert_eq!(
+            matches!(output.operator_type, OperatorType::OpenBracket),
+            true
+        );
 
         Ok(())
     }
@@ -70,7 +79,10 @@ mod tests {
         assert_eq!(output.start.line, 0);
         assert_eq!(output.end.character, 1);
         assert_eq!(output.end.line, 0);
-        assert_eq!(matches!(output.operator_type, OperatorType::CloseBracket), true);
+        assert_eq!(
+            matches!(output.operator_type, OperatorType::CloseBracket),
+            true
+        );
 
         Ok(())
     }
@@ -84,7 +96,10 @@ mod tests {
         assert_eq!(output.start.line, 0);
         assert_eq!(output.end.character, 1);
         assert_eq!(output.end.line, 0);
-        assert_eq!(matches!(output.operator_type, OperatorType::SquareOpenBracket), true);
+        assert_eq!(
+            matches!(output.operator_type, OperatorType::SquareOpenBracket),
+            true
+        );
 
         Ok(())
     }
@@ -98,7 +113,10 @@ mod tests {
         assert_eq!(output.start.line, 0);
         assert_eq!(output.end.character, 1);
         assert_eq!(output.end.line, 0);
-        assert_eq!(matches!(output.operator_type, OperatorType::SquareCloseBracket), true);
+        assert_eq!(
+            matches!(output.operator_type, OperatorType::SquareCloseBracket),
+            true
+        );
 
         Ok(())
     }
@@ -126,7 +144,10 @@ mod tests {
         assert_eq!(output.start.line, 0);
         assert_eq!(output.end.character, 1);
         assert_eq!(output.end.line, 0);
-        assert_eq!(matches!(output.operator_type, OperatorType::QuestionMark), true);
+        assert_eq!(
+            matches!(output.operator_type, OperatorType::QuestionMark),
+            true
+        );
 
         Ok(())
     }

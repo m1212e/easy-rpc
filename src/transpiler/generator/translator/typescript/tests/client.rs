@@ -1,6 +1,8 @@
 #[cfg(test)]
 mod tests {
-    use crate::transpiler::{generator::translator::typescript::client::generate_client, config::Role};
+    use crate::transpiler::{
+        config::Role, generator::translator::typescript::client::generate_client,
+    };
 
     #[test]
     fn test_success_foreign() {

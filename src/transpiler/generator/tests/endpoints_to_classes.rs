@@ -70,7 +70,7 @@ export default class TestClass {
     }
 
     constructor(callbacks?: {
-        MySuperCoolEndpoint: () => Promise<void>
+        MySuperCoolEndpoint: () => void | Promise<void>
         someName: someName
     }) {
         if (callbacks?.MySuperCoolEndpoint) {
@@ -85,8 +85,8 @@ export default class TestClass {
 
     }
 
-    private _MySuperCoolEndpoint: () => Promise<void> = undefined as any
-    set MySuperCoolEndpoint(value: () => Promise<void>) {
+    private _MySuperCoolEndpoint: () => void | Promise<void> = undefined as any
+    set MySuperCoolEndpoint(value: () => void | Promise<void>) {
         this._MySuperCoolEndpoint = value
         this.server?.registerERPCCallbackFunction(value, \"test/test2/TestClass/MySuperCoolEndpoint\")
     }

@@ -12,7 +12,7 @@ export default class api {
     }
 
     constructor(callbacks?: {
-        test1: () => Promise<void>
+        test1: () => void | Promise<void>
     }) {
         if (callbacks?.test1) {
             this.test1 = callbacks.test1
@@ -20,8 +20,8 @@ export default class api {
 
     }
 
-    private _test1: () => Promise<void> = undefined as any
-    set test1(value: () => Promise<void>) {
+    private _test1: () => void | Promise<void> = undefined as any
+    set test1(value: () => void | Promise<void>) {
         this._test1 = value
         this.server?.registerERPCCallbackFunction(value, "api/test1")
     }

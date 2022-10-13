@@ -1,13 +1,16 @@
 #[cfg(test)]
 mod tests {
-    use crate::transpiler::parser::{input_reader::{InputReaderError, InputReader}, lexer::disposeable_comment::DisposeableComment};
+    use crate::transpiler::parser::{
+        input_reader::{InputReader, InputReaderError},
+        lexer::disposeable_comment::DisposeableComment,
+    };
 
     #[test]
     fn test_success_nbs() -> Result<(), InputReaderError> {
         let input = "#This is a simple test string!";
         let mut reader = InputReader::new(input.as_bytes());
         let output = DisposeableComment::lex_disposeable_comment(&mut reader)?;
-        
+
         assert_eq!(output.is_some(), true);
         let output = output.unwrap();
         assert_eq!(output.start.character, 0);
@@ -21,9 +24,10 @@ mod tests {
 
     #[test]
     fn test_success_2_nbs() -> Result<(), InputReaderError> {
-        let mut reader = InputReader::new("#This is a simple test string!\nthis is no comment".as_bytes());
+        let mut reader =
+            InputReader::new("#This is a simple test string!\nthis is no comment".as_bytes());
         let output = DisposeableComment::lex_disposeable_comment(&mut reader)?;
-        
+
         assert_eq!(output.is_some(), true);
         let output = output.unwrap();
         assert_eq!(output.start.character, 0);
@@ -41,7 +45,7 @@ mod tests {
         let input = "//This is a simple test string!";
         let mut reader = InputReader::new(input.as_bytes());
         let output = DisposeableComment::lex_disposeable_comment(&mut reader)?;
-        
+
         assert_eq!(output.is_some(), true);
         let output = output.unwrap();
         assert_eq!(output.start.character, 0);
@@ -55,9 +59,10 @@ mod tests {
 
     #[test]
     fn test_success_2_slash() -> Result<(), InputReaderError> {
-        let mut reader = InputReader::new("//This is a simple test string!\nthis is no comment".as_bytes());
+        let mut reader =
+            InputReader::new("//This is a simple test string!\nthis is no comment".as_bytes());
         let output = DisposeableComment::lex_disposeable_comment(&mut reader)?;
-        
+
         assert_eq!(output.is_some(), true);
         let output = output.unwrap();
         assert_eq!(output.start.character, 0);
@@ -72,16 +77,21 @@ mod tests {
 
     #[test]
     fn test_success_multiline() -> Result<(), InputReaderError> {
-        let mut reader = InputReader::new("/*\nThis is a simple test string!\nthis also comment\n*/something".as_bytes());
+        let mut reader = InputReader::new(
+            "/*\nThis is a simple test string!\nthis also comment\n*/something".as_bytes(),
+        );
         let output = DisposeableComment::lex_disposeable_comment(&mut reader)?;
-        
+
         assert_eq!(output.is_some(), true);
         let output = output.unwrap();
         assert_eq!(output.start.character, 0);
         assert_eq!(output.start.line, 0);
         assert_eq!(output.end.character, 2);
         assert_eq!(output.end.line, 3);
-        assert_eq!(output.content, "\nThis is a simple test string!\nthis also comment\n");
+        assert_eq!(
+            output.content,
+            "\nThis is a simple test string!\nthis also comment\n"
+        );
         assert_eq!(reader.peek(9)?.unwrap(), "something");
 
         Ok(())
@@ -89,9 +99,11 @@ mod tests {
 
     #[test]
     fn test_fail_multiline() -> Result<(), InputReaderError> {
-        let mut reader = InputReader::new("/**\nThis is a simple test string!\nthis also comment\n*/".as_bytes());
+        let mut reader = InputReader::new(
+            "/**\nThis is a simple test string!\nthis also comment\n*/".as_bytes(),
+        );
         let output = DisposeableComment::lex_disposeable_comment(&mut reader)?;
-        
+
         assert_eq!(output.is_some(), false);
 
         Ok(())

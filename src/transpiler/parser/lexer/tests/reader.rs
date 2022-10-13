@@ -2,11 +2,7 @@
 mod tests {
     use crate::transpiler::parser::{
         input_reader::{InputReader, InputReaderError},
-        lexer::{
-            operator::{OperatorType},
-            token::Token,
-            TokenReader,
-        },
+        lexer::{operator::OperatorType, token::Token, TokenReader},
     };
 
     #[test]
@@ -82,7 +78,7 @@ mod tests {
     #[test]
     fn test_last_element_position() -> Result<(), InputReaderError> {
         let mut reader = TokenReader::new(InputReader::new("? Identifier ?\n ||".as_bytes()))?;
-        
+
         assert_eq!(reader.last_token_code_start.character, 0);
         assert_eq!(reader.last_token_code_start.line, 0);
         assert_eq!(reader.last_token_code_end.character, 0);
@@ -105,5 +101,4 @@ mod tests {
 
         Ok(())
     }
-
 }

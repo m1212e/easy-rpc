@@ -3,11 +3,9 @@ use strum_macros::{self, Display, EnumIter};
 
 use std::io::Read;
 
-use crate::{
-    transpiler::parser::{
-        input_reader::{InputReader, InputReaderError},
-        CodePosition,
-    },
+use crate::transpiler::parser::{
+    input_reader::{InputReader, InputReaderError},
+    CodePosition,
 };
 
 /**

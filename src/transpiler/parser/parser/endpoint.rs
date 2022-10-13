@@ -7,7 +7,7 @@ use crate::{
     },
 };
 
-use super::field_type::{Type, parse_field_type};
+use super::field_type::{parse_field_type, Type};
 
 #[derive(Debug)]
 pub struct Parameter {
@@ -256,5 +256,3 @@ fn parse_endpoint_parameter(reader: &mut TokenReader) -> Result<Parameter, Parse
         parameter_type,
     });
 }
-
-

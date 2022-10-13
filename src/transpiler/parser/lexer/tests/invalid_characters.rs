@@ -12,7 +12,7 @@ mod tests {
 
         assert_eq!(output.is_some(), true);
         let output = output.unwrap();
-    assert_eq!(output.start.character, 0);
+        assert_eq!(output.start.character, 0);
         assert_eq!(output.start.line, 0);
         assert_eq!(output.end.character, 1);
         assert_eq!(output.end.line, 0);

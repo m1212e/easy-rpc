@@ -12,7 +12,7 @@ export default class api {
     }
 
     constructor(callbacks?: {
-        login: (newUser: string) => Promise<"success" | "fail">
+        login: (newUser: string) => "success" | "fail" | Promise<"success" | "fail">
     }) {
         if (callbacks?.login) {
             this.login = callbacks.login
@@ -20,8 +20,8 @@ export default class api {
 
     }
 
-    private _login: (newUser: string) => Promise<"success" | "fail"> = undefined as any
-    set login(value: (newUser: string) => Promise<"success" | "fail">) {
+    private _login: (newUser: string) => "success" | "fail" | Promise<"success" | "fail"> = undefined as any
+    set login(value: (newUser: string) => "success" | "fail" | Promise<"success" | "fail">) {
         this._login = value
         this.server?.registerERPCCallbackFunction(value, "api/login")
     }

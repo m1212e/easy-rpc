@@ -53,8 +53,8 @@ pub struct Custom {
 }
 
 /**
-    Parses a field type. Expects the first type token, not the : operator
- */
+   Parses a field type. Expects the first type token, not the : operator
+*/
 pub fn parse_field_type(reader: &mut TokenReader) -> Result<Type, ParseError> {
     let peeked = reader.peek(1);
 
@@ -99,7 +99,7 @@ fn parse_primitive_type(reader: &mut TokenReader) -> Result<Type, ParseError> {
                     start: keyword.start,
                     end: keyword.start,
                     message: "Invalid keyword for primitive type".to_string(),
-                })
+                });
             }
         },
         token => {
@@ -108,7 +108,7 @@ fn parse_primitive_type(reader: &mut TokenReader) -> Result<Type, ParseError> {
                 start: token.start(),
                 end: token.start(),
                 message: "Invalid token for primitive type".to_string(),
-            })
+            });
         }
     };
 
@@ -175,7 +175,7 @@ fn parse_custom_type(reader: &mut TokenReader) -> Result<Type, ParseError> {
                 start: token.start(),
                 end: token.end(),
                 message: "Invalid token for custom type".to_string(),
-            })
+            });
         }
     };
 
@@ -186,8 +186,8 @@ fn parse_custom_type(reader: &mut TokenReader) -> Result<Type, ParseError> {
 }
 
 /**
-    Parses an array length specification which can occur after some types
- */
+   Parses an array length specification which can occur after some types
+*/
 fn parse_array_length(reader: &mut TokenReader) -> Result<ArrayAmount, ParseError> {
     let peeked = reader.peek(2);
 

@@ -101,7 +101,15 @@ fn generate_callback_class(
             }
         }
 
-        ret.push_str(") => Promise<");
+        ret.push_str(") => ");
+        if endpoint.return_type.is_some() {
+            ret.push_str(&stringify_field_type(
+                endpoint.return_type.as_ref().unwrap(),
+            ));
+        } else {
+            ret.push_str("void");
+        }
+        ret.push_str(" | Promise<");
         if endpoint.return_type.is_some() {
             ret.push_str(&stringify_field_type(
                 endpoint.return_type.as_ref().unwrap(),

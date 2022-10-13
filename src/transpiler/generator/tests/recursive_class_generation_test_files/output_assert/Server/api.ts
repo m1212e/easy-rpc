@@ -14,8 +14,8 @@ export default class api {
     }
 
     constructor(callbacks?: {
-        test3: () => Promise<void>
-        test4: () => Promise<void>
+        test3: () => void | Promise<void>
+        test4: () => void | Promise<void>
         tracks: tracks
     }) {
         if (callbacks?.test3) {
@@ -34,8 +34,8 @@ export default class api {
 
     }
 
-    private _test3: () => Promise<void> = undefined as any
-    set test3(value: () => Promise<void>) {
+    private _test3: () => void | Promise<void> = undefined as any
+    set test3(value: () => void | Promise<void>) {
         this._test3 = value
         this.server?.registerERPCCallbackFunction(value, "api/test3")
     }
@@ -43,8 +43,8 @@ export default class api {
         return this._test3
     }
 
-    private _test4: () => Promise<void> = undefined as any
-    set test4(value: () => Promise<void>) {
+    private _test4: () => void | Promise<void> = undefined as any
+    set test4(value: () => void | Promise<void>) {
         this._test4 = value
         this.server?.registerERPCCallbackFunction(value, "api/test4")
     }

@@ -19,7 +19,10 @@ pub fn assert_equal_directories(a: &std::path::Path, b: &std::path::Path) {
 
             assert_eq!(
                 std::fs::read_to_string(&a.join(entry.file_name())).unwrap(),
-                std::fs::read_to_string(&b.join(entry.file_name())).unwrap()
+                std::fs::read_to_string(&b.join(entry.file_name())).unwrap(),
+                "\nComparison between\n{}\nand\n{}\nfailed.",
+                a.join(entry.file_name()).to_str().unwrap(),
+                b.join(entry.file_name()).to_str().unwrap()
             );
         }
     }

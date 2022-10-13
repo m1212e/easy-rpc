@@ -2,7 +2,7 @@
 mod tests {
     use crate::transpiler::parser::{
         input_reader::{InputReader, InputReaderError},
-        lexer::{identifier::Identifier},
+        lexer::identifier::Identifier,
     };
 
     #[test]
@@ -18,7 +18,6 @@ mod tests {
         assert_eq!(output.end.line, 0);
         assert_eq!(output.content, "Hello");
         assert_eq!(reader.peek(2)?.unwrap(), "//");
-        
 
         Ok(())
     }

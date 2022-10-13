@@ -42,5 +42,4 @@ impl DocumentationalComment {
 
         Ok(None)
     }
-
 }
