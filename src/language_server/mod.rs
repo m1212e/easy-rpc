@@ -4,19 +4,21 @@ use std::collections::HashMap;
 use crate::transpiler::ERPCError;
 
 use serde_json::Value;
-use tower_lsp::jsonrpc::Result;
 use tower_lsp::lsp_types::*;
 use tower_lsp::{Client, LanguageServer, LspService, Server};
 
 #[derive(Debug)]
 struct Backend {
     client: Client,
-    error_reciever: async_channel::Receiver<Vec<ERPCError>>,
+    error_reciever: async_channel::Receiver<Result<String, Vec<ERPCError>>>,
 }
 
 #[tower_lsp::async_trait]
 impl LanguageServer for Backend {
-    async fn initialize(&self, _: InitializeParams) -> Result<InitializeResult> {
+    async fn initialize(
+        &self,
+        _: InitializeParams,
+    ) -> tower_lsp::jsonrpc::Result<InitializeResult> {
         Ok(InitializeResult {
             server_info: None,
             capabilities: ServerCapabilities {
@@ -65,67 +67,69 @@ impl LanguageServer for Backend {
 
                 last.clear();
 
-                for err in recieved {
-                    match err {
-                        ERPCError::ValidationError((err, origin)) => {
-                            let d = Diagnostic {
-                                range: Range {
-                                    start: err.start.into(),
-                                    end: err.end.into(),
-                                },
-                                severity: Some(DiagnosticSeverity::ERROR),
-                                code: None,
-                                code_description: None,
-                                source: None,
-                                message: err.message,
-                                related_information: None,
-                                tags: None,
-                                data: None,
-                            };
-                            match diagnostics_per_origin.entry(origin) {
-                                Entry::Occupied(mut entry) => {
-                                    entry.get_mut().push(d);
-                                }
-                                Entry::Vacant(entry) => {
-                                    entry.insert(vec![d]);
-                                }
-                            }
-                        }
-                        ERPCError::ParseError((err, origin)) => {
-                            let d = Diagnostic {
-                                range: Range {
-                                    start: err.start.into(),
-                                    end: err.end.into(),
-                                },
-                                severity: Some(DiagnosticSeverity::ERROR),
-                                code: None,
-                                code_description: None,
-                                source: None,
-                                message: err.message,
-                                related_information: None,
-                                tags: None,
-                                data: None,
-                            };
-                            match diagnostics_per_origin.entry(origin) {
-                                Entry::Occupied(mut entry) => {
-                                    entry.get_mut().push(d);
-                                }
-                                Entry::Vacant(entry) => {
-                                    entry.insert(vec![d]);
+                if recieved.is_err() {
+                    for err in recieved.unwrap_err() {
+                        match err {
+                            ERPCError::ValidationError((err, origin)) => {
+                                let d = Diagnostic {
+                                    range: Range {
+                                        start: err.start.into(),
+                                        end: err.end.into(),
+                                    },
+                                    severity: Some(DiagnosticSeverity::ERROR),
+                                    code: None,
+                                    code_description: None,
+                                    source: None,
+                                    message: err.message,
+                                    related_information: None,
+                                    tags: None,
+                                    data: None,
+                                };
+                                match diagnostics_per_origin.entry(origin) {
+                                    Entry::Occupied(mut entry) => {
+                                        entry.get_mut().push(d);
+                                    }
+                                    Entry::Vacant(entry) => {
+                                        entry.insert(vec![d]);
+                                    }
                                 }
                             }
-                        }
-                        ERPCError::InputReaderError(_)
-                        | ERPCError::JSONError(_)
-                        | ERPCError::ConfigurationError(_)
-                        | ERPCError::IO(_)
-                        | ERPCError::NotifyError(_)
-                        | ERPCError::RecvError(_) => {
-                            client
-                                .show_message(MessageType::ERROR, err.to_string())
-                                .await
-                        }
-                    };
+                            ERPCError::ParseError((err, origin)) => {
+                                let d = Diagnostic {
+                                    range: Range {
+                                        start: err.start.into(),
+                                        end: err.end.into(),
+                                    },
+                                    severity: Some(DiagnosticSeverity::ERROR),
+                                    code: None,
+                                    code_description: None,
+                                    source: None,
+                                    message: err.message,
+                                    related_information: None,
+                                    tags: None,
+                                    data: None,
+                                };
+                                match diagnostics_per_origin.entry(origin) {
+                                    Entry::Occupied(mut entry) => {
+                                        entry.get_mut().push(d);
+                                    }
+                                    Entry::Vacant(entry) => {
+                                        entry.insert(vec![d]);
+                                    }
+                                }
+                            }
+                            ERPCError::InputReaderError(_)
+                            | ERPCError::JSONError(_)
+                            | ERPCError::ConfigurationError(_)
+                            | ERPCError::IO(_)
+                            | ERPCError::NotifyError(_)
+                            | ERPCError::RecvError(_) => {
+                                client
+                                    .show_message(MessageType::ERROR, err.to_string())
+                                    .await
+                            }
+                        };
+                    }
                 }
 
                 for (origin, diagnostics) in diagnostics_per_origin {
@@ -142,11 +146,14 @@ impl LanguageServer for Backend {
         });
     }
 
-    async fn shutdown(&self) -> Result<()> {
+    async fn shutdown(&self) -> tower_lsp::jsonrpc::Result<()> {
         Ok(())
     }
 
-    async fn execute_command(&self, _: ExecuteCommandParams) -> Result<Option<Value>> {
+    async fn execute_command(
+        &self,
+        _: ExecuteCommandParams,
+    ) -> tower_lsp::jsonrpc::Result<Option<Value>> {
         self.client
             .log_message(MessageType::INFO, "command executed!")
             .await;
@@ -154,7 +161,10 @@ impl LanguageServer for Backend {
         Ok(None)
     }
 
-    async fn completion(&self, _: CompletionParams) -> Result<Option<CompletionResponse>> {
+    async fn completion(
+        &self,
+        _: CompletionParams,
+    ) -> tower_lsp::jsonrpc::Result<Option<CompletionResponse>> {
         Ok(Some(CompletionResponse::Array(vec![
             CompletionItem::new_simple("Hello".to_string(), "Some detail".to_string()),
             CompletionItem::new_simple("Bye".to_string(), "More detail".to_string()),
@@ -162,7 +172,9 @@ impl LanguageServer for Backend {
     }
 }
 
-pub async fn run_language_server(error_reciever: async_channel::Receiver<Vec<ERPCError>>) {
+pub async fn run_language_server(
+    error_reciever: async_channel::Receiver<Result<String, Vec<ERPCError>>>,
+) {
     let (stdin, stdout) = (tokio::io::stdin(), tokio::io::stdout());
 
     let (service, socket) = LspService::new(|client| Backend {

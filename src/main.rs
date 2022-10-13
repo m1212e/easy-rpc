@@ -10,7 +10,7 @@ use std::{
 };
 
 use notify::{RecommendedWatcher, RecursiveMode, Watcher};
-use tokio::{io::AsyncWriteExt, runtime::Handle};
+use tokio::{runtime::Handle};
 use transpiler::{run, ERPCError};
 use util::normalize_path::normalize_path;
 
@@ -26,9 +26,7 @@ async fn main() {
 async fn run_main(args: Vec<String>) -> Result<(), String> {
     let entry_path = match args.iter().position(|e| *e == "-p") {
         Some(index) => match args.get(index + 1) {
-            Some(v) => {
-                normalize_path(&PathBuf::from(v))
-            }
+            Some(v) => normalize_path(&PathBuf::from(v)),
             None => {
                 return Err("Could not find path argument after -p flag".to_string());
             }
@@ -37,127 +35,36 @@ async fn run_main(args: Vec<String>) -> Result<(), String> {
     };
 
     if args.contains(&"-ls".to_string()) {
-        run_ls_mode(entry_path).await
+        let (sender, reciever) = async_channel::unbounded::<Result<String, Vec<ERPCError>>>();
+        tokio::spawn(language_server::run_language_server(reciever));
+        run_watch(entry_path, sender).await
     } else if args.contains(&"-w".to_string()) {
-        run_watch_mode(entry_path).await
-    } else {
-        run_normal_mode(entry_path).await
-    }
-}
-
-async fn run_ls_mode(entry_path: PathBuf) -> Result<(), String> {
-    let (sender, reciever) = async_channel::unbounded::<Vec<ERPCError>>();
-    let ls = tokio::spawn(language_server::run_language_server(reciever));
-    let root_dirs = match get_root_dirs(entry_path) {
-        Ok(val) => {
-            if val.len() == 0 {
-                sender.send(vec![ERPCError::ConfigurationError("Could not find any easy-rpc project root. Make sure the project contains an erpc.json at its root.".to_string())]).await.unwrap();
-                return Err("Could not find any easy-rpc project root. Make sure the project contains an erpc.json at its root.".to_string());
-            }
-            val
-        }
-        Err(err) => {
-            sender
-                .send(vec![ERPCError::ConfigurationError(err.to_string())])
-                .await
-                .unwrap();
-            return Err(err.to_string());
-        }
-    };
-
-    for root_dir in root_dirs {
-        let config = match read_config(&root_dir) {
-            Ok(val) => val,
-            Err(err) => {
-                sender.send(vec![err]).await.unwrap();
-                return Err("Configuration error occured".to_string());
-            }
-        };
-
-        let generated = root_dir.join(".erpc").join("generated");
-        if generated.exists() {
-            match fs::remove_dir_all(&generated) {
-                Ok(_) => {}
-                Err(err) => {
-                    sender.send(vec![err.into()]).await.unwrap();
-                    return Err("IO error occured".to_string());
-                }
-            }
-        };
-
-        for source in config.sources {
-            let root_dir = root_dir.clone();
-            let role = config.role.clone();
-
-            let (watch_sender, watch_reciever) = async_channel::bounded(1);
-
-            let handle = Handle::current();
-            let mut watcher = match RecommendedWatcher::new(
-                move |res| {
-                    let sdr = watch_sender.clone();
-                    handle.spawn(async move {
-                        sdr.send(res).await.unwrap();
-                    });
-                },
-                notify::Config::default(),
-            ) {
-                Ok(val) => val,
-                Err(err) => {
-                    sender
-                        .send(vec![ERPCError::NotifyError(err)])
-                        .await
-                        .unwrap();
-                    return Err("Notify error occured".to_string());
-                }
-            };
-
-            let normalized_source_path = normalize_path(&root_dir.join(&source));
-
-            watcher
-                .watch(&normalized_source_path, RecursiveMode::Recursive)
-                .unwrap();
-
+        let (sender, reciever) = async_channel::unbounded::<Result<String, Vec<ERPCError>>>();
+        // just log the incoming results to console
+        tokio::spawn(async move {
             loop {
-                let event = match watch_reciever.recv().await {
-                    Ok(val) => match val {
-                        Ok(val) => val,
-                        Err(err) => {
-                            sender
-                                .send(vec![ERPCError::NotifyError(err)])
-                                .await
-                                .unwrap();
-                            return Err("Notify error occured".to_string());
+                match reciever.recv().await {
+                    Ok(v) => println!(
+                        "{}",
+                        match v {
+                            Ok(v) => v,
+                            Err(v) => format!("{:#?}", v),
                         }
-                    },
-                    Err(err) => {
-                        sender.send(vec![ERPCError::RecvError(err)]).await.unwrap();
-                        return Err(err.to_string());
-                    }
+                    ),
+                    Err(err) => println!("{:#?}", err),
                 };
-
-                match event.kind {
-                    notify::EventKind::Create(_)
-                    | notify::EventKind::Modify(_)
-                    | notify::EventKind::Remove(_) => {
-                        let res = run(
-                            &normalized_source_path,
-                            &root_dir.join(".erpc").join("generated"),
-                            &role,
-                        )
-                        .await;
-                        sender.send(res).await.unwrap();
-                    }
-                    _ => {}
-                }
             }
-        }
+        });
+        run_watch(entry_path, sender).await
+    } else {
+        run_once(entry_path).await
     }
-    ls.await.unwrap();
-
-    Ok(())
 }
 
-async fn run_watch_mode(entry_path: PathBuf) -> Result<(), String> {
+async fn run_watch(
+    entry_path: PathBuf,
+    error_reporter: async_channel::Sender<Result<String, Vec<ERPCError>>>,
+) -> Result<(), String> {
     let root_dirs = get_root_dirs(entry_path)?;
 
     let mut handles = vec![];
@@ -182,6 +89,7 @@ async fn run_watch_mode(entry_path: PathBuf) -> Result<(), String> {
             let root_dir = root_dir.clone();
             let role = config.role.clone();
 
+            let error_reporter = error_reporter.clone();
             handles.push(tokio::spawn(async move {
                 let (sender, reciever) = async_channel::bounded(1);
 
@@ -197,10 +105,7 @@ async fn run_watch_mode(entry_path: PathBuf) -> Result<(), String> {
                 ) {
                     Ok(val) => val,
                     Err(err) => {
-                        tokio::io::stderr()
-                            .write(format!("{err}\n").as_bytes())
-                            .await
-                            .unwrap();
+                        error_reporter.send(Err(vec![ERPCError::NotifyError(err)])).await.unwrap();
                         return;
                     }
                 };
@@ -216,18 +121,12 @@ async fn run_watch_mode(entry_path: PathBuf) -> Result<(), String> {
                         Ok(val) => match val {
                             Ok(val) => val,
                             Err(err) => {
-                                tokio::io::stderr()
-                                    .write(format!("{err}\n").as_bytes())
-                                    .await
-                                    .unwrap();
+                                error_reporter.send(Err(vec![ERPCError::NotifyError(err)])).await.unwrap();
                                 return;
                             }
                         },
                         Err(err) => {
-                            tokio::io::stderr()
-                                .write(format!("{err}\n").as_bytes())
-                                .await
-                                .unwrap();
+                            error_reporter.send(Err(vec![ERPCError::RecvError(err)])).await.unwrap();
                             return;
                         }
                     };
@@ -243,18 +142,12 @@ async fn run_watch_mode(entry_path: PathBuf) -> Result<(), String> {
                             )
                             .await;
                             if res.len() > 0 {
-                                tokio::io::stderr()
-                                    .write(format!("{:#?}\n", res).as_bytes())
-                                    .await
-                                    .unwrap();
+                                error_reporter.send(Err(res)).await.unwrap();
                             } else {
-                                tokio::io::stdout()
-                                    .write(
-                                        format!("Processed {}\n", root_dir.to_str().unwrap())
-                                            .as_bytes(),
-                                    )
-                                    .await
-                                    .unwrap();
+                                error_reporter.send(Ok(format!(
+                                    "Processed {}\n",
+                                    root_dir.to_str().unwrap()
+                                ))).await.unwrap();
                             }
                         }
                         _ => {}
@@ -268,7 +161,7 @@ async fn run_watch_mode(entry_path: PathBuf) -> Result<(), String> {
     Ok(())
 }
 
-async fn run_normal_mode(entry_path: PathBuf) -> Result<(), String> {
+async fn run_once(entry_path: PathBuf) -> Result<(), String> {
     let root_dirs = get_root_dirs(entry_path)?;
 
     let mut handles = vec![];
