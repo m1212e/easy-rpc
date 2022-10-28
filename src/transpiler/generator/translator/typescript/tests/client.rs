@@ -101,12 +101,12 @@ export default class Server extends ERPCServer {
     onConnection(callback: (target: Client) => void) {
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore
-        super.onSocketConnection(({ role, client}) => {
+        super.onSocketConnection((role, socket) => {
             if (role == \"Client\") {
                 const ret = new Client({} as any)
                 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
                 // @ts-ignore
-                ret.setERPCSocket(client)
+                ret.setERPCSocket(socket)
                 callback(ret)
             }
         })

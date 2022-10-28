@@ -129,11 +129,11 @@ fn generate_callback_client(
             ") => void) {
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore
-        super.onSocketConnection(({ role, client}) => {\n",
+        super.onSocketConnection((role, socket) => {\n",
         );
         for role in socket_enabled_browser_roles {
             ret.push_str(&format!(
-                "            if (role == \"{role}\") {{\n                const ret = new {role}({{}} as any)\n                // eslint-disable-next-line @typescript-eslint/ban-ts-comment\n                // @ts-ignore\n                ret.setERPCSocket(client)\n                callback(ret)\n            }}"
+                "            if (role == \"{role}\") {{\n                const ret = new {role}({{}} as any)\n                // eslint-disable-next-line @typescript-eslint/ban-ts-comment\n                // @ts-ignore\n                ret.setERPCSocket(socket)\n                callback(ret)\n            }}"
             ));
         }
         ret.push_str("\n        })\n    }");

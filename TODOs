@@ -16,3 +16,4 @@ TODO: middleware
 TODO: input/parameter validation
 TODO: improve error messages on crash
 TODO: Refactor main.rs + transpiler/generator/mod.rs
+TODO: validation for .json config files

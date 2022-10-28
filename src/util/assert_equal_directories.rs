@@ -9,7 +9,6 @@ use text_diff::{diff, Difference};
 */
 #[cfg(test)]
 pub fn assert_equal_directories(a: &std::path::Path, b: &std::path::Path) {
-    use colored::ColoredString;
 
     for entry in std::fs::read_dir(a).unwrap() {
         let entry = entry.unwrap();
