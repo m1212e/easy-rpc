@@ -8,11 +8,13 @@ export default class api {
         this.server = server
 
         // trigger the setters to set the handlers on the server object
-        this.test1 = this.test1
+        if (this.test1) {
+            this.test1 = this.test1
+        }
     }
 
     constructor(callbacks?: {
-        test1: () => void | Promise<void>
+        test1: () => Promise<void>
     }) {
         if (callbacks?.test1) {
             this.test1 = callbacks.test1
@@ -20,8 +22,8 @@ export default class api {
 
     }
 
-    private _test1: () => void | Promise<void> = undefined as any
-    set test1(value: () => void | Promise<void>) {
+    private _test1: () => Promise<void> = undefined as any
+    set test1(value: () => Promise<void>) {
         this._test1 = value
         this.server?.registerERPCCallbackFunction(value, "api/test1")
     }

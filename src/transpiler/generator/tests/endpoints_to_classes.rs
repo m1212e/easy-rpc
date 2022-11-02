@@ -66,11 +66,13 @@ export default class TestClass {
         this.server = server
 
         // trigger the setters to set the handlers on the server object
-        this.MySuperCoolEndpoint = this.MySuperCoolEndpoint
+        if (this.MySuperCoolEndpoint) {
+            this.MySuperCoolEndpoint = this.MySuperCoolEndpoint
+        }
     }
 
     constructor(callbacks?: {
-        MySuperCoolEndpoint: () => void | Promise<void>
+        MySuperCoolEndpoint: () => Promise<void>
         someName: someName
     }) {
         if (callbacks?.MySuperCoolEndpoint) {
@@ -85,8 +87,8 @@ export default class TestClass {
 
     }
 
-    private _MySuperCoolEndpoint: () => void | Promise<void> = undefined as any
-    set MySuperCoolEndpoint(value: () => void | Promise<void>) {
+    private _MySuperCoolEndpoint: () => Promise<void> = undefined as any
+    set MySuperCoolEndpoint(value: () => Promise<void>) {
         this._MySuperCoolEndpoint = value
         this.server?.registerERPCCallbackFunction(value, \"test/test2/TestClass/MySuperCoolEndpoint\")
     }

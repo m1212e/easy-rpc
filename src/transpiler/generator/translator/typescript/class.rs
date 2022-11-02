@@ -41,13 +41,7 @@ fn generate_callback_class(
     let mut ret = String::new();
 
     for imp in class_imports {
-        ret.push_str("import ");
-        ret.push_str(&imp);
-        ret.push_str(" from \"./");
-        ret.push_str(&class_name);
-        ret.push_str("/");
-        ret.push_str(&imp);
-        ret.push_str("\"\n");
+        ret.push_str(&format!("import {imp} from \"./{class_name}/{imp}\"\n"));
     }
     ret.push_str("\n");
 
@@ -56,25 +50,25 @@ fn generate_callback_class(
         ret.push_str("\n");
     }
 
-    ret.push_str("export default class ");
-    ret.push_str(class_name);
-    ret.push_str(" {
+    ret.push_str(&format!("export default class {class_name} {{
     private server: any
     /**
         This method is used by easy-rpc internally and is not intended for manual use. It can be used to set the server of the object.
     */
-    private setERPCServer(server: any) {
+    private setERPCServer(server: any) {{
         this.server = server
 
         // trigger the setters to set the handlers on the server object
-");
+"));
 
     for endpoint in endpoints {
-        ret.push_str("        this.");
-        ret.push_str(&endpoint.identifier);
-        ret.push_str(" = this.");
-        ret.push_str(&endpoint.identifier);
-        ret.push_str("\n");
+        let identifier = &endpoint.identifier;
+        ret.push_str(&format!(
+            "        if (this.{identifier}) {{
+            this.{identifier} = this.{identifier}
+        }}
+"
+        ));
     }
 
     ret.push_str("    }\n\n    constructor(callbacks?: {\n");
@@ -101,15 +95,7 @@ fn generate_callback_class(
             }
         }
 
-        ret.push_str(") => ");
-        if endpoint.return_type.is_some() {
-            ret.push_str(&stringify_field_type(
-                endpoint.return_type.as_ref().unwrap(),
-            ));
-        } else {
-            ret.push_str("void");
-        }
-        ret.push_str(" | Promise<");
+        ret.push_str(") => Promise<");
         if endpoint.return_type.is_some() {
             ret.push_str(&stringify_field_type(
                 endpoint.return_type.as_ref().unwrap(),

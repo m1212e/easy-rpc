@@ -8,17 +8,25 @@ export default class api {
         this.server = server
 
         // trigger the setters to set the handlers on the server object
-        this.test1 = this.test1
-        this.test7 = this.test7
-        this.test8 = this.test8
-        this.test9 = this.test9
+        if (this.test1) {
+            this.test1 = this.test1
+        }
+        if (this.test7) {
+            this.test7 = this.test7
+        }
+        if (this.test8) {
+            this.test8 = this.test8
+        }
+        if (this.test9) {
+            this.test9 = this.test9
+        }
     }
 
     constructor(callbacks?: {
-        test1: () => void | Promise<void>
-        test7: () => void | Promise<void>
-        test8: () => void | Promise<void>
-        test9: () => void | Promise<void>
+        test1: () => Promise<void>
+        test7: () => Promise<void>
+        test8: () => Promise<void>
+        test9: () => Promise<void>
     }) {
         if (callbacks?.test1) {
             this.test1 = callbacks.test1
@@ -38,8 +46,8 @@ export default class api {
 
     }
 
-    private _test1: () => void | Promise<void> = undefined as any
-    set test1(value: () => void | Promise<void>) {
+    private _test1: () => Promise<void> = undefined as any
+    set test1(value: () => Promise<void>) {
         this._test1 = value
         this.server?.registerERPCCallbackFunction(value, "api/test1")
     }
@@ -47,8 +55,8 @@ export default class api {
         return this._test1
     }
 
-    private _test7: () => void | Promise<void> = undefined as any
-    set test7(value: () => void | Promise<void>) {
+    private _test7: () => Promise<void> = undefined as any
+    set test7(value: () => Promise<void>) {
         this._test7 = value
         this.server?.registerERPCCallbackFunction(value, "api/test7")
     }
@@ -56,8 +64,8 @@ export default class api {
         return this._test7
     }
 
-    private _test8: () => void | Promise<void> = undefined as any
-    set test8(value: () => void | Promise<void>) {
+    private _test8: () => Promise<void> = undefined as any
+    set test8(value: () => Promise<void>) {
         this._test8 = value
         this.server?.registerERPCCallbackFunction(value, "api/test8")
     }
@@ -65,8 +73,8 @@ export default class api {
         return this._test8
     }
 
-    private _test9: () => void | Promise<void> = undefined as any
-    set test9(value: () => void | Promise<void>) {
+    private _test9: () => Promise<void> = undefined as any
+    set test9(value: () => Promise<void>) {
         this._test9 = value
         this.server?.registerERPCCallbackFunction(value, "api/test9")
     }

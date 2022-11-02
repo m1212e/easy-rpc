@@ -8,11 +8,13 @@ export default class api {
         this.server = server
 
         // trigger the setters to set the handlers on the server object
-        this.login = this.login
+        if (this.login) {
+            this.login = this.login
+        }
     }
 
     constructor(callbacks?: {
-        login: (newUser: string) => "success" | "fail" | Promise<"success" | "fail">
+        login: (newUser: string) => Promise<"success" | "fail">
     }) {
         if (callbacks?.login) {
             this.login = callbacks.login
@@ -20,8 +22,8 @@ export default class api {
 
     }
 
-    private _login: (newUser: string) => "success" | "fail" | Promise<"success" | "fail"> = undefined as any
-    set login(value: (newUser: string) => "success" | "fail" | Promise<"success" | "fail">) {
+    private _login: (newUser: string) => Promise<"success" | "fail"> = undefined as any
+    set login(value: (newUser: string) => Promise<"success" | "fail">) {
         this._login = value
         this.server?.registerERPCCallbackFunction(value, "api/login")
     }

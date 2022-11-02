@@ -17,3 +17,5 @@ TODO: input/parameter validation
 TODO: improve error messages on crash
 TODO: Refactor main.rs + transpiler/generator/mod.rs
 TODO: validation for .json config files
+TODO: deleting folders when starting watchmode isnt good since the transpiler doesnt run immediately after, so TS etc cant find dirs
+TODO: when no endpoints are defined on backend, generate client anyway to allow frontend socket connection

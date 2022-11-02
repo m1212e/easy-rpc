@@ -8,11 +8,13 @@ export default class models {
         this.server = server
 
         // trigger the setters to set the handlers on the server object
-        this.test9 = this.test9
+        if (this.test9) {
+            this.test9 = this.test9
+        }
     }
 
     constructor(callbacks?: {
-        test9: () => void | Promise<void>
+        test9: () => Promise<void>
     }) {
         if (callbacks?.test9) {
             this.test9 = callbacks.test9
@@ -20,8 +22,8 @@ export default class models {
 
     }
 
-    private _test9: () => void | Promise<void> = undefined as any
-    set test9(value: () => void | Promise<void>) {
+    private _test9: () => Promise<void> = undefined as any
+    set test9(value: () => Promise<void>) {
         this._test9 = value
         this.server?.registerERPCCallbackFunction(value, "api/roles/models/test9")
     }

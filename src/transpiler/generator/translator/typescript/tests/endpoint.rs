@@ -95,8 +95,8 @@ mod tests {
         assert_eq!(
             result,
             "/**some docs*/
-    private _MySuperCoolEndpoint: (p1?: string[], p2: number) => string[] | Promise<string[]> = undefined as any
-    set MySuperCoolEndpoint(value: (p1?: string[], p2: number) => string[] | Promise<string[]>) {
+    private _MySuperCoolEndpoint: (p1?: string[], p2: number) => Promise<string[]> = undefined as any
+    set MySuperCoolEndpoint(value: (p1?: string[], p2: number) => Promise<string[]>) {
         this._MySuperCoolEndpoint = value
         this.server?.registerERPCCallbackFunction(value, \"ABC123\")
     }

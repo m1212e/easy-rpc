@@ -96,13 +96,17 @@ export default class MyCoolClass {
         this.server = server
 
         // trigger the setters to set the handlers on the server object
-        this.MySuperCoolEndpoint1 = this.MySuperCoolEndpoint1
-        this.MySuperCoolEndpoint2 = this.MySuperCoolEndpoint2
+        if (this.MySuperCoolEndpoint1) {
+            this.MySuperCoolEndpoint1 = this.MySuperCoolEndpoint1
+        }
+        if (this.MySuperCoolEndpoint2) {
+            this.MySuperCoolEndpoint2 = this.MySuperCoolEndpoint2
+        }
     }
 
     constructor(callbacks?: {
-        MySuperCoolEndpoint1: (p1?: string[], p2: number) => string[] | Promise<string[]>
-        MySuperCoolEndpoint2: () => void | Promise<void>
+        MySuperCoolEndpoint1: (p1?: string[], p2: number) => Promise<string[]>
+        MySuperCoolEndpoint2: () => Promise<void>
         ImportedClass: ImportedClass
         ImportedClass2: ImportedClass2
     }) {
@@ -129,8 +133,8 @@ export default class MyCoolClass {
     }
 
 /**some docs*/
-    private _MySuperCoolEndpoint1: (p1?: string[], p2: number) => string[] | Promise<string[]> = undefined as any
-    set MySuperCoolEndpoint1(value: (p1?: string[], p2: number) => string[] | Promise<string[]>) {
+    private _MySuperCoolEndpoint1: (p1?: string[], p2: number) => Promise<string[]> = undefined as any
+    set MySuperCoolEndpoint1(value: (p1?: string[], p2: number) => Promise<string[]>) {
         this._MySuperCoolEndpoint1 = value
         this.server?.registerERPCCallbackFunction(value, \"test/test2/MyCoolClass/MySuperCoolEndpoint1\")
     }
@@ -138,8 +142,8 @@ export default class MyCoolClass {
         return this._MySuperCoolEndpoint1
     }
 
-    private _MySuperCoolEndpoint2: () => void | Promise<void> = undefined as any
-    set MySuperCoolEndpoint2(value: () => void | Promise<void>) {
+    private _MySuperCoolEndpoint2: () => Promise<void> = undefined as any
+    set MySuperCoolEndpoint2(value: () => Promise<void>) {
         this._MySuperCoolEndpoint2 = value
         this.server?.registerERPCCallbackFunction(value, \"test/test2/MyCoolClass/MySuperCoolEndpoint2\")
     }
