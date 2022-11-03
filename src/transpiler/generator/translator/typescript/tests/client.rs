@@ -103,7 +103,7 @@ export default class Server extends ERPCServer {
         // @ts-ignore
         super.onSocketConnection((role, socket) => {
             if (role == \"Client\") {
-                const ret = new Client({} as any)
+                const ret = new Client({address: \"\", port: 0})
                 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
                 // @ts-ignore
                 ret.setERPCSocket(socket)

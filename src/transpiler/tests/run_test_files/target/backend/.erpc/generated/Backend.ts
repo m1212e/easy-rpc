@@ -31,7 +31,7 @@ export default class Backend extends ERPCServer {
         // @ts-ignore
         super.onSocketConnection((role, socket) => {
             if (role == "Frontend") {
-                const ret = new Frontend({} as any)
+                const ret = new Frontend({address: "", port: 0})
                 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
                 // @ts-ignore
                 ret.setERPCSocket(socket)

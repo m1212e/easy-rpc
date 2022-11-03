@@ -32,7 +32,6 @@ pub trait Translator {
         custom_types: &Vec<CustomType>,
     ) -> String;
 
-    //TODO: make the file suffix return a slice instead of a string object
     /**
        Returns the file suffix for the generated language.
 

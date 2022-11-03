@@ -133,7 +133,7 @@ fn generate_callback_client(
         );
         for role in socket_enabled_browser_roles {
             ret.push_str(&format!(
-                "            if (role == \"{role}\") {{\n                const ret = new {role}({{}} as any)\n                // eslint-disable-next-line @typescript-eslint/ban-ts-comment\n                // @ts-ignore\n                ret.setERPCSocket(socket)\n                callback(ret)\n            }}"
+                "            if (role == \"{role}\") {{\n                const ret = new {role}({{address: \"\", port: 0}})\n                // eslint-disable-next-line @typescript-eslint/ban-ts-comment\n                // @ts-ignore\n                ret.setERPCSocket(socket)\n                callback(ret)\n            }}"
             ));
         }
         ret.push_str("\n        })\n    }");

@@ -1,21 +1,24 @@
-TODO: collect feedback & potentially improve parser error messages
-TODO: check where a string could be replaced by a string slice
+TODO: validation for .json config files
+TODO: prevent spaces in files paths/warn when they occur (leads to invalid syntax)
 TODO: in validator, ensure that a browser role never has multiple types, since a browser never can also be http-server
-TODO: refactor all string buildings to use format!() macro
-TODO: make enums for configuration stuff like types, filenames etc.
-TODO: CLA/code of conduct
+TODO: deleting folders when starting watchmode isnt good since the transpiler doesnt run immediately after, so TS etc cant find dirs
+TODO: when no endpoints are defined on backend, generate client anyway to allow frontend socket connection
 TODO: remove all .unwrap() calls
     TODO: increase rubustness, especially in ls mode
-TODO: Show warning when endpoint is unimplemented
-TODO: Goto ERPC definition inside TS files for addon/ls
+TODO: refactor all string buildings to use format!() macro
+TODO: CLA/code of conduct
+TODO: make enums for configuration stuff like types, filenames etc.
+TODO: some sort of static code analysis: https://www.reddit.com/r/rust/comments/ufwryc/comment/i6w629y/?utm_source=share&utm_medium=web2x&context=3
 TODO: Restructure/organize ERPC error
-TODO: (long term) allow multiple errors per file/multiple errors in ls
-TODO: update docs & project/module readmes
+TODO: Restructure the project to allow caching of parts which dont need to be rebuilt
 TODO: in docs, explain the problem of conflicting names/structures of sources or introduce a merge mechanism
 TODO: middleware
+TODO: collect feedback & potentially improve parser error messages
+TODO: check where a string could be replaced by a string slice
+TODO: Show warning when endpoint is unimplemented
+TODO: Goto ERPC definition inside TS files for addon/ls
+TODO: (long term) allow multiple errors per file/multiple errors in ls
+TODO: update docs & project/module readmes
 TODO: input/parameter validation
 TODO: improve error messages on crash
 TODO: Refactor main.rs + transpiler/generator/mod.rs
-TODO: validation for .json config files
-TODO: deleting folders when starting watchmode isnt good since the transpiler doesnt run immediately after, so TS etc cant find dirs
-TODO: when no endpoints are defined on backend, generate client anyway to allow frontend socket connection
