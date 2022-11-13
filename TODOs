@@ -1,4 +1,5 @@
 TODO: validation for .json config files
+TODO: check how the addon behaves while creating a project
 TODO: prevent spaces in files paths/warn when they occur (leads to invalid syntax)
 TODO: in validator, ensure that a browser role never has multiple types, since a browser never can also be http-server
 TODO: deleting folders when starting watchmode isnt good since the transpiler doesnt run immediately after, so TS etc cant find dirs
@@ -22,3 +23,4 @@ TODO: update docs & project/module readmes
 TODO: input/parameter validation
 TODO: improve error messages on crash
 TODO: Refactor main.rs + transpiler/generator/mod.rs
+TODO: for ssr frameworks, find a way to make calls to the local machine without http requests etc.
