@@ -18,7 +18,7 @@ export default class Backend extends ERPCServer {
     constructor(options: ServerOptions, callbacks?: {
         api: api
     }) {
-        super(options, ["http-server", ], true, "Backend")
+        super(options, "http-server", true, "Backend")
         if (callbacks?.api) {
             this.api = callbacks.api
         } else {

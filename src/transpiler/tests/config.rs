@@ -10,11 +10,11 @@ mod tests {
             "[
     {
         \"name\": \"Server\",
-        \"types\": [\"http-server\", \"tcp-server\"]
+        \"type\": \"http-server\"
     },
     {
         \"name\": \"Client\",
-        \"types\": [\"browser\"],
+        \"type\": \"browser\",
         \"documentation\": \"This is the browser client\"
     }
 ]"
@@ -23,13 +23,13 @@ mod tests {
 
         assert_eq!(result[0].name, "Server".to_string());
         assert_eq!(
-            result[0].types,
-            vec!["http-server".to_string(), "tcp-server".to_string()]
+            result[0].role_type,
+            "http-server".to_string()
         );
         assert_eq!(result[0].documentation, None);
 
         assert_eq!(result[1].name, "Client".to_string());
-        assert_eq!(result[1].types, vec!["browser".to_string()]);
+        assert_eq!(result[1].role_type, "browser".to_string());
         assert_eq!(
             result[1].documentation.as_ref().unwrap(),
             "This is the browser client"

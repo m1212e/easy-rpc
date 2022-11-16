@@ -8,6 +8,6 @@ export default class Backend extends ERPCTarget {
         @param options The options to set for the easy-rpc object
     */
     constructor(options: TargetOptions) {
-        super(options, ["http-server", ])
+        super(options, "http-server")
     }
 }

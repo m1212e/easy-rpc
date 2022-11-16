@@ -48,9 +48,9 @@ fn generate_callback_client(
     // 1: the client belongs to a server and there is at least one browser which has endpoints (socket_enabled_browser_roles.len() > 0)
     // 2: the client belongs to a browser and the role has endpoints (socket_enabled_browser_roles.contains(&role.name))
     let enable_websockets = (socket_enabled_browser_roles.len() > 0
-        && role.types.contains(&"http-server".to_string()))
+        && role.role_type.contains(&"http-server".to_string()))
         || (socket_enabled_browser_roles.contains(&role.name)
-            && role.types.contains(&"browser".to_string()));
+            && role.role_type.contains(&"browser".to_string()));
 
     for imp in class_imports {
         ret.push_str(&format!(
@@ -98,13 +98,10 @@ fn generate_callback_client(
     for imp in class_imports {
         ret.push_str(&format!("        {imp}: {imp}\n"))
     }
-    ret.push_str("    }) {\n        super(options, [");
-    for typ in &role.types {
-        ret.push_str(&format!("\"{typ}\", "));
-    }
+    ret.push_str(&format!("    }}) {{\n        super(options, \"{}\"", role.role_type));
 
     ret.push_str(&format!(
-        "], {enable_websockets}, \"{role_name}\")\n",
+        ", {enable_websockets}, \"{role_name}\")\n",
         role_name = role.name
     ));
 
@@ -117,7 +114,7 @@ fn generate_callback_client(
     ret.push_str("    }\n");
 
     // browsers are not able to accept web socket connections, therefore we dont need to add the onConnection method to ws enabled browsers
-    if enable_websockets && !role.types.contains(&"browser".to_string()) {
+    if enable_websockets && !role.role_type.contains(&"browser".to_string()) {
         ret.push_str("\n    onConnection(callback: (target: ");
         for i in 0..socket_enabled_browser_roles.len() {
             ret.push_str(&socket_enabled_browser_roles[i]);
@@ -196,12 +193,10 @@ fn generate_foreign_client(
     );
 
     ret.push_str("    constructor(options: TargetOptions) {\n");
-    ret.push_str("        super(options, [");
-    for typ in &role.types {
-        ret.push_str(&format!("\"{typ}\", "));
-    }
+    ret.push_str("        super(options, \"");
+    ret.push_str(&role.role_type);
 
-    ret.push_str("])\n    }\n}");
+    ret.push_str("\")\n    }\n}");
 
     ret
 }

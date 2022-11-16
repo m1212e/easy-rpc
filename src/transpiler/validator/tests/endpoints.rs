@@ -15,62 +15,66 @@ mod tests {
     #[test]
     fn test_double_endpoint() {
         let result = validate(
-            &vec![Endpoint {
-                documentation: None,
-                start: CodePosition {
-                    line: 0,
-                    character: 0,
+            &vec![
+                Endpoint {
+                    documentation: None,
+                    start: CodePosition {
+                        line: 0,
+                        character: 0,
+                    },
+                    end: CodePosition {
+                        line: 0,
+                        character: 30,
+                    },
+                    identifier: "SuperCoolEndpoint".to_string(),
+                    role: "SomeRole1".to_string(),
+                    return_type: None,
+                    parameters: vec![],
                 },
-                end: CodePosition {
-                    line: 0,
-                    character: 30,
+                Endpoint {
+                    documentation: None,
+                    start: CodePosition {
+                        line: 1,
+                        character: 0,
+                    },
+                    end: CodePosition {
+                        line: 1,
+                        character: 30,
+                    },
+                    identifier: "SuperCoolEndpoint".to_string(),
+                    role: "SomeRole2".to_string(),
+                    return_type: None,
+                    parameters: vec![],
                 },
-                identifier: "SuperCoolEndpoint".to_string(),
-                role: "SomeRole1".to_string(),
-                return_type: None,
-                parameters: vec![],
-            },
-            Endpoint {
-                documentation: None,
-                start: CodePosition {
-                    line: 1,
-                    character: 0,
+                Endpoint {
+                    documentation: None,
+                    start: CodePosition {
+                        line: 3,
+                        character: 0,
+                    },
+                    end: CodePosition {
+                        line: 3,
+                        character: 30,
+                    },
+                    identifier: "SuperCoolEndpoint".to_string(),
+                    role: "SomeRole1".to_string(),
+                    return_type: None,
+                    parameters: vec![],
                 },
-                end: CodePosition {
-                    line: 1,
-                    character: 30,
-                },
-                identifier: "SuperCoolEndpoint".to_string(),
-                role: "SomeRole2".to_string(),
-                return_type: None,
-                parameters: vec![],
-            },
-            Endpoint {
-                documentation: None,
-                start: CodePosition {
-                    line: 3,
-                    character: 0,
-                },
-                end: CodePosition {
-                    line: 3,
-                    character: 30,
-                },
-                identifier: "SuperCoolEndpoint".to_string(),
-                role: "SomeRole1".to_string(),
-                return_type: None,
-                parameters: vec![],
-            }],
+            ],
             &vec![],
-            &vec![Role {
-                documentation: None,
-                name: "SomeRole1".to_string(),
-                types: vec![],
-            },
-            Role {
-                documentation: None,
-                name: "SomeRole2".to_string(),
-                types: vec![],
-            }],
+            &vec![
+                Role {
+                    documentation: None,
+                    name: "SomeRole1".to_string(),
+                    role_type: "browser".to_string(),
+                },
+                Role {
+                    documentation: None,
+                    name: "SomeRole2".to_string(),
+                    role_type: "browser".to_string(),
+                },
+            ],
         )
         .unwrap_err();
 
@@ -106,7 +110,7 @@ mod tests {
             &vec![Role {
                 documentation: None,
                 name: "SomeDifferentRole".to_string(),
-                types: vec![],
+                role_type: "browser".to_string(),
             }],
         )
         .unwrap_err();
@@ -150,7 +154,7 @@ mod tests {
             &vec![Role {
                 documentation: None,
                 name: "SomeRole".to_string(),
-                types: vec![],
+                role_type: "browser".to_string(),
             }],
         )
         .unwrap_err();
@@ -177,9 +181,9 @@ mod tests {
                 },
                 identifier: "SuperCoolEndpoint".to_string(),
                 role: "SomeRole".to_string(),
-                return_type: Some(Type::Custom(Custom{
+                return_type: Some(Type::Custom(Custom {
                     array_amount: ArrayAmount::NoArray,
-                    identifier: "SomeUnknownReturnType".to_string()
+                    identifier: "SomeUnknownReturnType".to_string(),
                 })),
                 parameters: vec![],
             }],
@@ -187,7 +191,7 @@ mod tests {
             &vec![Role {
                 documentation: None,
                 name: "SomeRole".to_string(),
-                types: vec![],
+                role_type: "browser".to_string(),
             }],
         )
         .unwrap_err();

@@ -29,7 +29,7 @@ export default class Server extends ERPCServer {
         api: api
         auth: auth
     }) {
-        super(options, ["http-server", ], true, "Server")
+        super(options, "http-server", true, "Server")
         if (callbacks?.api) {
             this.api = callbacks.api
         } else {

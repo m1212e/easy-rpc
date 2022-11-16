@@ -17,7 +17,7 @@ export default class Frontend extends ERPCServer {
     constructor(options: ServerOptions, callbacks?: {
         api: api
     }) {
-        super(options, ["browser", ], true, "Frontend")
+        super(options, "browser", true, "Frontend")
         if (callbacks?.api) {
             this.api = callbacks.api
         } else {

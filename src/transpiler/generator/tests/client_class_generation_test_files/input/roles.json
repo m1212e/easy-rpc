@@ -1,12 +1,12 @@
 [
   {
     "name": "Server",
-    "types": ["http-server"],
+    "type": "http-server",
     "documentation": "This is some docs"
   },
   {
     "name": "Client",
-    "types": ["browser"],
+    "type": "browser",
     "documentation": "This is some docs"
   }
 ]

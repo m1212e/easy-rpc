@@ -6,7 +6,8 @@ use serde::Deserialize;
 #[serde(rename_all = "camelCase")]
 pub struct Role {
     pub name: String,
-    pub types: Vec<String>,
+    #[serde(rename = "type")]
+    pub role_type: String,
     pub documentation: Option<String>,
 }
 

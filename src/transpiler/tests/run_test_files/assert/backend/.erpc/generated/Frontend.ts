@@ -7,6 +7,6 @@ export default class Frontend extends ERPCTarget {
         @param options The options to set for the easy-rpc object
     */
     constructor(options: TargetOptions) {
-        super(options, ["browser", ])
+        super(options, "browser")
     }
 }

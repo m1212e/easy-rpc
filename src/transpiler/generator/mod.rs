@@ -60,7 +60,7 @@ pub fn generate_for_directory<T: Translator>(
         .iter()
         .filter_map(|role| {
             if classes_per_role.contains_key(&role.name)
-                && role.types.contains(&"browser".to_string())
+                && role.role_type.contains(&"browser".to_string())
             {
                 return Some(role.name.to_owned());
             }
@@ -72,7 +72,7 @@ pub fn generate_for_directory<T: Translator>(
         .iter()
         .find(|x| x.name == selected_role_name)
         .unwrap()
-        .types
+        .role_type
         .contains(&"browser".to_string())
     {
         "@easy-rpc/browser"

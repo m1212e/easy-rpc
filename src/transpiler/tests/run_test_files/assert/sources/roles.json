@@ -1,10 +1,10 @@
 [
   {
     "name": "Frontend",
-    "types": ["browser"]
+    "type": "browser"
   },
   {
     "name": "Backend",
-    "types": ["http-server"]
+    "type": "http-server"
   }
 ]

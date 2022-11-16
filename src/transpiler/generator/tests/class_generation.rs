@@ -3,13 +3,16 @@ mod tests {
 
     use std::{fs, path::Path};
 
-    use crate::{transpiler::{
-        config::Role,
-        generator::{
-            generate_for_directory, generate_for_directory_recursively,
-            translator::typescript::TypeScriptTranslator,
+    use crate::{
+        transpiler::{
+            config::Role,
+            generator::{
+                generate_for_directory, generate_for_directory_recursively,
+                translator::typescript::TypeScriptTranslator,
+            },
         },
-    }, util::assert_equal_directories::assert_equal_directories};
+        util::assert_equal_directories::assert_equal_directories,
+    };
 
     #[test]
     fn test_recursive() {
@@ -34,12 +37,12 @@ mod tests {
                 Role {
                     documentation: None,
                     name: "Client".to_string(),
-                    types: vec!["browser".to_string()],
+                    role_type: "browser".to_string(),
                 },
                 Role {
                     documentation: None,
                     name: "Server".to_string(),
-                    types: vec!["http-server".to_string()],
+                    role_type: "http-server".to_string(),
                 },
             ],
         )
@@ -88,6 +91,4 @@ mod tests {
             &test_files.join("output"),
         );
     }
-
-    
 }

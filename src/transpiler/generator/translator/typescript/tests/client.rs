@@ -12,7 +12,7 @@ mod tests {
             &Role {
                 documentation: Some("Example docs".to_string()),
                 name: "Client".to_string(),
-                types: vec!["browser".to_string()],
+                role_type: "browser".to_string(),
             },
             &vec!["Client".to_string()],
             "@easy-rpc/browser",
@@ -32,7 +32,7 @@ export default class Client extends ERPCTarget {
         @param options The options to set for the easy-rpc object
     */
     constructor(options: TargetOptions) {
-        super(options, [\"browser\", ])
+        super(options, \"browser\")
     }
 }"
         );
@@ -46,7 +46,7 @@ export default class Client extends ERPCTarget {
             &Role {
                 documentation: Some("Example docs".to_string()),
                 name: "Server".to_string(),
-                types: vec!["http-server".to_string()],
+                role_type: "http-server".to_string(),
             },
             &vec!["Client".to_string()],
             "@easy-rpc/node",
@@ -85,7 +85,7 @@ export default class Server extends ERPCServer {
         api: api
         tracks: tracks
     }) {
-        super(options, [\"http-server\", ], true, \"Server\")
+        super(options, \"http-server\", true, \"Server\")
         if (callbacks?.api) {
             this.api = callbacks.api
         } else {
