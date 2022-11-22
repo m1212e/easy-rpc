@@ -1,5 +1,7 @@
 #[cfg(test)]
 mod tests {
+    use tower_lsp::lsp_types::Range;
+
     use crate::transpiler::{
         generator::{translator::typescript::{interface::custom_type_to_interface}},
         parser::{
@@ -8,7 +10,6 @@ mod tests {
                 custom_type::{CustomType, Field},
                 field_type::{ArrayAmount, Custom, Enum, Primitive, PrimitiveType, Type},
             },
-            CodePosition,
         },
     };
 
@@ -16,8 +17,7 @@ mod tests {
     fn test_success() {
         let t = CustomType {
             documentation: Some("Some sample".to_string()),
-            start: CodePosition::zero_initialized(),
-            end: CodePosition::zero_initialized(),
+            range: Range::default(),
             identifier: "MyType".to_string(),
             fields: vec![
                 Field {
@@ -99,30 +99,25 @@ mod tests {
                     field_type: Type::Enum(Enum {
                         values: vec![
                             Literal {
-                                start: CodePosition::zero_initialized(),
-                                end: CodePosition::zero_initialized(),
+                                range: Range::default(),
                                 literal_type: LiteralType::Boolean(true),
                             },
                             Literal {
-                                start: CodePosition::zero_initialized(),
-                                end: CodePosition::zero_initialized(),
+                                range: Range::default(),
                                 literal_type: LiteralType::Boolean(false),
                             },
                             Literal {
-                                start: CodePosition::zero_initialized(),
-                                end: CodePosition::zero_initialized(),
+                                range: Range::default(),
                                 literal_type: LiteralType::String(
                                     "hello from the other side".to_string(),
                                 ),
                             },
                             Literal {
-                                start: CodePosition::zero_initialized(),
-                                end: CodePosition::zero_initialized(),
+                                range: Range::default(),
                                 literal_type: LiteralType::Float(123.456),
                             },
                             Literal {
-                                start: CodePosition::zero_initialized(),
-                                end: CodePosition::zero_initialized(),
+                                range: Range::default(),
                                 literal_type: LiteralType::Integer(-123456),
                             },
                         ],

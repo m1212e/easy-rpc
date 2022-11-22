@@ -2,9 +2,11 @@
 mod tests {
     use std::{collections::HashMap, vec};
 
+    use tower_lsp::lsp_types::Range;
+
     use crate::transpiler::{
         generator::{generate_classes_per_role, translator::typescript::TypeScriptTranslator},
-        parser::{parser::endpoint::Endpoint, CodePosition},
+        parser::{parser::endpoint::Endpoint},
     };
 
     #[test]
@@ -15,8 +17,7 @@ mod tests {
             vec![
                 Endpoint {
                     documentation: None,
-                    end: CodePosition::zero_initialized(),
-                    start: CodePosition::zero_initialized(),
+                    range: Range::default(),
                     identifier: "MySuperCoolEndpoint".to_string(),
                     role: "Server".to_string(),
                     return_type: None,
@@ -24,8 +25,7 @@ mod tests {
                 },
                 Endpoint {
                     documentation: None,
-                    end: CodePosition::zero_initialized(),
-                    start: CodePosition::zero_initialized(),
+                    range: Range::default(),
                     identifier: "MySuperCoolEndpoint2".to_string(),
                     role: "Client".to_string(),
                     return_type: None,
@@ -33,8 +33,7 @@ mod tests {
                 },
                 Endpoint {
                     documentation: None,
-                    end: CodePosition::zero_initialized(),
-                    start: CodePosition::zero_initialized(),
+                    range: Range::default(),
                     identifier: "MySuperCoolEndpoint3".to_string(),
                     role: "Client".to_string(),
                     return_type: None,

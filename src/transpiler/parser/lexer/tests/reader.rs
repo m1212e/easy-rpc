@@ -79,25 +79,25 @@ mod tests {
     fn test_last_element_position() -> Result<(), InputReaderError> {
         let mut reader = TokenReader::new(InputReader::new("? Identifier ?\n ||".as_bytes()))?;
 
-        assert_eq!(reader.last_token_code_start.character, 0);
-        assert_eq!(reader.last_token_code_start.line, 0);
-        assert_eq!(reader.last_token_code_end.character, 0);
-        assert_eq!(reader.last_token_code_end.line, 0);
+        assert_eq!(reader.last_token_range.start.character, 0);
+        assert_eq!(reader.last_token_range.start.line, 0);
+        assert_eq!(reader.last_token_range.end.character, 0);
+        assert_eq!(reader.last_token_range.end.line, 0);
         reader.peek(2);
-        assert_eq!(reader.last_token_code_start.character, 0);
-        assert_eq!(reader.last_token_code_start.line, 0);
-        assert_eq!(reader.last_token_code_end.character, 0);
-        assert_eq!(reader.last_token_code_end.line, 0);
+        assert_eq!(reader.last_token_range.start.character, 0);
+        assert_eq!(reader.last_token_range.start.line, 0);
+        assert_eq!(reader.last_token_range.end.character, 0);
+        assert_eq!(reader.last_token_range.end.line, 0);
         reader.consume(2);
-        assert_eq!(reader.last_token_code_start.character, 2);
-        assert_eq!(reader.last_token_code_start.line, 0);
-        assert_eq!(reader.last_token_code_end.character, 12);
-        assert_eq!(reader.last_token_code_end.line, 0);
+        assert_eq!(reader.last_token_range.start.character, 2);
+        assert_eq!(reader.last_token_range.start.line, 0);
+        assert_eq!(reader.last_token_range.end.character, 12);
+        assert_eq!(reader.last_token_range.end.line, 0);
         reader.consume(3);
-        assert_eq!(reader.last_token_code_start.character, 1);
-        assert_eq!(reader.last_token_code_start.line, 1);
-        assert_eq!(reader.last_token_code_end.character, 2);
-        assert_eq!(reader.last_token_code_end.line, 1);
+        assert_eq!(reader.last_token_range.start.character, 1);
+        assert_eq!(reader.last_token_range.start.line, 1);
+        assert_eq!(reader.last_token_range.end.character, 2);
+        assert_eq!(reader.last_token_range.end.line, 1);
 
         Ok(())
     }

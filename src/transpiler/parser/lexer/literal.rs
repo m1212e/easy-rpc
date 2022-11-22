@@ -1,12 +1,10 @@
 use lazy_static::lazy_static;
 use regex::Regex;
 use std::io::Read;
+use tower_lsp::lsp_types::Range;
 
 use crate::{
-    transpiler::parser::{
-        input_reader::{InputReader, InputReaderError},
-        CodePosition,
-    },
+    transpiler::parser::input_reader::{InputReader, InputReaderError},
     unwrap_result_option,
 };
 
@@ -23,8 +21,7 @@ pub enum LiteralType {
 #[derive(Clone, Debug)]
 pub struct Literal {
     pub literal_type: LiteralType,
-    pub start: CodePosition,
-    pub end: CodePosition,
+    pub range: Range,
 }
 
 impl Literal {
@@ -70,8 +67,7 @@ fn process_boolean<T: Read>(
 
             return Ok(Some(Literal {
                 literal_type: LiteralType::Boolean(true),
-                start: start,
-                end: end,
+                range: Range { start, end },
             }));
         }
     }
@@ -88,8 +84,7 @@ fn process_boolean<T: Read>(
 
             return Ok(Some(Literal {
                 literal_type: LiteralType::Boolean(false),
-                start: start,
-                end: end,
+                range: Range { start, end },
             }));
         }
     }
@@ -136,8 +131,7 @@ fn process_string<T: Read>(
     let end = reader.current_position.clone();
 
     Ok(Some(Literal {
-        start: start,
-        end: end,
+        range: Range { start, end },
         literal_type: LiteralType::String(string_content),
     }))
 }
@@ -167,8 +161,7 @@ fn process_number<T: Read>(
             let end = reader.current_position.clone();
 
             return Ok(Some(Literal {
-                start: start,
-                end: end,
+                range: Range { start, end },
                 literal_type: LiteralType::Float(parsed.unwrap()),
             }));
         }
@@ -181,8 +174,7 @@ fn process_number<T: Read>(
             let end = reader.current_position.clone();
 
             return Ok(Some(Literal {
-                start: start,
-                end: end,
+                range: Range { start, end },
                 literal_type: LiteralType::Integer(parsed.unwrap()),
             }));
         }

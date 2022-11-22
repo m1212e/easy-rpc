@@ -1,9 +1,11 @@
+use tower_lsp::lsp_types::Range;
+
 use self::{
     custom_type::CustomType, disposeable_comment::DisposeableComment, endpoint::Endpoint,
     line_break::LineBreak,
 };
 
-use super::{lexer::TokenReader, CodePosition};
+use super::{lexer::TokenReader};
 
 pub mod custom_type;
 mod disposeable_comment;
@@ -14,8 +16,7 @@ mod tests;
 
 #[derive(Debug)]
 pub struct ParseError {
-    pub start: CodePosition,
-    pub end: CodePosition,
+    pub range: Range,
     pub message: String,
 }
 
@@ -75,8 +76,7 @@ pub fn parse(reader: &mut TokenReader) -> Result<ParseResult, ParseError> {
         let token = reader.consume(1).unwrap();
         let err = token.get(0).unwrap();
         return Err(ParseError {
-            start: err.start(),
-            end: err.end(),
+            range: err.range(),
             message: format!("Unexpected token"),
         });
     }

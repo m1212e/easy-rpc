@@ -13,10 +13,10 @@ mod tests {
 
         assert_eq!(output.is_some(), true);
         let output = output.unwrap();
-        assert_eq!(output.start.character, 0);
-        assert_eq!(output.start.line, 0);
-        assert_eq!(output.end.character, input.len() as u32);
-        assert_eq!(output.end.line, 0);
+        assert_eq!(output.range.start.character, 0);
+        assert_eq!(output.range.start.line, 0);
+        assert_eq!(output.range.end.character, input.len() as u32);
+        assert_eq!(output.range.end.line, 0);
         assert_eq!(output.content, "This is a simple test string!");
 
         Ok(())
@@ -30,10 +30,10 @@ mod tests {
 
         assert_eq!(output.is_some(), true);
         let output = output.unwrap();
-        assert_eq!(output.start.character, 0);
-        assert_eq!(output.start.line, 0);
-        assert_eq!(output.end.character, 0);
-        assert_eq!(output.end.line, 1);
+        assert_eq!(output.range.start.character, 0);
+        assert_eq!(output.range.start.line, 0);
+        assert_eq!(output.range.end.character, 0);
+        assert_eq!(output.range.end.line, 1);
         assert_eq!(output.content, "This is a simple test string!\n");
         assert_eq!(reader.peek(18)?.unwrap(), "this is no comment");
 
@@ -48,10 +48,10 @@ mod tests {
 
         assert_eq!(output.is_some(), true);
         let output = output.unwrap();
-        assert_eq!(output.start.character, 0);
-        assert_eq!(output.start.line, 0);
-        assert_eq!(output.end.character, input.len() as u32);
-        assert_eq!(output.end.line, 0);
+        assert_eq!(output.range.start.character, 0);
+        assert_eq!(output.range.start.line, 0);
+        assert_eq!(output.range.end.character, input.len() as u32);
+        assert_eq!(output.range.end.line, 0);
         assert_eq!(output.content, "This is a simple test string!");
 
         Ok(())
@@ -65,10 +65,10 @@ mod tests {
 
         assert_eq!(output.is_some(), true);
         let output = output.unwrap();
-        assert_eq!(output.start.character, 0);
-        assert_eq!(output.start.line, 0);
-        assert_eq!(output.end.character, 0);
-        assert_eq!(output.end.line, 1);
+        assert_eq!(output.range.start.character, 0);
+        assert_eq!(output.range.start.line, 0);
+        assert_eq!(output.range.end.character, 0);
+        assert_eq!(output.range.end.line, 1);
         assert_eq!(output.content, "This is a simple test string!\n");
         assert_eq!(reader.peek(18)?.unwrap(), "this is no comment");
 
@@ -84,10 +84,10 @@ mod tests {
 
         assert_eq!(output.is_some(), true);
         let output = output.unwrap();
-        assert_eq!(output.start.character, 0);
-        assert_eq!(output.start.line, 0);
-        assert_eq!(output.end.character, 2);
-        assert_eq!(output.end.line, 3);
+        assert_eq!(output.range.start.character, 0);
+        assert_eq!(output.range.start.line, 0);
+        assert_eq!(output.range.end.character, 2);
+        assert_eq!(output.range.end.line, 3);
         assert_eq!(
             output.content,
             "\nThis is a simple test string!\nthis also comment\n"

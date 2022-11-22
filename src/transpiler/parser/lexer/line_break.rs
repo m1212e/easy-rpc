@@ -1,10 +1,9 @@
 use std::io::Read;
 
+use tower_lsp::lsp_types::Range;
+
 use crate::{
-    transpiler::parser::{
-        input_reader::{InputReader, InputReaderError},
-        CodePosition,
-    },
+    transpiler::parser::input_reader::{InputReader, InputReaderError},
     unwrap_result_option,
 };
 
@@ -13,8 +12,7 @@ use crate::{
 */
 #[derive(Clone, Debug)]
 pub struct LineBreak {
-    pub start: CodePosition,
-    pub end: CodePosition,
+    pub range: Range,
 }
 
 impl LineBreak {
@@ -42,7 +40,9 @@ impl LineBreak {
             }
             let end = reader.current_position.clone();
 
-            return Ok(Some(LineBreak { start, end }));
+            return Ok(Some(LineBreak {
+                range: Range { start, end },
+            }));
         }
 
         Ok(None)

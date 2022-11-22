@@ -1,8 +1,8 @@
 mod tests;
 
 use strum_macros::Display;
+use tower_lsp::lsp_types::Position;
 
-use super::CodePosition;
 use std::io::{BufRead, BufReader, Read};
 
 /*
@@ -12,12 +12,13 @@ use std::io::{BufRead, BufReader, Read};
 pub struct InputReader<T: Read> {
     buffer: String,
     done: bool,
-    pub current_position: CodePosition,
+    pub current_position: Position,
     reader: BufReader<T>,
 }
 
 /**
-   An error which can occur while using the input reader.
+   An error which can occur while using the input reader. Indicates that something went wrong while processing the file.
+   Does not indicate a user made error like wrong syntax or configuration
 */
 #[derive(Debug, Display)]
 pub enum InputReaderError {
@@ -44,7 +45,7 @@ impl<T: Read> InputReader<T> {
         InputReader {
             buffer: String::new(),
             done: false,
-            current_position: CodePosition {
+            current_position: Position {
                 line: 0,
                 character: 0,
             },

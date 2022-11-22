@@ -1,9 +1,10 @@
 use std::io::Read;
 
+use tower_lsp::lsp_types::Range;
+
 use crate::{
     transpiler::parser::{
         input_reader::{InputReader, InputReaderError},
-        CodePosition,
     },
     unwrap_result_option,
 };
@@ -14,8 +15,7 @@ use crate::{
 #[derive(Clone, Debug)]
 pub struct DocumentationalComment {
     pub content: String,
-    pub start: CodePosition,
-    pub end: CodePosition,
+    pub range: Range,
 }
 
 impl DocumentationalComment {
@@ -34,8 +34,10 @@ impl DocumentationalComment {
             reader.consume(3)?;
             let content = unwrap_result_option!(reader.consume_to_delimeter_or_end("*/"));
             return Ok(Some(DocumentationalComment {
-                start: start,
-                end: reader.current_position.clone(),
+                range: Range {
+                    start,
+                    end: reader.current_position.clone(),
+                },
                 content: content.strip_suffix("*/").unwrap_or(&content).to_string(),
             }));
         }

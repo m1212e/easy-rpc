@@ -1,3 +1,4 @@
+mod error;
 mod language_server;
 mod tests;
 mod transpiler;
@@ -9,9 +10,10 @@ use std::{
     path::{Path, PathBuf},
 };
 
+use error::DisplayableError;
 use notify::{RecommendedWatcher, RecursiveMode, Watcher};
 use tokio::runtime::Handle;
-use transpiler::{run, ERPCError};
+use transpiler::run;
 use util::normalize_path::normalize_path;
 
 #[tokio::main]
@@ -35,24 +37,15 @@ async fn run_main(args: Vec<String>) -> Result<(), String> {
     };
 
     if args.contains(&"-ls".to_string()) {
-        let (sender, reciever) = async_channel::unbounded::<Result<String, Vec<ERPCError>>>();
+        let (sender, reciever) = async_channel::unbounded::<Vec<DisplayableError>>();
         tokio::spawn(language_server::run_language_server(reciever));
         run_watch(entry_path, sender).await
     } else if args.contains(&"-w".to_string()) {
-        let (sender, reciever) = async_channel::unbounded::<Result<String, Vec<ERPCError>>>();
+        let (sender, reciever) = async_channel::unbounded::<Vec<DisplayableError>>();
         // just log the incoming results to console
         tokio::spawn(async move {
             loop {
-                match reciever.recv().await {
-                    Ok(v) => println!(
-                        "{}",
-                        match v {
-                            Ok(v) => v,
-                            Err(v) => format!("{:#?}", v),
-                        }
-                    ),
-                    Err(err) => println!("{:#?}", err),
-                };
+                println!("{:#?}", reciever.recv().await);
             }
         });
         run_watch(entry_path, sender).await
@@ -63,7 +56,7 @@ async fn run_main(args: Vec<String>) -> Result<(), String> {
 
 async fn run_watch(
     entry_path: PathBuf,
-    error_reporter: async_channel::Sender<Result<String, Vec<ERPCError>>>,
+    error_reporter: async_channel::Sender<Vec<DisplayableError>>,
 ) -> Result<(), String> {
     let root_dirs = get_root_dirs(entry_path)?;
 
@@ -105,10 +98,7 @@ async fn run_watch(
                 ) {
                     Ok(val) => val,
                     Err(err) => {
-                        error_reporter
-                            .send(Err(vec![ERPCError::NotifyError(err)]))
-                            .await
-                            .unwrap();
+                        error_reporter.send(vec![err.into()]).await.unwrap();
                         return;
                     }
                 };
@@ -124,18 +114,12 @@ async fn run_watch(
                         Ok(val) => match val {
                             Ok(val) => val,
                             Err(err) => {
-                                error_reporter
-                                    .send(Err(vec![ERPCError::NotifyError(err)]))
-                                    .await
-                                    .unwrap();
+                                error_reporter.send(vec![err.into()]).await.unwrap();
                                 return;
                             }
                         },
                         Err(err) => {
-                            error_reporter
-                                .send(Err(vec![ERPCError::RecvError(err)]))
-                                .await
-                                .unwrap();
+                            error_reporter.send(vec![err.into()]).await.unwrap();
                             return;
                         }
                     };
@@ -151,10 +135,14 @@ async fn run_watch(
                             )
                             .await;
                             if res.len() > 0 {
-                                error_reporter.send(Err(res)).await.unwrap();
+                                error_reporter.send(res).await.unwrap();
                             } else {
                                 error_reporter
-                                    .send(Ok(format!("Processed {}\n", root_dir.to_str().unwrap())))
+                                    .send(vec![format!(
+                                        "Processed {}\n",
+                                        root_dir.to_str().unwrap()
+                                    )
+                                    .into()])
                                     .await
                                     .unwrap();
                             }
@@ -205,8 +193,7 @@ async fn run_once(entry_path: PathBuf) -> Result<(), String> {
                 if res.len() > 0 {
                     let mut ret = String::new();
                     for e in res {
-                        ret.push_str(&e.to_string());
-                        ret.push_str("\n");
+                        ret.push_str(&format!("{:#?}\n", e));
                     }
                     Err(ret)
                 } else {
@@ -234,16 +221,17 @@ async fn run_once(entry_path: PathBuf) -> Result<(), String> {
     }
 }
 
-fn read_config(root_dir: &Path) -> Result<crate::transpiler::config::Config, ERPCError> {
+fn read_config(root_dir: &Path) -> Result<crate::transpiler::config::Config, DisplayableError> {
     let path = root_dir.join("erpc.json");
     if !path.exists() {
-        return Err(ERPCError::ConfigurationError(format!(
+        return Err(format!(
             "Could not find erpc.json at {path_str}",
             path_str = path
                 .as_os_str()
                 .to_str()
                 .unwrap_or("<Unable to unwrap path>")
-        )));
+        )
+        .into());
     }
 
     Ok(crate::transpiler::config::parse_config(File::open(path)?)?)

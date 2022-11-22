@@ -1,4 +1,4 @@
-use crate::transpiler::parser::CodePosition;
+use tower_lsp::lsp_types::{Position, Range};
 
 use super::{
     disposeable_comment::DisposeableComment, documentational_comment::DocumentationalComment,
@@ -70,29 +70,16 @@ impl From<Operator> for Token {
 }
 
 impl Token {
-    pub fn start(&self) -> CodePosition {
+    pub fn range(&self) -> Range {
         match self {
-            Token::DisposeableComment(value) => value.start,
-            Token::DocumentationalComment(value) => value.start,
-            Token::Identifier(value) => value.start,
-            Token::InvalidCharacters(value) => value.start,
-            Token::Keyword(value) => value.start,
-            Token::LineBreak(value) => value.start,
-            Token::Literal(value) => value.start,
-            Token::Operator(value) => value.start,
-        }
-    }
-
-    pub fn end(&self) -> CodePosition {
-        match self {
-            Token::DisposeableComment(value) => value.end,
-            Token::DocumentationalComment(value) => value.end,
-            Token::Identifier(value) => value.end,
-            Token::InvalidCharacters(value) => value.end,
-            Token::Keyword(value) => value.end,
-            Token::LineBreak(value) => value.end,
-            Token::Literal(value) => value.end,
-            Token::Operator(value) => value.end,
+            Token::DisposeableComment(value) => value.range,
+            Token::DocumentationalComment(value) => value.range,
+            Token::Identifier(value) => value.range,
+            Token::InvalidCharacters(value) => value.range,
+            Token::Keyword(value) => value.range,
+            Token::LineBreak(value) => value.range,
+            Token::Literal(value) => value.range,
+            Token::Operator(value) => value.range,
         }
     }
 }

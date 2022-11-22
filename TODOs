@@ -1,4 +1,4 @@
-TODO: validation for .json config files
+TODO: validation for .json config files/LS support
 TODO: check how the addon behaves while creating a project
 TODO: prevent spaces in files paths/warn when they occur (leads to invalid syntax)
 TODO: in validator, ensure that a browser role never has multiple types, since a browser never can also be http-server

@@ -23,8 +23,8 @@ mod tests {
         assert!(result.is_ok());
         let result = result.unwrap();
 
-        assert_eq!(result.end.character, 32);
-        assert_eq!(result.start.character, 1);
+        assert_eq!(result.range.end.character, 32);
+        assert_eq!(result.range.start.character, 1);
         assert_eq!(result.documentation, None);
         assert_eq!(result.identifier, "someEndpointIdentifier");
         assert_eq!(result.role, "Server");
@@ -101,8 +101,8 @@ mod tests {
         assert!(result.is_ok());
         let result = result.unwrap();
 
-        assert_eq!(result.end.character, 107);
-        assert_eq!(result.start.character, 1);
+        assert_eq!(result.range.end.character, 107);
+        assert_eq!(result.range.start.character, 1);
         assert_eq!(result.documentation, None);
         assert_eq!(result.identifier, "someEndpointIdentifier");
         assert_eq!(result.role, "Server");

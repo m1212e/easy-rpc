@@ -2,18 +2,16 @@ use std::collections::HashSet;
 
 mod tests;
 
+use tower_lsp::lsp_types::Range;
+
 use super::{
     config::Role,
-    parser::{
-        parser::{custom_type::CustomType, endpoint::Endpoint, field_type::Type},
-        CodePosition,
-    },
+    parser::parser::{custom_type::CustomType, endpoint::Endpoint, field_type::Type},
 };
 
 #[derive(Debug)]
 pub struct ValidationError {
-    pub start: CodePosition,
-    pub end: CodePosition,
+    pub range: Range,
     pub message: String,
 }
 
@@ -24,51 +22,48 @@ pub fn validate(
     endpoints: &Vec<Endpoint>,
     custom_types: &Vec<CustomType>,
     roles: &Vec<Role>,
-) -> Result<(), ValidationError> {
+) -> Vec<ValidationError> {
+    let errors = vec![];
+
     // all types which are required by some field, parameter, return type, etc.
     // type, start, end
-    let mut required_types: Vec<(String, CodePosition, CodePosition)> = Vec::new();
+    let mut required_types: Vec<(String, Range)> = Vec::new();
 
     for t in custom_types {
         for field in &t.fields {
             match &field.field_type {
-                Type::Custom(val) => {
-                    required_types.push((val.identifier.to_owned(), t.start, t.end))
-                }
+                Type::Custom(val) => required_types.push((val.identifier.to_owned(), t.range)),
                 _ => {}
             }
         }
     }
 
-    for ep in endpoints {
-        match roles.iter().find(|val| val.name == ep.role) {
+    for endpoint in endpoints {
+        match roles.iter().find(|val| val.name == endpoint.role) {
             Some(_) => {}
-            None => {
-                return Err(ValidationError {
-                    start: ep.start,
-                    end: ep.end,
-                    message: format!(
+            None => errors.push(ValidationError {
+                range: endpoint.range,
+                message: format!(
                     "Role {eprole} of endpoint {epidentifier} is not configured in the roles.json",
-                    eprole = ep.role,
-                    epidentifier = ep.identifier
+                    eprole = endpoint.role,
+                    epidentifier = endpoint.identifier
                 ),
-                })
-            }
+            }),
         }
 
-        for param in &ep.parameters {
+        for param in &endpoint.parameters {
             match &param.parameter_type {
                 Type::Custom(val) => {
-                    required_types.push((val.identifier.to_owned(), ep.start, ep.end))
+                    required_types.push((val.identifier.to_owned(), endpoint.range))
                 }
                 _ => {}
             }
         }
 
-        match &ep.return_type {
+        match &endpoint.return_type {
             Some(val) => match val {
                 Type::Custom(cstm) => {
-                    required_types.push((cstm.identifier.to_owned(), ep.start, ep.end))
+                    required_types.push((cstm.identifier.to_owned(), endpoint.range))
                 }
                 _ => {}
             },
@@ -82,20 +77,18 @@ pub fn validate(
             .find(|val| val.identifier == required.0)
             .is_none()
         {
-            return Err(ValidationError {
-                start: required.1,
-                end: required.2,
+            errors.push(ValidationError {
+                range: required.1,
                 message: format!("Type {t} is unknown", t = required.0),
-            });
+            })
         }
     }
 
     let mut visited_types = HashSet::<String>::new();
     for custom_type in custom_types {
         if visited_types.contains(&custom_type.identifier) {
-            return Err(ValidationError {
-                start: custom_type.start,
-                end: custom_type.end,
+            errors.push(ValidationError {
+                range: custom_type.range,
                 message: format!("Type {t} is already defined", t = custom_type.identifier),
             });
         }
@@ -106,9 +99,8 @@ pub fn validate(
     let mut visited_endpoints = HashSet::<(&str, &str)>::new();
     for endpoint in endpoints {
         if visited_endpoints.contains(&(&endpoint.role, &endpoint.identifier)) {
-            return Err(ValidationError {
-                start: endpoint.start,
-                end: endpoint.end,
+            errors.push(ValidationError {
+                range: endpoint.range,
                 message: format!(
                     "Endpoint {role} {identifier} is already defined",
                     role = endpoint.role,
@@ -119,5 +111,5 @@ pub fn validate(
         visited_endpoints.insert((&endpoint.role, &endpoint.identifier));
     }
 
-    Ok(())
+    errors
 }

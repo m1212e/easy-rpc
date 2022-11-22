@@ -1,8 +1,9 @@
+use tower_lsp::lsp_types::{Position, Range};
+
 use crate::{
     cast,
-    transpiler::parser::{
-        lexer::{keyword::KeywordType, operator::OperatorType, token::Token, TokenReader},
-        CodePosition,
+    transpiler::parser::lexer::{
+        keyword::KeywordType, operator::OperatorType, token::Token, TokenReader,
     },
 };
 
@@ -21,8 +22,7 @@ pub struct Field {
 
 #[derive(Debug)]
 pub struct CustomType {
-    pub start: CodePosition,
-    pub end: CodePosition,
+    pub range: Range,
     pub documentation: Option<String>,
     pub identifier: String,
     pub fields: Vec<Field>,
@@ -69,30 +69,29 @@ impl CustomType {
             }
         }
 
-        let start: CodePosition;
+        let start: Position;
         let mut documentation: Option<String> = None;
 
         if newline_after_doc {
             let mut consumed = reader.consume(3).unwrap();
             let doc_token = consumed.remove(0);
-            start = doc_token.start();
+            start = doc_token.range().start;
             documentation = Some(cast!(doc_token, Token::DocumentationalComment).content);
         } else if has_docs {
             let mut consumed = reader.consume(2).unwrap();
             let doc_token = consumed.remove(0);
-            start = doc_token.start();
+            start = doc_token.range().start;
             documentation = Some(cast!(doc_token, Token::DocumentationalComment).content);
         } else {
             let t = reader.consume(1).unwrap().remove(0); // only the type keyword
-            start = t.start();
+            start = t.range().start;
         }
 
         let identifier = match reader.consume(1).unwrap().remove(0) {
             Token::Identifier(id) => id,
             value => {
                 return Some(Err(ParseError {
-                    start: value.start(),
-                    end: value.end(),
+                    range: value.range(),
                     message: "Expected type identifier".to_string(),
                 }))
             }
@@ -101,8 +100,7 @@ impl CustomType {
         let open_bracket = reader.consume(1);
         if open_bracket.is_none() {
             return Some(Err(ParseError {
-                start: reader.last_token_code_start,
-                end: reader.last_token_code_end,
+                range: reader.last_token_range,
                 message: "Expected an opening { for the type".to_string(),
             }));
         }
@@ -111,16 +109,14 @@ impl CustomType {
                 OperatorType::CurlyOpenBracket => {}
                 _ => {
                     return Some(Err(ParseError {
-                        start: operator.start,
-                        end: operator.end,
+                        range: operator.range,
                         message: "Expected {".to_string(),
                     }))
                 }
             },
             token => {
                 return Some(Err(ParseError {
-                    start: token.start(),
-                    end: token.end(),
+                    range: token.range(),
                     message: "Expected {".to_string(),
                 }))
             }
@@ -132,8 +128,7 @@ impl CustomType {
             let next = reader.peek(1);
             if next.is_none() {
                 return Some(Err(ParseError {
-                    start: reader.last_token_code_start,
-                    end: reader.last_token_code_end,
+                    range: reader.last_token_range,
                     message: "Expected closing }".to_string(),
                 }));
             }
@@ -157,8 +152,7 @@ impl CustomType {
             if peeked.is_none() {
                 // should never occur
                 return Some(Err(ParseError {
-                    start: reader.last_token_code_start,
-                    end: reader.last_token_code_end,
+                    range: reader.last_token_range,
                     message: "Expected more tokens for correct type body".to_string(),
                 }));
             }
@@ -188,8 +182,7 @@ impl CustomType {
             if next.is_none() {
                 // this should never occur
                 return Some(Err(ParseError {
-                    start: reader.last_token_code_start,
-                    end: reader.last_token_code_end,
+                    range: reader.last_token_range,
                     message: "Expected identifier for field".to_string(),
                 }));
             }
@@ -199,8 +192,7 @@ impl CustomType {
                 Token::Identifier(id) => id,
                 token => {
                     return Some(Err(ParseError {
-                        start: token.start(),
-                        end: token.end(),
+                        range: token.range(),
                         message: "Expected field identifier".to_string(),
                     }));
                 }
@@ -210,8 +202,7 @@ impl CustomType {
             if next.is_none() {
                 // should never occur
                 return Some(Err(ParseError {
-                    start: reader.last_token_code_start,
-                    end: reader.last_token_code_end,
+                    range: reader.last_token_range,
                     message: "Expected more tokens for valid field".to_string(),
                 }));
             }
@@ -242,8 +233,10 @@ impl CustomType {
         }
 
         return Some(Ok(CustomType {
-            end: reader.last_token_code_end,
-            start,
+            range: Range {
+                start,
+                end: reader.last_token_range.end,
+            },
             documentation,
             identifier: identifier.content,
             fields,

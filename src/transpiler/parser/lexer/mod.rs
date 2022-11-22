@@ -2,16 +2,15 @@ mod tests;
 
 use std::io::Read;
 
+use tower_lsp::lsp_types::{Range};
+
 use self::{
     disposeable_comment::DisposeableComment, documentational_comment::DocumentationalComment,
     identifier::Identifier, invalid_characters::InvalidCharacters, keyword::Keyword,
     line_break::LineBreak, literal::Literal, operator::Operator, space::Space, token::Token,
 };
 
-use super::{
-    input_reader::{InputReader, InputReaderError},
-    CodePosition,
-};
+use super::input_reader::{InputReader, InputReaderError};
 
 pub mod disposeable_comment;
 pub mod documentational_comment;
@@ -30,8 +29,7 @@ pub mod token;
 pub struct TokenReader {
     buffer: Vec<Token>,
     pub done: bool,
-    pub last_token_code_start: CodePosition,
-    pub last_token_code_end: CodePosition,
+    pub last_token_range: Range,
 }
 
 impl TokenReader {
@@ -42,14 +40,7 @@ impl TokenReader {
         let mut ret = TokenReader {
             buffer: Vec::new(),
             done: false,
-            last_token_code_start: CodePosition {
-                line: 0,
-                character: 0,
-            },
-            last_token_code_end: CodePosition {
-                line: 0,
-                character: 0,
-            },
+            last_token_range: Range::default(),
         };
 
         ret.run(reader)?;
@@ -139,8 +130,7 @@ impl TokenReader {
 
         let elements: Vec<Token> = self.buffer.drain(0..amount).collect();
 
-        self.last_token_code_start = elements.last().unwrap().start();
-        self.last_token_code_end = elements.last().unwrap().end();
+        self.last_token_range = elements.last().unwrap().range();
 
         if self.buffer.len() == 0 {
             self.done = true;

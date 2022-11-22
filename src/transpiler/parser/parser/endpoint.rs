@@ -1,9 +1,10 @@
+use tower_lsp::lsp_types::{Position, Range};
+
 use crate::{
     cast,
     transpiler::parser::{
         lexer::{identifier::Identifier, operator::OperatorType, token::Token, TokenReader},
         parser::ParseError,
-        CodePosition,
     },
 };
 
@@ -18,8 +19,7 @@ pub struct Parameter {
 
 #[derive(Debug)]
 pub struct Endpoint {
-    pub start: CodePosition,
-    pub end: CodePosition,
+    pub range: Range,
     pub documentation: Option<String>,
     pub identifier: String,
     pub role: String,
@@ -88,7 +88,7 @@ impl Endpoint {
         // at this point it's pretty safe that the currently parsed tokens are meant to build an endpoint, therefore we can start consuming
         // we also checked the types/order of the following tokens and can consume them directly, without re-checking
 
-        let start: CodePosition;
+        let start: Position;
         let mut documentation: Option<String> = None;
         let role: String;
         let identifier: String;
@@ -97,7 +97,7 @@ impl Endpoint {
             let mut consumed = reader.consume(5)?;
 
             let doc_token = consumed.remove(0);
-            start = doc_token.start();
+            start = doc_token.range().start;
             documentation = Some(cast!(doc_token, Token::DocumentationalComment).content);
             consumed.remove(0); // newline
             role = cast!(consumed.remove(0), Token::Identifier).content;
@@ -106,7 +106,7 @@ impl Endpoint {
             let mut consumed = reader.consume(4)?;
 
             let doc_token = consumed.remove(0);
-            start = doc_token.start();
+            start = doc_token.range().start;
             documentation = Some(cast!(doc_token, Token::DocumentationalComment).content);
             role = cast!(consumed.remove(0), Token::Identifier).content;
             identifier = cast!(consumed.remove(0), Token::Identifier).content;
@@ -114,7 +114,7 @@ impl Endpoint {
             let mut consumed = reader.consume(3)?;
 
             let role_token = consumed.remove(0);
-            start = role_token.start();
+            start = role_token.range().start;
             role = cast!(role_token, Token::Identifier).content;
             identifier = cast!(consumed.remove(0), Token::Identifier).content;
         }
@@ -126,8 +126,7 @@ impl Endpoint {
             // in valid cases this is either a parameter token or the closing bracket which at this point is not yet consumed
             if peeked.is_none() {
                 return Some(Err(ParseError {
-                    start: reader.last_token_code_start,
-                    end: reader.last_token_code_end,
+                    range: reader.last_token_range,
                     message: "Expected more tokens for correct endpoint syntax".to_string(),
                 }));
             }
@@ -148,8 +147,7 @@ impl Endpoint {
                                 Token::Operator(operator) => match operator.operator_type {
                                     OperatorType::CloseBracket => {
                                         return Some(Err(ParseError {
-                                            start: operator.start,
-                                            end: operator.end,
+                                            range: operator.range,
                                             message:
                                                 "Expected parameters instead of closing bracket"
                                                     .to_string(),
@@ -194,8 +192,10 @@ impl Endpoint {
 
         Some(Ok(Endpoint {
             documentation,
-            start,
-            end: reader.last_token_code_end,
+            range: Range {
+                start,
+                end: reader.last_token_range.end,
+            },
             identifier,
             parameters,
             return_type,
@@ -209,8 +209,7 @@ fn parse_endpoint_parameter(reader: &mut TokenReader) -> Result<Parameter, Parse
 
     if peeked.is_none() {
         return Err(ParseError {
-            start: reader.last_token_code_start,
-            end: reader.last_token_code_end,
+            range: reader.last_token_range,
             message: "Not enough tokens to form a valid parameter".to_string(),
         });
     }
@@ -224,8 +223,7 @@ fn parse_endpoint_parameter(reader: &mut TokenReader) -> Result<Parameter, Parse
         }
         value => {
             return Err(ParseError {
-                start: value.start(),
-                end: value.start(),
+                range: value.range(),
                 message: "Expected parameter identifier".to_string(),
             });
         }
@@ -239,8 +237,7 @@ fn parse_endpoint_parameter(reader: &mut TokenReader) -> Result<Parameter, Parse
             }
             _ => {
                 return Err(ParseError {
-                    start: operator.start,
-                    end: operator.end,
+                    range: operator.range,
                     message: "Unexpected operator. Only ? is valid here.".to_string(),
                 })
             }

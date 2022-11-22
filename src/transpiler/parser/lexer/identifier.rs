@@ -1,11 +1,11 @@
 use lazy_static::lazy_static;
 use regex::Regex;
+use tower_lsp::lsp_types::Range;
 use std::io::Read;
 
 use crate::{
     transpiler::parser::{
         input_reader::{InputReader, InputReaderError},
-        CodePosition,
     },
     unwrap_result_option,
 };
@@ -16,8 +16,7 @@ use crate::{
 #[derive(Clone, Debug)]
 pub struct Identifier {
     pub content: String,
-    pub start: CodePosition,
-    pub end: CodePosition,
+    pub range: Range
 }
 
 impl Identifier {
@@ -43,8 +42,7 @@ impl Identifier {
 
         Ok(Some(Identifier {
             content: content,
-            end: end,
-            start: start,
+            range: Range { start, end }
         }))
     }
 }

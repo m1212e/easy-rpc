@@ -10,10 +10,10 @@ mod tests {
         let mut reader = InputReader::new("|".as_bytes());
         let output = Operator::lex_operator(&mut reader)?.unwrap();
 
-        assert_eq!(output.start.character, 0);
-        assert_eq!(output.start.line, 0);
-        assert_eq!(output.end.character, 1);
-        assert_eq!(output.end.line, 0);
+        assert_eq!(output.range.start.character, 0);
+        assert_eq!(output.range.start.line, 0);
+        assert_eq!(output.range.end.character, 1);
+        assert_eq!(output.range.end.line, 0);
         assert_eq!(matches!(output.operator_type, OperatorType::Pipe), true);
 
         Ok(())
@@ -24,10 +24,10 @@ mod tests {
         let mut reader = InputReader::new("{".as_bytes());
         let output = Operator::lex_operator(&mut reader)?.unwrap();
 
-        assert_eq!(output.start.character, 0);
-        assert_eq!(output.start.line, 0);
-        assert_eq!(output.end.character, 1);
-        assert_eq!(output.end.line, 0);
+        assert_eq!(output.range.start.character, 0);
+        assert_eq!(output.range.start.line, 0);
+        assert_eq!(output.range.end.character, 1);
+        assert_eq!(output.range.end.line, 0);
         assert_eq!(
             matches!(output.operator_type, OperatorType::CurlyOpenBracket),
             true
@@ -41,10 +41,10 @@ mod tests {
         let mut reader = InputReader::new("}".as_bytes());
         let output = Operator::lex_operator(&mut reader)?.unwrap();
 
-        assert_eq!(output.start.character, 0);
-        assert_eq!(output.start.line, 0);
-        assert_eq!(output.end.character, 1);
-        assert_eq!(output.end.line, 0);
+        assert_eq!(output.range.start.character, 0);
+        assert_eq!(output.range.start.line, 0);
+        assert_eq!(output.range.end.character, 1);
+        assert_eq!(output.range.end.line, 0);
         assert_eq!(
             matches!(output.operator_type, OperatorType::CurlyCloseBracket),
             true
@@ -58,10 +58,10 @@ mod tests {
         let mut reader = InputReader::new("(".as_bytes());
         let output = Operator::lex_operator(&mut reader)?.unwrap();
 
-        assert_eq!(output.start.character, 0);
-        assert_eq!(output.start.line, 0);
-        assert_eq!(output.end.character, 1);
-        assert_eq!(output.end.line, 0);
+        assert_eq!(output.range.start.character, 0);
+        assert_eq!(output.range.start.line, 0);
+        assert_eq!(output.range.end.character, 1);
+        assert_eq!(output.range.end.line, 0);
         assert_eq!(
             matches!(output.operator_type, OperatorType::OpenBracket),
             true
@@ -75,10 +75,10 @@ mod tests {
         let mut reader = InputReader::new(")".as_bytes());
         let output = Operator::lex_operator(&mut reader)?.unwrap();
 
-        assert_eq!(output.start.character, 0);
-        assert_eq!(output.start.line, 0);
-        assert_eq!(output.end.character, 1);
-        assert_eq!(output.end.line, 0);
+        assert_eq!(output.range.start.character, 0);
+        assert_eq!(output.range.start.line, 0);
+        assert_eq!(output.range.end.character, 1);
+        assert_eq!(output.range.end.line, 0);
         assert_eq!(
             matches!(output.operator_type, OperatorType::CloseBracket),
             true
@@ -92,10 +92,10 @@ mod tests {
         let mut reader = InputReader::new("[".as_bytes());
         let output = Operator::lex_operator(&mut reader)?.unwrap();
 
-        assert_eq!(output.start.character, 0);
-        assert_eq!(output.start.line, 0);
-        assert_eq!(output.end.character, 1);
-        assert_eq!(output.end.line, 0);
+        assert_eq!(output.range.start.character, 0);
+        assert_eq!(output.range.start.line, 0);
+        assert_eq!(output.range.end.character, 1);
+        assert_eq!(output.range.end.line, 0);
         assert_eq!(
             matches!(output.operator_type, OperatorType::SquareOpenBracket),
             true
@@ -109,10 +109,10 @@ mod tests {
         let mut reader = InputReader::new("]".as_bytes());
         let output = Operator::lex_operator(&mut reader)?.unwrap();
 
-        assert_eq!(output.start.character, 0);
-        assert_eq!(output.start.line, 0);
-        assert_eq!(output.end.character, 1);
-        assert_eq!(output.end.line, 0);
+        assert_eq!(output.range.start.character, 0);
+        assert_eq!(output.range.start.line, 0);
+        assert_eq!(output.range.end.character, 1);
+        assert_eq!(output.range.end.line, 0);
         assert_eq!(
             matches!(output.operator_type, OperatorType::SquareCloseBracket),
             true
@@ -126,10 +126,10 @@ mod tests {
         let mut reader = InputReader::new(",".as_bytes());
         let output = Operator::lex_operator(&mut reader)?.unwrap();
 
-        assert_eq!(output.start.character, 0);
-        assert_eq!(output.start.line, 0);
-        assert_eq!(output.end.character, 1);
-        assert_eq!(output.end.line, 0);
+        assert_eq!(output.range.start.character, 0);
+        assert_eq!(output.range.start.line, 0);
+        assert_eq!(output.range.end.character, 1);
+        assert_eq!(output.range.end.line, 0);
         assert_eq!(matches!(output.operator_type, OperatorType::Comma), true);
 
         Ok(())
@@ -140,10 +140,10 @@ mod tests {
         let mut reader = InputReader::new("?".as_bytes());
         let output = Operator::lex_operator(&mut reader)?.unwrap();
 
-        assert_eq!(output.start.character, 0);
-        assert_eq!(output.start.line, 0);
-        assert_eq!(output.end.character, 1);
-        assert_eq!(output.end.line, 0);
+        assert_eq!(output.range.start.character, 0);
+        assert_eq!(output.range.start.line, 0);
+        assert_eq!(output.range.end.character, 1);
+        assert_eq!(output.range.end.line, 0);
         assert_eq!(
             matches!(output.operator_type, OperatorType::QuestionMark),
             true

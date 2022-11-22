@@ -1,5 +1,7 @@
 #[cfg(test)]
 mod tests {
+    use tower_lsp::lsp_types::Range;
+
     use crate::transpiler::{
         parser::{
             parser::{
@@ -7,7 +9,6 @@ mod tests {
                 endpoint::{Endpoint, Parameter},
                 field_type::{ArrayAmount, Primitive, PrimitiveType, Type},
             },
-            CodePosition,
         }, generator::translator::typescript::class::generate_class,
     };
 
@@ -16,8 +17,7 @@ mod tests {
         let endpoints = vec![
             Endpoint {
                 documentation: Some("some docs".to_string()),
-                end: CodePosition::zero_initialized(),
-                start: CodePosition::zero_initialized(),
+                range: Range::default(),
                 identifier: "MySuperCoolEndpoint1".to_string(),
                 role: "MyVeryNiceRole".to_string(),
                 return_type: Some(Type::Primitive(Primitive {
@@ -45,8 +45,7 @@ mod tests {
             },
             Endpoint {
                 documentation: None,
-                end: CodePosition::zero_initialized(),
-                start: CodePosition::zero_initialized(),
+                range: Range::default(),
                 identifier: "MySuperCoolEndpoint2".to_string(),
                 role: "MyVeryNiceRole".to_string(),
                 return_type: None,
@@ -63,15 +62,13 @@ mod tests {
             &vec![
                 CustomType {
                     documentation: None,
-                    start: CodePosition::zero_initialized(),
-                    end: CodePosition::zero_initialized(),
+                    range: Range::default(),
                     fields: vec![],
                     identifier: "MyCoolType1".to_string(),
                 },
                 CustomType {
                     documentation: None,
-                    start: CodePosition::zero_initialized(),
-                    end: CodePosition::zero_initialized(),
+                    range: Range::default(),
                     fields: vec![],
                     identifier: "MyCoolType2".to_string(),
                 },
@@ -176,8 +173,7 @@ export default class MyCoolClass {
         let endpoints = vec![
             Endpoint {
                 documentation: Some("some docs".to_string()),
-                end: CodePosition::zero_initialized(),
-                start: CodePosition::zero_initialized(),
+                range: Range::default(),
                 identifier: "MySuperCoolEndpoint1".to_string(),
                 role: "MyVeryNiceRole".to_string(),
                 return_type: Some(Type::Primitive(Primitive {
@@ -205,8 +201,7 @@ export default class MyCoolClass {
             },
             Endpoint {
                 documentation: None,
-                end: CodePosition::zero_initialized(),
-                start: CodePosition::zero_initialized(),
+                range: Range::default(),
                 identifier: "MySuperCoolEndpoint2".to_string(),
                 role: "MyVeryNiceRole".to_string(),
                 return_type: None,
@@ -223,15 +218,13 @@ export default class MyCoolClass {
             &vec![
                 CustomType {
                     documentation: None,
-                    start: CodePosition::zero_initialized(),
-                    end: CodePosition::zero_initialized(),
+                    range: Range::default(),
                     fields: vec![],
                     identifier: "MyCoolType1".to_string(),
                 },
                 CustomType {
                     documentation: None,
-                    start: CodePosition::zero_initialized(),
-                    end: CodePosition::zero_initialized(),
+                    range: Range::default(),
                     fields: vec![],
                     identifier: "MyCoolType2".to_string(),
                 },

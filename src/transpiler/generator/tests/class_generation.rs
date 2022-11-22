@@ -45,8 +45,10 @@ mod tests {
                     role_type: "http-server".to_string(),
                 },
             ],
-        )
-        .unwrap();
+        );
+
+        assert_eq!(result.1.len(), 0);
+        let result = result.0;
 
         assert_equal_directories(
             &test_files.join("output_assert"),
@@ -79,12 +81,15 @@ mod tests {
             Err(_) => {}
         };
 
-        generate_for_directory::<TypeScriptTranslator>(
-            &test_files.join("input"),
-            &test_files.join("output"),
-            "Server",
-        )
-        .unwrap();
+        assert_eq!(
+            generate_for_directory::<TypeScriptTranslator>(
+                &test_files.join("input"),
+                &test_files.join("output"),
+                "Server",
+            )
+            .len(),
+            0
+        );
 
         assert_equal_directories(
             &test_files.join("output_assert"),

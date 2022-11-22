@@ -1,5 +1,7 @@
 #[cfg(test)]
 mod tests {
+    use tower_lsp::lsp_types::Range;
+
     use crate::transpiler::{
         generator::{
             translator::typescript::endpoint::endpoint_to_function,
@@ -9,7 +11,6 @@ mod tests {
                 endpoint::{Endpoint, Parameter},
                 field_type::{ArrayAmount, Primitive, PrimitiveType, Type},
             },
-            CodePosition,
         },
     };
 
@@ -17,8 +18,7 @@ mod tests {
     fn test_success_foreign() {
         let ep = Endpoint {
             documentation: Some("some docs".to_string()),
-            end: CodePosition::zero_initialized(),
-            start: CodePosition::zero_initialized(),
+            range: Range::default(),
             identifier: "MySuperCoolEndpoint".to_string(),
             role: "MyVeryNiceRole".to_string(),
             return_type: Some(Type::Primitive(Primitive {
@@ -62,8 +62,7 @@ mod tests {
     fn test_success_callback() {
         let ep = Endpoint {
             documentation: Some("some docs".to_string()),
-            end: CodePosition::zero_initialized(),
-            start: CodePosition::zero_initialized(),
+            range: Range::default(),
             identifier: "MySuperCoolEndpoint".to_string(),
             role: "MyVeryNiceRole".to_string(),
             return_type: Some(Type::Primitive(Primitive {

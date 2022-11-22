@@ -61,8 +61,7 @@ pub fn parse_field_type(reader: &mut TokenReader) -> Result<Type, ParseError> {
     if peeked.is_none() {
         return Err(ParseError {
             message: "Expected a parameter type".to_string(),
-            start: reader.last_token_code_start,
-            end: reader.last_token_code_end,
+            range: reader.last_token_range
         });
     }
 
@@ -74,8 +73,7 @@ pub fn parse_field_type(reader: &mut TokenReader) -> Result<Type, ParseError> {
         Token::Identifier(_) => parse_custom_type(reader),
         _ => Err(ParseError {
             message: "Expected a parameter type".to_string(),
-            start: reader.last_token_code_start,
-            end: reader.last_token_code_end,
+            range: reader.last_token_range
         }),
     };
 }
@@ -96,8 +94,7 @@ fn parse_primitive_type(reader: &mut TokenReader) -> Result<Type, ParseError> {
             _ => {
                 // should not occur
                 return Err(ParseError {
-                    start: keyword.start,
-                    end: keyword.start,
+                    range: keyword.range,
                     message: "Invalid keyword for primitive type".to_string(),
                 });
             }
@@ -105,8 +102,7 @@ fn parse_primitive_type(reader: &mut TokenReader) -> Result<Type, ParseError> {
         token => {
             // should not occur
             return Err(ParseError {
-                start: token.start(),
-                end: token.start(),
+                range: token.range(),
                 message: "Invalid token for primitive type".to_string(),
             });
         }
@@ -124,8 +120,7 @@ fn parse_enum_type(reader: &mut TokenReader) -> Result<Type, ParseError> {
         let token = reader.consume(1);
         if token.is_none() {
             return Err(ParseError {
-                start: reader.last_token_code_start,
-                end: reader.last_token_code_end,
+                range: reader.last_token_range,
                 message: "Expected a literal for this enum type".to_string(),
             });
         }
@@ -135,8 +130,7 @@ fn parse_enum_type(reader: &mut TokenReader) -> Result<Type, ParseError> {
             Token::Literal(literal) => values.push(literal),
             _ => {
                 return Err(ParseError {
-                    start: token.start(),
-                    end: token.end(),
+                    range: token.range(),
                     message: "Expected literal token".to_string(),
                 })
             }
@@ -172,8 +166,7 @@ fn parse_custom_type(reader: &mut TokenReader) -> Result<Type, ParseError> {
         token => {
             // should not occur
             return Err(ParseError {
-                start: token.start(),
-                end: token.end(),
+                range: token.range(),
                 message: "Invalid token for custom type".to_string(),
             });
         }
@@ -214,8 +207,7 @@ fn parse_array_length(reader: &mut TokenReader) -> Result<ArrayAmount, ParseErro
     let length_token = reader.consume(1);
     if length_token.is_none() {
         return Err(ParseError {
-            start: reader.last_token_code_start,
-            end: reader.last_token_code_end,
+            range: reader.last_token_range,
             message: "Expected token to complete the length definition of this array".to_string(),
         });
     }
@@ -227,8 +219,7 @@ fn parse_array_length(reader: &mut TokenReader) -> Result<ArrayAmount, ParseErro
             }
             _ => {
                 return Err(ParseError {
-                    start: operator.start,
-                    end: operator.end,
+                    range: operator.range,
                     message: "Expected integer or closing bracket".to_string(),
                 })
             }
@@ -237,16 +228,14 @@ fn parse_array_length(reader: &mut TokenReader) -> Result<ArrayAmount, ParseErro
             LiteralType::Integer(integer) => integer,
             _ => {
                 return Err(ParseError {
-                    start: literal.start,
-                    end: literal.end,
+                    range: literal.range,
                     message: "Expected integer or closing bracket".to_string(),
                 })
             }
         },
         token => {
             return Err(ParseError {
-                start: token.start(),
-                end: token.end(),
+                range: token.range(),
                 message: "Expected integer or closing bracket".to_string(),
             })
         }
@@ -254,8 +243,7 @@ fn parse_array_length(reader: &mut TokenReader) -> Result<ArrayAmount, ParseErro
 
     if length < 1 {
         return Err(ParseError {
-            start: reader.last_token_code_start,
-            end: reader.last_token_code_end,
+            range: reader.last_token_range,
             message: "Size of the array must be above or equal to 1".to_string(),
         });
     }

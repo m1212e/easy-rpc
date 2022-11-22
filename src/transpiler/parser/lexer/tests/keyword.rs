@@ -12,10 +12,10 @@ mod tests {
 
         assert_eq!(output.is_some(), true);
         let output = output.unwrap();
-        assert_eq!(output.start.character, 0);
-        assert_eq!(output.start.line, 0);
-        assert_eq!(output.end.character, 4);
-        assert_eq!(output.end.line, 0);
+        assert_eq!(output.range.start.character, 0);
+        assert_eq!(output.range.start.line, 0);
+        assert_eq!(output.range.end.character, 4);
+        assert_eq!(output.range.end.line, 0);
         assert_eq!(matches!(output.keyword_type, KeywordType::Type), true);
 
         Ok(())
@@ -28,10 +28,10 @@ mod tests {
 
         assert_eq!(output.is_some(), true);
         let output = output.unwrap();
-        assert_eq!(output.start.character, 0);
-        assert_eq!(output.start.line, 0);
-        assert_eq!(output.end.character, 4);
-        assert_eq!(output.end.line, 0);
+        assert_eq!(output.range.start.character, 0);
+        assert_eq!(output.range.start.line, 0);
+        assert_eq!(output.range.end.character, 4);
+        assert_eq!(output.range.end.line, 0);
         assert_eq!(matches!(output.keyword_type, KeywordType::Type), true);
         assert!(reader.is_done());
 
@@ -55,10 +55,10 @@ mod tests {
 
         assert_eq!(output.is_some(), true);
         let output = output.unwrap();
-        assert_eq!(output.start.character, 0);
-        assert_eq!(output.start.line, 0);
-        assert_eq!(output.end.character, 7);
-        assert_eq!(output.end.line, 0);
+        assert_eq!(output.range.start.character, 0);
+        assert_eq!(output.range.start.line, 0);
+        assert_eq!(output.range.end.character, 7);
+        assert_eq!(output.range.end.line, 0);
         assert_eq!(matches!(output.keyword_type, KeywordType::Boolean), true);
 
         Ok(())
@@ -71,10 +71,10 @@ mod tests {
 
         assert_eq!(output.is_some(), true);
         let output = output.unwrap();
-        assert_eq!(output.start.character, 0);
-        assert_eq!(output.start.line, 0);
-        assert_eq!(output.end.character, 3);
-        assert_eq!(output.end.line, 0);
+        assert_eq!(output.range.start.character, 0);
+        assert_eq!(output.range.start.line, 0);
+        assert_eq!(output.range.end.character, 3);
+        assert_eq!(output.range.end.line, 0);
         assert_eq!(matches!(output.keyword_type, KeywordType::Int), true);
 
         Ok(())
@@ -87,10 +87,10 @@ mod tests {
 
         assert_eq!(output.is_some(), true);
         let output = output.unwrap();
-        assert_eq!(output.start.character, 0);
-        assert_eq!(output.start.line, 0);
-        assert_eq!(output.end.character, 4);
-        assert_eq!(output.end.line, 0);
+        assert_eq!(output.range.start.character, 0);
+        assert_eq!(output.range.start.line, 0);
+        assert_eq!(output.range.end.character, 4);
+        assert_eq!(output.range.end.line, 0);
         assert_eq!(matches!(output.keyword_type, KeywordType::Int8), true);
 
         Ok(())
@@ -103,10 +103,10 @@ mod tests {
 
         assert_eq!(output.is_some(), true);
         let output = output.unwrap();
-        assert_eq!(output.start.character, 0);
-        assert_eq!(output.start.line, 0);
-        assert_eq!(output.end.character, 5);
-        assert_eq!(output.end.line, 0);
+        assert_eq!(output.range.start.character, 0);
+        assert_eq!(output.range.start.line, 0);
+        assert_eq!(output.range.end.character, 5);
+        assert_eq!(output.range.end.line, 0);
         assert_eq!(matches!(output.keyword_type, KeywordType::Int16), true);
 
         Ok(())
@@ -119,10 +119,10 @@ mod tests {
 
         assert_eq!(output.is_some(), true);
         let output = output.unwrap();
-        assert_eq!(output.start.character, 0);
-        assert_eq!(output.start.line, 0);
-        assert_eq!(output.end.character, 5);
-        assert_eq!(output.end.line, 0);
+        assert_eq!(output.range.start.character, 0);
+        assert_eq!(output.range.start.line, 0);
+        assert_eq!(output.range.end.character, 5);
+        assert_eq!(output.range.end.line, 0);
         assert_eq!(matches!(output.keyword_type, KeywordType::Int32), true);
 
         Ok(())
@@ -135,10 +135,10 @@ mod tests {
 
         assert_eq!(output.is_some(), true);
         let output = output.unwrap();
-        assert_eq!(output.start.character, 0);
-        assert_eq!(output.start.line, 0);
-        assert_eq!(output.end.character, 5);
-        assert_eq!(output.end.line, 0);
+        assert_eq!(output.range.start.character, 0);
+        assert_eq!(output.range.start.line, 0);
+        assert_eq!(output.range.end.character, 5);
+        assert_eq!(output.range.end.line, 0);
         assert_eq!(matches!(output.keyword_type, KeywordType::Int64), true);
 
         Ok(())
@@ -151,10 +151,10 @@ mod tests {
 
         assert_eq!(output.is_some(), true);
         let output = output.unwrap();
-        assert_eq!(output.start.character, 0);
-        assert_eq!(output.start.line, 0);
-        assert_eq!(output.end.character, 5);
-        assert_eq!(output.end.line, 0);
+        assert_eq!(output.range.start.character, 0);
+        assert_eq!(output.range.start.line, 0);
+        assert_eq!(output.range.end.character, 5);
+        assert_eq!(output.range.end.line, 0);
         assert_eq!(matches!(output.keyword_type, KeywordType::Float), true);
 
         Ok(())
@@ -167,10 +167,10 @@ mod tests {
 
         assert_eq!(output.is_some(), true);
         let output = output.unwrap();
-        assert_eq!(output.start.character, 0);
-        assert_eq!(output.start.line, 0);
-        assert_eq!(output.end.character, 7);
-        assert_eq!(output.end.line, 0);
+        assert_eq!(output.range.start.character, 0);
+        assert_eq!(output.range.start.line, 0);
+        assert_eq!(output.range.end.character, 7);
+        assert_eq!(output.range.end.line, 0);
         assert_eq!(matches!(output.keyword_type, KeywordType::Float32), true);
 
         Ok(())
@@ -183,10 +183,10 @@ mod tests {
 
         assert_eq!(output.is_some(), true);
         let output = output.unwrap();
-        assert_eq!(output.start.character, 0);
-        assert_eq!(output.start.line, 0);
-        assert_eq!(output.end.character, 7);
-        assert_eq!(output.end.line, 0);
+        assert_eq!(output.range.start.character, 0);
+        assert_eq!(output.range.start.line, 0);
+        assert_eq!(output.range.end.character, 7);
+        assert_eq!(output.range.end.line, 0);
         assert_eq!(matches!(output.keyword_type, KeywordType::Float64), true);
 
         Ok(())
@@ -199,10 +199,10 @@ mod tests {
 
         assert_eq!(output.is_some(), true);
         let output = output.unwrap();
-        assert_eq!(output.start.character, 0);
-        assert_eq!(output.start.line, 0);
-        assert_eq!(output.end.character, 6);
-        assert_eq!(output.end.line, 0);
+        assert_eq!(output.range.start.character, 0);
+        assert_eq!(output.range.start.line, 0);
+        assert_eq!(output.range.end.character, 6);
+        assert_eq!(output.range.end.line, 0);
         assert_eq!(matches!(output.keyword_type, KeywordType::String), true);
 
         Ok(())

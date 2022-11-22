@@ -1,11 +1,11 @@
 use strum::IntoEnumIterator;
 use strum_macros::{self, Display, EnumIter};
+use tower_lsp::lsp_types::Range;
 
 use std::io::Read;
 
 use crate::transpiler::parser::{
     input_reader::{InputReader, InputReaderError},
-    CodePosition,
 };
 
 /**
@@ -35,8 +35,7 @@ pub enum OperatorType {
 #[derive(Clone, Debug)]
 pub struct Operator {
     pub operator_type: OperatorType,
-    pub start: CodePosition,
-    pub end: CodePosition,
+    pub range: Range
 }
 
 impl Operator {
@@ -59,8 +58,7 @@ impl Operator {
 
                 return Ok(Some(Operator {
                     operator_type,
-                    start,
-                    end,
+                    range: Range { start, end }
                 }));
             }
         }

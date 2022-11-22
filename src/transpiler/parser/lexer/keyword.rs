@@ -1,12 +1,10 @@
 use strum::IntoEnumIterator;
 use strum_macros::{self, Display, EnumIter};
+use tower_lsp::lsp_types::Range;
 
 use std::io::Read;
 
-use crate::transpiler::parser::{
-    input_reader::{InputReader, InputReaderError},
-    CodePosition,
-};
+use crate::transpiler::parser::input_reader::{InputReader, InputReaderError};
 
 /**
    Keywords are predefined words which the parser knows.
@@ -29,8 +27,7 @@ pub enum KeywordType {
 #[derive(Clone, Debug)]
 pub struct Keyword {
     pub keyword_type: KeywordType,
-    pub start: CodePosition,
-    pub end: CodePosition,
+    pub range: Range,
 }
 
 impl Keyword {
@@ -53,8 +50,7 @@ impl Keyword {
 
                 return Ok(Some(Keyword {
                     keyword_type,
-                    start: start,
-                    end: end,
+                    range: Range { start, end },
                 }));
             }
         }

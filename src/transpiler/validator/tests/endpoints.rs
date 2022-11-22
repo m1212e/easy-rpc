@@ -1,13 +1,12 @@
 #[cfg(test)]
 mod tests {
+    use tower_lsp::lsp_types::{Position, Range};
+
     use crate::transpiler::{
         config::Role,
-        parser::{
-            parser::{
-                endpoint::{Endpoint, Parameter},
-                field_type::{ArrayAmount, Custom, Type},
-            },
-            CodePosition,
+        parser::parser::{
+            endpoint::{Endpoint, Parameter},
+            field_type::{ArrayAmount, Custom, Type},
         },
         validator::validate,
     };
@@ -18,13 +17,12 @@ mod tests {
             &vec![
                 Endpoint {
                     documentation: None,
-                    start: CodePosition {
-                        line: 0,
-                        character: 0,
-                    },
-                    end: CodePosition {
-                        line: 0,
-                        character: 30,
+                    range: Range {
+                        start: Position::default(),
+                        end: Position {
+                            line: 0,
+                            character: 30,
+                        },
                     },
                     identifier: "SuperCoolEndpoint".to_string(),
                     role: "SomeRole1".to_string(),
@@ -33,13 +31,15 @@ mod tests {
                 },
                 Endpoint {
                     documentation: None,
-                    start: CodePosition {
-                        line: 1,
-                        character: 0,
-                    },
-                    end: CodePosition {
-                        line: 1,
-                        character: 30,
+                    range: Range {
+                        start: Position {
+                            line: 1,
+                            character: 0,
+                        },
+                        end: Position {
+                            line: 1,
+                            character: 30,
+                        },
                     },
                     identifier: "SuperCoolEndpoint".to_string(),
                     role: "SomeRole2".to_string(),
@@ -48,13 +48,15 @@ mod tests {
                 },
                 Endpoint {
                     documentation: None,
-                    start: CodePosition {
-                        line: 3,
-                        character: 0,
-                    },
-                    end: CodePosition {
-                        line: 3,
-                        character: 30,
+                    range: Range {
+                        start: Position {
+                            line: 3,
+                            character: 0,
+                        },
+                        end: Position {
+                            line: 3,
+                            character: 30,
+                        },
                     },
                     identifier: "SuperCoolEndpoint".to_string(),
                     role: "SomeRole1".to_string(),
@@ -75,17 +77,18 @@ mod tests {
                     role_type: "browser".to_string(),
                 },
             ],
-        )
-        .unwrap_err();
+        );
+
+        assert_eq!(result.len(), 1);
 
         assert_eq!(
-            result.message,
+            result[0].message,
             "Endpoint SomeRole1 SuperCoolEndpoint is already defined"
         );
-        assert_eq!(result.start.character, 0);
-        assert_eq!(result.start.line, 3);
-        assert_eq!(result.end.character, 30);
-        assert_eq!(result.end.line, 3);
+        assert_eq!(result[0].range.start.character, 0);
+        assert_eq!(result[0].range.start.line, 3);
+        assert_eq!(result[0].range.end.character, 30);
+        assert_eq!(result[0].range.end.line, 3);
     }
 
     #[test]
@@ -93,13 +96,12 @@ mod tests {
         let result = validate(
             &vec![Endpoint {
                 documentation: None,
-                start: CodePosition {
-                    line: 0,
-                    character: 0,
-                },
-                end: CodePosition {
-                    line: 0,
-                    character: 30,
+                range: Range {
+                    start: Position::default(),
+                    end: Position {
+                        line: 0,
+                        character: 30,
+                    },
                 },
                 identifier: "SuperCoolEndpoint".to_string(),
                 role: "SomeRole".to_string(),
@@ -112,17 +114,18 @@ mod tests {
                 name: "SomeDifferentRole".to_string(),
                 role_type: "browser".to_string(),
             }],
-        )
-        .unwrap_err();
+        );
+
+        assert_eq!(result.len(), 1);
 
         assert_eq!(
-            result.message,
+            result[0].message,
             "Role SomeRole of endpoint SuperCoolEndpoint is not configured in the roles.json"
         );
-        assert_eq!(result.start.character, 0);
-        assert_eq!(result.start.line, 0);
-        assert_eq!(result.end.character, 30);
-        assert_eq!(result.end.line, 0);
+        assert_eq!(result[0].range.start.character, 0);
+        assert_eq!(result[0].range.start.line, 0);
+        assert_eq!(result[0].range.end.character, 30);
+        assert_eq!(result[0].range.end.line, 0);
     }
 
     #[test]
@@ -130,13 +133,12 @@ mod tests {
         let result = validate(
             &vec![Endpoint {
                 documentation: None,
-                start: CodePosition {
-                    line: 0,
-                    character: 0,
-                },
-                end: CodePosition {
-                    line: 0,
-                    character: 30,
+                range: Range {
+                    start: Position::default(),
+                    end: Position {
+                        line: 0,
+                        character: 30,
+                    },
                 },
                 identifier: "SuperCoolEndpoint".to_string(),
                 role: "SomeRole".to_string(),
@@ -156,14 +158,15 @@ mod tests {
                 name: "SomeRole".to_string(),
                 role_type: "browser".to_string(),
             }],
-        )
-        .unwrap_err();
+        );
 
-        assert_eq!(result.message, "Type UnknownType is unknown");
-        assert_eq!(result.start.character, 0);
-        assert_eq!(result.start.line, 0);
-        assert_eq!(result.end.character, 30);
-        assert_eq!(result.end.line, 0);
+        assert_eq!(result.len(), 1);
+
+        assert_eq!(result[0].message, "Type UnknownType is unknown");
+        assert_eq!(result[0].range.start.character, 0);
+        assert_eq!(result[0].range.start.line, 0);
+        assert_eq!(result[0].range.end.character, 30);
+        assert_eq!(result[0].range.end.line, 0);
     }
 
     #[test]
@@ -171,13 +174,12 @@ mod tests {
         let result = validate(
             &vec![Endpoint {
                 documentation: None,
-                start: CodePosition {
-                    line: 0,
-                    character: 0,
-                },
-                end: CodePosition {
-                    line: 0,
-                    character: 30,
+                range: Range {
+                    start: Position::default(),
+                    end: Position {
+                        line: 0,
+                        character: 30,
+                    },
                 },
                 identifier: "SuperCoolEndpoint".to_string(),
                 role: "SomeRole".to_string(),
@@ -193,13 +195,14 @@ mod tests {
                 name: "SomeRole".to_string(),
                 role_type: "browser".to_string(),
             }],
-        )
-        .unwrap_err();
+        );
 
-        assert_eq!(result.message, "Type SomeUnknownReturnType is unknown");
-        assert_eq!(result.start.character, 0);
-        assert_eq!(result.start.line, 0);
-        assert_eq!(result.end.character, 30);
-        assert_eq!(result.end.line, 0);
+        assert_eq!(result.len(), 1);
+
+        assert_eq!(result[0].message, "Type SomeUnknownReturnType is unknown");
+        assert_eq!(result[0].range.start.character, 0);
+        assert_eq!(result[0].range.start.line, 0);
+        assert_eq!(result[0].range.end.character, 30);
+        assert_eq!(result[0].range.end.line, 0);
     }
 }

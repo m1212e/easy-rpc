@@ -1,10 +1,9 @@
 use std::io::Read;
 
+use tower_lsp::lsp_types::Range;
+
 use crate::{
-    transpiler::parser::{
-        input_reader::{InputReader, InputReaderError},
-        CodePosition,
-    },
+    transpiler::parser::input_reader::{InputReader, InputReaderError},
     unwrap_result_option,
 };
 
@@ -14,8 +13,7 @@ use crate::{
 #[derive(Clone, Debug)]
 pub struct DisposeableComment {
     pub content: String,
-    pub start: CodePosition,
-    pub end: CodePosition,
+    pub range: Range,
 }
 
 impl DisposeableComment {
@@ -39,8 +37,10 @@ impl DisposeableComment {
             reader.consume(1)?;
             let content = unwrap_result_option!(reader.consume_to_delimeter_or_end("\n"));
             return Ok(Some(DisposeableComment {
-                start: start,
-                end: reader.current_position.clone(),
+                range: Range {
+                    start,
+                    end: reader.current_position.clone(),
+                },
                 content,
             }));
         }
@@ -49,8 +49,10 @@ impl DisposeableComment {
             reader.consume(2)?;
             let content = unwrap_result_option!(reader.consume_to_delimeter_or_end("\n"));
             return Ok(Some(DisposeableComment {
-                start: start,
-                end: reader.current_position.clone(),
+                range: Range {
+                    start,
+                    end: reader.current_position.clone(),
+                },
                 content,
             }));
         }
@@ -59,8 +61,10 @@ impl DisposeableComment {
             reader.consume(2)?;
             let content = unwrap_result_option!(reader.consume_to_delimeter_or_end("*/"));
             return Ok(Some(DisposeableComment {
-                start: start,
-                end: reader.current_position.clone(),
+                range: Range {
+                    start,
+                    end: reader.current_position.clone(),
+                },
                 content: content.strip_suffix("*/").unwrap_or(&content).to_string(),
             }));
         }
