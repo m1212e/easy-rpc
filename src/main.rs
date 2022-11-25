@@ -38,7 +38,7 @@ async fn run_main(args: Vec<String>) {
     if args.contains(&"-ls".to_string()) {
         let (sender, reciever) = async_channel::unbounded::<Vec<DisplayableError>>();
         tokio::spawn(language_server::run_language_server(reciever));
-        run_watch(entry_path, sender).await;
+        run_watch(entry_path, sender, false).await;
     } else if args.contains(&"-w".to_string()) {
         let (sender, reciever) = async_channel::unbounded::<Vec<DisplayableError>>();
         // just log the incoming results to console
@@ -47,7 +47,7 @@ async fn run_main(args: Vec<String>) {
                 println!("{:#?}", reciever.recv().await);
             }
         });
-        run_watch(entry_path, sender).await;
+        run_watch(entry_path, sender, true).await;
     } else {
         println!("{}", run_once(entry_path).await);
     }
@@ -56,6 +56,7 @@ async fn run_main(args: Vec<String>) {
 async fn run_watch(
     entry_path: PathBuf,
     error_reporter: async_channel::Sender<Vec<DisplayableError>>,
+    report_success: bool,
 ) {
     let root_dirs = loop {
         //TODO optimize
@@ -160,14 +161,18 @@ async fn run_watch(
                             if res.len() > 0 {
                                 error_reporter.send(res).await.unwrap();
                             } else {
-                                error_reporter
-                                    .send(vec![format!(
-                                        "Processed {}\n",
-                                        root_dir.to_str().unwrap()
-                                    )
-                                    .into()])
-                                    .await
-                                    .unwrap();
+                                if report_success {
+                                    error_reporter
+                                        .send(vec![format!(
+                                            "Processed {}\n",
+                                            root_dir.to_str().unwrap()
+                                        )
+                                        .into()])
+                                        .await
+                                        .unwrap();
+                                } else {
+                                    error_reporter.send(vec![]).await.unwrap();
+                                }
                             }
                         }
                         _ => {}
