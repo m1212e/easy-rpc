@@ -43,13 +43,17 @@ impl From<String> for DisplayableError {
 
 impl From<notify::Error> for DisplayableError {
     fn from(err: notify::Error) -> Self {
-        DisplayableError::Message(Message { message: format!("Error in file system notifier occurred: {err}") })
+        DisplayableError::Message(Message {
+            message: format!("Error in file system notifier occurred: {err}"),
+        })
     }
 }
 
 impl From<async_channel::RecvError> for DisplayableError {
     fn from(err: async_channel::RecvError) -> Self {
-        DisplayableError::Message(Message { message: format!("Recv error occurred: {err}") })
+        DisplayableError::Message(Message {
+            message: format!("Recv error occurred: {err}"),
+        })
     }
 }
 // impl From<notify::Error> for ERPCError {
@@ -57,3 +61,12 @@ impl From<async_channel::RecvError> for DisplayableError {
 //         ERPCError::NotifyError(err)
 //     }
 // }
+
+impl DisplayableError {
+    pub fn message(self) -> String {
+        match self {
+            DisplayableError::Message(v) => v.message,
+            DisplayableError::Diagnostic(v) => v.message,
+        }
+    }
+}

@@ -23,7 +23,7 @@ pub fn validate(
     custom_types: &Vec<CustomType>,
     roles: &Vec<Role>,
 ) -> Vec<ValidationError> {
-    let errors = vec![];
+    let mut errors = vec![];
 
     // all types which are required by some field, parameter, return type, etc.
     // type, start, end

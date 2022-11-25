@@ -8,6 +8,7 @@ use std::{
     fs::{self, DirEntry, File},
     io::{self},
     path::{Path, PathBuf},
+    time::Duration,
 };
 
 use error::DisplayableError;
@@ -19,18 +20,16 @@ use util::normalize_path::normalize_path;
 #[tokio::main]
 async fn main() {
     let args: Vec<String> = env::args().collect();
-    match run_main(args).await {
-        Ok(_) => {}
-        Err(err) => eprintln!("{}", err),
-    };
+    run_main(args).await;
 }
 
-async fn run_main(args: Vec<String>) -> Result<(), String> {
+async fn run_main(args: Vec<String>) {
     let entry_path = match args.iter().position(|e| *e == "-p") {
         Some(index) => match args.get(index + 1) {
             Some(v) => normalize_path(&PathBuf::from(v)),
             None => {
-                return Err("Could not find path argument after -p flag".to_string());
+                eprintln!("Could not find path argument after -p flag");
+                return;
             }
         },
         None => current_dir().unwrap(),
@@ -39,7 +38,7 @@ async fn run_main(args: Vec<String>) -> Result<(), String> {
     if args.contains(&"-ls".to_string()) {
         let (sender, reciever) = async_channel::unbounded::<Vec<DisplayableError>>();
         tokio::spawn(language_server::run_language_server(reciever));
-        run_watch(entry_path, sender).await
+        run_watch(entry_path, sender).await;
     } else if args.contains(&"-w".to_string()) {
         let (sender, reciever) = async_channel::unbounded::<Vec<DisplayableError>>();
         // just log the incoming results to console
@@ -48,32 +47,56 @@ async fn run_main(args: Vec<String>) -> Result<(), String> {
                 println!("{:#?}", reciever.recv().await);
             }
         });
-        run_watch(entry_path, sender).await
+        run_watch(entry_path, sender).await;
     } else {
-        run_once(entry_path).await
+        println!("{}", run_once(entry_path).await);
     }
 }
 
 async fn run_watch(
     entry_path: PathBuf,
     error_reporter: async_channel::Sender<Vec<DisplayableError>>,
-) -> Result<(), String> {
-    let root_dirs = get_root_dirs(entry_path)?;
+) {
+    let root_dirs = loop {
+        //TODO optimize
+        let entry_path = entry_path.clone();
+        match get_root_dirs(entry_path) {
+            Ok(v) => break v,
+            Err(err) => {
+                error_reporter.send(vec![err]).await.unwrap();
+            }
+        };
+
+        //give the user some time to adjust and dont spam them
+        tokio::time::sleep(Duration::from_millis(10000)).await;
+    };
 
     let mut handles = vec![];
     for root_dir in root_dirs {
-        let config = match read_config(&root_dir) {
-            Ok(val) => val,
-            Err(err) => {
-                return Err(err.to_string());
-            }
+        let config = loop {
+            match read_config(&root_dir) {
+                Ok(v) => break v,
+                Err(err) => {
+                    error_reporter.send(vec![err]).await.unwrap();
+                }
+            };
+
+            //give the user some time to adjust and dont spam them
+            tokio::time::sleep(Duration::from_millis(10000)).await;
         };
         let generated = root_dir.join(".erpc").join("generated");
         if generated.exists() {
             match fs::remove_dir_all(&generated) {
                 Ok(_) => {}
                 Err(err) => {
-                    return Err(err.to_string());
+                    error_reporter
+                        .send(vec![format!(
+                            "Could not remove directory at (2) {}: {err}",
+                            generated.to_str().unwrap_or("<could not unwrap path>")
+                        )
+                        .into()])
+                        .await
+                        .unwrap();
                 }
             };
         }
@@ -154,19 +177,20 @@ async fn run_watch(
         }
     }
     futures::future::join_all(handles).await;
-
-    Ok(())
 }
 
-async fn run_once(entry_path: PathBuf) -> Result<(), String> {
-    let root_dirs = get_root_dirs(entry_path)?;
+async fn run_once(entry_path: PathBuf) -> String {
+    let root_dirs = match get_root_dirs(entry_path) {
+        Ok(v) => v,
+        Err(err) => return err.message(),
+    };
 
     let mut handles = vec![];
     for root_dir in root_dirs {
         let config = match read_config(&root_dir) {
             Ok(val) => val,
             Err(err) => {
-                return Err(err.to_string());
+                return err.message();
             }
         };
 
@@ -175,7 +199,10 @@ async fn run_once(entry_path: PathBuf) -> Result<(), String> {
             match fs::remove_dir_all(&generated) {
                 Ok(_) => {}
                 Err(err) => {
-                    return Err(err.to_string());
+                    return format!(
+                        "Could not remove directory at {}: {err}",
+                        generated.to_str().unwrap_or("<could not unwrap path>")
+                    );
                 }
             };
         }
@@ -214,11 +241,7 @@ async fn run_once(entry_path: PathBuf) -> Result<(), String> {
         }
     }
 
-    if ret == "" {
-        return Ok(());
-    } else {
-        return Err(ret);
-    }
+    "".to_string()
 }
 
 fn read_config(root_dir: &Path) -> Result<crate::transpiler::config::Config, DisplayableError> {
@@ -234,10 +257,28 @@ fn read_config(root_dir: &Path) -> Result<crate::transpiler::config::Config, Dis
         .into());
     }
 
-    Ok(crate::transpiler::config::parse_config(File::open(path)?)?)
+    let result = crate::transpiler::config::parse_config(match File::open(path.clone()) {
+        Ok(v) => v,
+        Err(err) => {
+            return Err(format!(
+                "Could not open config at {}: {err}",
+                path.to_str().unwrap_or("<could not unwrap path>")
+            )
+            .into());
+        }
+    });
+
+    match result {
+        Ok(v) => Ok(v),
+        Err(err) => Err(format!(
+            "Could not parse config at {}: {err}",
+            path.to_str().unwrap_or("<could not unwrap path>")
+        )
+        .into()),
+    }
 }
 
-fn get_root_dirs(start_dir: PathBuf) -> Result<Vec<PathBuf>, String> {
+fn get_root_dirs(start_dir: PathBuf) -> Result<Vec<PathBuf>, DisplayableError> {
     fn add_start_directories(
         path: &Path,
         list: &mut Vec<PathBuf>,
@@ -268,12 +309,12 @@ fn get_root_dirs(start_dir: PathBuf) -> Result<Vec<PathBuf>, String> {
     match add_start_directories(&start_dir, &mut start_dirs, 100) {
         Ok(_) => {}
         Err(err) => {
-            return Err(format!("Could not read root dirs: {err}"));
+            return Err(format!("Could not read root dirs: {err}").into());
         }
     };
 
     if start_dirs.len() == 0 {
-        return Err("Could not find any easy-rpc project root. Make sure the project contains an erpc.json at its root.".to_string());
+        return Err("Could not find any easy-rpc project root. Make sure the project contains an erpc.json at its root.".to_string().into());
     }
 
     Ok(start_dirs)

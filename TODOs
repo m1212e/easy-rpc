@@ -24,3 +24,4 @@ TODO: input/parameter validation
 TODO: improve error messages on crash
 TODO: Refactor main.rs + transpiler/generator/mod.rs
 TODO: for ssr frameworks, find a way to make calls to the local machine without http requests etc.
+TODO: check the use of all .clone() and .to_owned() calls

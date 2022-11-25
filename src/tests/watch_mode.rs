@@ -33,8 +33,7 @@ mod tests {
                 "-p".to_string(),
                 (&w_dir_clone).to_str().unwrap().to_string(),
             ])
-            .await
-            .unwrap();
+            .await;
         });
 
         sleep(Duration::from_millis(1000)).await;

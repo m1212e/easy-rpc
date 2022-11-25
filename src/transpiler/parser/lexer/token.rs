@@ -1,4 +1,4 @@
-use tower_lsp::lsp_types::{Position, Range};
+use tower_lsp::lsp_types::Range;
 
 use super::{
     disposeable_comment::DisposeableComment, documentational_comment::DocumentationalComment,

@@ -48,13 +48,12 @@ pub fn generate_for_directory<T: Translator>(
         .into()];
     }
 
-    let all_roles = match parse_roles(match File::open(path) {
+    let all_roles = match parse_roles(match File::open(path.clone()) {
         Ok(v) => v,
         Err(err) => {
             return vec![format!(
                 "Could not open {path_str}: {err}",
                 path_str = path
-                    .as_os_str()
                     .to_str()
                     .unwrap_or("<Unable to unwrap path>")
             )
@@ -82,7 +81,7 @@ pub fn generate_for_directory<T: Translator>(
         &all_roles,
     );
 
-    let errors = result.1;
+    let mut errors = result.1;
     let classes_per_role = result.0;
 
     // all roles which have endpoints and are configured as browser
@@ -132,7 +131,7 @@ pub fn generate_for_directory<T: Translator>(
             source,
         );
 
-        let mut generated_file_name = String::from(role.name);
+        let mut generated_file_name = String::from(role.name.clone());
         generated_file_name.push_str(".");
         generated_file_name.push_str(&T::file_suffix());
 
@@ -156,7 +155,7 @@ pub fn generate_for_directory<T: Translator>(
             .write(true)
             .truncate(true)
             .create(true)
-            .open(output_directory.join(generated_file_name))
+            .open(output_directory.join(generated_file_name.clone()))
         {
             Ok(v) => v,
             Err(err) => {
@@ -208,7 +207,7 @@ fn generate_for_directory_recursively<T: Translator>(
 ) -> (HashMap<String, Vec<String>>, Vec<DisplayableError>) {
     // tracks which classes per role were generated on the current dir level
     let mut generated_classnames_per_role: HashMap<String, Vec<String>> = HashMap::new();
-    let errors = vec![];
+    let mut errors = vec![];
 
     /*
         for each processed file we store which classes were generated for what role
@@ -442,7 +441,7 @@ fn generate_for_directory_recursively<T: Translator>(
                     .write(true)
                     .create(true)
                     .truncate(true)
-                    .open(parent.join(generated_file_name))
+                    .open(parent.join(generated_file_name.clone()))
                 {
                     Ok(v) => v,
                     Err(err) => {
@@ -516,7 +515,7 @@ fn generate_for_directory_recursively<T: Translator>(
                     output_directory
                         .join(role.clone())
                         .join(relative_path)
-                        .join(generated_file_name),
+                        .join(generated_file_name.clone()),
                 ) {
                 Ok(v) => v,
                 Err(err) => {
