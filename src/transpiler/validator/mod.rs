@@ -111,5 +111,27 @@ pub fn validate(
         visited_endpoints.insert((&endpoint.role, &endpoint.identifier));
     }
 
+    // checking double fields on types
+    for custom_type in custom_types {
+        // we only need to report doubles once, so we need to remember what we already reported
+        let mut already_reported = vec![];
+        for field in &custom_type.fields {
+            let amount = custom_type
+                .fields
+                .iter()
+                .filter(|f| f.identifier == field.identifier)
+                .count();
+
+            if amount > 1 && already_reported.iter().find(|r| **r == field.identifier).is_none() {
+                errors.push(ValidationError {
+                    range: custom_type.range,
+                    message: format!("Field {} is defined multiple times", field.identifier),
+                });
+
+                already_reported.push(field.identifier.clone());
+            }
+        }
+    }
+
     errors
 }

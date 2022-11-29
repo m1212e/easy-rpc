@@ -5,7 +5,7 @@ mod tests {
     use crate::transpiler::{
         parser::parser::{
             custom_type::{CustomType, Field},
-            field_type::{ArrayAmount, Custom, Type},
+            field_type::{ArrayAmount, Custom, Primitive, PrimitiveType, Type},
         },
         validator::validate,
     };
@@ -62,8 +62,14 @@ mod tests {
             &vec![CustomType {
                 documentation: None,
                 range: Range {
-                    start: Position { line: 0, character: 0 },
-                    end: Position { line: 3, character: 0 }
+                    start: Position {
+                        line: 0,
+                        character: 0,
+                    },
+                    end: Position {
+                        line: 3,
+                        character: 0,
+                    },
                 },
                 fields: vec![Field {
                     documentation: None,
@@ -78,9 +84,58 @@ mod tests {
             }],
             &vec![],
         );
-        
+
         assert_eq!(result.len(), 1);
         assert_eq!(result[0].message, "Type SomeType is unknown");
+        assert_eq!(result[0].range.start.character, 0);
+        assert_eq!(result[0].range.start.line, 0);
+        assert_eq!(result[0].range.end.character, 0);
+        assert_eq!(result[0].range.end.line, 3);
+    }
+
+    #[test]
+    fn test_double_field() {
+        let result = validate(
+            &vec![],
+            &vec![CustomType {
+                documentation: None,
+                range: Range {
+                    start: Position {
+                        line: 0,
+                        character: 0,
+                    },
+                    end: Position {
+                        line: 3,
+                        character: 0,
+                    },
+                },
+                fields: vec![
+                    Field {
+                        documentation: None,
+                        identifier: "field1".to_string(),
+                        optional: false,
+                        field_type: Type::Primitive(Primitive {
+                            array_amount: ArrayAmount::NoArray,
+                            primitive_type: PrimitiveType::String,
+                        }),
+                    },
+                    Field {
+                        documentation: None,
+                        identifier: "field1".to_string(),
+                        optional: false,
+                        field_type: Type::Primitive(Primitive {
+                            array_amount: ArrayAmount::NoArray,
+                            primitive_type: PrimitiveType::String,
+                        }),
+                    },
+                ],
+                identifier: "MySuperCoolType".to_string(),
+            }],
+            &vec![],
+        );
+
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].message, "Field field1 is defined multiple times");
         assert_eq!(result[0].range.start.character, 0);
         assert_eq!(result[0].range.start.line, 0);
         assert_eq!(result[0].range.end.character, 0);
