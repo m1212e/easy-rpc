@@ -85,14 +85,11 @@ fn make_callback_endpoint(endpoint: &Endpoint, url: &str) -> String {
     let mut ret = String::new();
 
     if endpoint.documentation.is_some() {
-        ret.push_str("/**");
-        ret.push_str(&endpoint.documentation.as_ref().unwrap());
-        ret.push_str("*/\n");
+        
+        ret.push_str(&format!("/**{}*/\n", endpoint.documentation.as_ref().unwrap()));
     }
 
-    ret.push_str("    private _");
-    ret.push_str(&endpoint.identifier);
-    ret.push_str(": (");
+    ret.push_str(&format!("    private _{}: (", endpoint.identifier));
 
     let mut params_string = String::new();
     for i in 0..endpoint.parameters.len() {
@@ -112,8 +109,7 @@ fn make_callback_endpoint(endpoint: &Endpoint, url: &str) -> String {
         }
     }
 
-    ret.push_str(&params_string);
-    ret.push_str(") => Promise<");
+    ret.push_str(&format!("{}) => Promise<", params_string));
     if endpoint.return_type.is_some() {
         ret.push_str(&stringify_field_type(
             endpoint.return_type.as_ref().unwrap(),
@@ -122,11 +118,7 @@ fn make_callback_endpoint(endpoint: &Endpoint, url: &str) -> String {
         ret.push_str("void");
     }
 
-    ret.push_str("> = undefined as any\n    set ");
-    ret.push_str(&endpoint.identifier);
-    ret.push_str("(value: (");
-    ret.push_str(&params_string);
-    ret.push_str(") => Promise<");
+    ret.push_str(&format!("> = undefined as any\n    set {}(value: ({}) => Promise<", endpoint.identifier, params_string));
     if endpoint.return_type.is_some() {
         ret.push_str(&stringify_field_type(
             endpoint.return_type.as_ref().unwrap(),
@@ -135,15 +127,15 @@ fn make_callback_endpoint(endpoint: &Endpoint, url: &str) -> String {
         ret.push_str("void");
     }
 
-    ret.push_str(">) {\n        this._");
-    ret.push_str(&endpoint.identifier);
-    ret.push_str(" = value\n        this.server?.registerERPCCallbackFunction(value, \"");
-    ret.push_str(&url);
-    ret.push_str("\")\n    }\n    get ");
-    ret.push_str(&endpoint.identifier);
-    ret.push_str("() {\n        return this._");
-    ret.push_str(&endpoint.identifier);
-    ret.push_str("\n    }\n\n");
+    ret.push_str(&format!(">) {{
+        this._{id} = value
+        this.server?.registerERPCCallbackFunction(value, \"{url}\")
+    }}
+    get {id}() {{
+        return this._{id}
+    }}
+
+", id=endpoint.identifier));
 
     ret
 }

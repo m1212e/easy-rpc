@@ -1,4 +1,5 @@
 use crate::transpiler::{
+    config::Role,
     parser::{
         lexer::literal::LiteralType,
         parser::{
@@ -6,7 +7,7 @@ use crate::transpiler::{
             endpoint::Endpoint,
             field_type::{ArrayAmount, PrimitiveType, Type},
         },
-    }, config::Role,
+    },
 };
 
 use self::{class::generate_class, client::generate_client};
@@ -44,8 +45,20 @@ impl Translator for TypeScriptTranslator {
         String::from("ts")
     }
 
-    fn generate_client(foreign: bool, class_imports: &Vec<String>, role: &Role, socket_enabled_browser_roles: &Vec<String>, library_source: &str) -> String {
-        generate_client(foreign, class_imports, role, socket_enabled_browser_roles, library_source)
+    fn generate_client(
+        foreign: bool,
+        class_imports: &Vec<String>,
+        role: &Role,
+        socket_enabled_browser_roles: &Vec<String>,
+        library_source: &str,
+    ) -> String {
+        generate_client(
+            foreign,
+            class_imports,
+            role,
+            socket_enabled_browser_roles,
+            library_source,
+        )
     }
 }
 
@@ -79,9 +92,7 @@ fn stringify_field_type(field_type: &Type) -> String {
                 match &en.values[i].literal_type {
                     LiteralType::Boolean(val) => ret.push_str(&val.to_string()),
                     LiteralType::String(val) => {
-                        ret.push_str("\"");
-                        ret.push_str(&val);
-                        ret.push_str("\"");
+                        ret.push_str(&format!("\"{val}\""));
                     }
                     LiteralType::Float(val) => ret.push_str(&val.to_string()),
                     LiteralType::Integer(val) => ret.push_str(&val.to_string()),
@@ -98,14 +109,12 @@ fn stringify_field_type(field_type: &Type) -> String {
             ArrayAmount::NoArray => custom.identifier.to_string(),
             ArrayAmount::NoLengthSpecified => {
                 let mut ret = String::new();
-                ret.push_str(&custom.identifier);
-                ret.push_str("[]");
+                ret.push_str(&format!("{}[]", custom.identifier));
                 ret
             }
             ArrayAmount::LengthSpecified(_) => {
                 let mut ret = String::new();
-                ret.push_str(&custom.identifier);
-                ret.push_str("[]");
+                ret.push_str(&format!("{}[]", custom.identifier));
                 ret
             }
         },

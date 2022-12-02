@@ -74,9 +74,7 @@ fn generate_callback_class(
     ret.push_str("    }\n\n    constructor(callbacks?: {\n");
 
     for endpoint in endpoints {
-        ret.push_str("        ");
-        ret.push_str(&endpoint.identifier);
-        ret.push_str(": (");
+        ret.push_str(&format!("        {}: (", endpoint.identifier));
 
         for i in 0..endpoint.parameters.len() {
             ret.push_str(&endpoint.parameters[i].identifier);
@@ -107,37 +105,27 @@ fn generate_callback_class(
     }
 
     for imp in class_imports {
-        ret.push_str("        ");
-        ret.push_str(&imp);
-        ret.push_str(": ");
-        ret.push_str(&imp);
-        ret.push_str("\n");
+        ret.push_str(&format!("        {imp}: {imp}\n"));
     }
 
     ret.push_str("    }) {\n");
 
     for endpoint in endpoints {
-        ret.push_str("        if (callbacks?.");
-        ret.push_str(&endpoint.identifier);
-        ret.push_str(") {\n            this.");
-        ret.push_str(&endpoint.identifier);
-        ret.push_str(" = callbacks.");
-        ret.push_str(&endpoint.identifier);
-        ret.push_str("\n        }\n\n");
+        ret.push_str(&format!("        if (callbacks?.{id}) {{
+            this.{id} = callbacks.{id}
+        }}
+
+", id=endpoint.identifier));
     }
 
     for imp in class_imports {
-        ret.push_str("        if (callbacks?.");
-        ret.push_str(&imp);
-        ret.push_str(") {\n            this.");
-        ret.push_str(&imp);
-        ret.push_str(" = callbacks.");
-        ret.push_str(&imp);
-        ret.push_str("\n        } else {\n            this.");
-        ret.push_str(&imp);
-        ret.push_str(" = this.");
-        ret.push_str(&imp);
-        ret.push_str("\n        }\n\n");
+        ret.push_str(&format!("        if (callbacks?.{imp}) {{
+            this.{imp} = callbacks.{imp}
+        }} else {{
+            this.{imp} = this.{imp}
+        }}
+
+"));
     }
 
     ret.push_str("    }\n\n");
@@ -179,13 +167,8 @@ fn generate_foreign_class(
     let mut ret = String::new();
 
     for imp in class_imports {
-        ret.push_str("import ");
-        ret.push_str(&imp);
-        ret.push_str(" from \"./");
-        ret.push_str(&class_name);
-        ret.push_str("/");
-        ret.push_str(&imp);
-        ret.push_str("\"\n");
+        
+        ret.push_str(&format!("import {imp} from \"./{class_name}/{imp}\"\n"));
     }
     ret.push_str("\n");
 
@@ -194,16 +177,10 @@ fn generate_foreign_class(
         ret.push_str("\n");
     }
 
-    ret.push_str("export default class ");
-    ret.push_str(class_name);
-    ret.push_str(" {\n");
+    ret.push_str(&format!("export default class {class_name} {{\n"));
 
     for imp in class_imports {
-        ret.push_str("    ");
-        ret.push_str(&imp);
-        ret.push_str(": ");
-        ret.push_str(&imp);
-        ret.push_str("\n");
+        ret.push_str(&format!("    {imp}: {imp}\n"));
     }
     ret.push_str("\n");
 
@@ -212,11 +189,7 @@ fn generate_foreign_class(
     );
 
     for imp in class_imports {
-        ret.push_str("        this.");
-        ret.push_str(&imp);
-        ret.push_str(" = new ");
-        ret.push_str(&imp);
-        ret.push_str("(server)\n");
+        ret.push_str(&format!("        this.{imp} = new {imp}(server)\n"));
     }
 
     ret.push_str("    }\n\n");

@@ -53,9 +53,7 @@ pub fn generate_for_directory<T: Translator>(
         Err(err) => {
             return vec![format!(
                 "Could not open {path_str}: {err}",
-                path_str = path
-                    .to_str()
-                    .unwrap_or("<Unable to unwrap path>")
+                path_str = path.to_str().unwrap_or("<Unable to unwrap path>")
             )
             .into()];
         }
@@ -131,9 +129,7 @@ pub fn generate_for_directory<T: Translator>(
             source,
         );
 
-        let mut generated_file_name = String::from(role.name.clone());
-        generated_file_name.push_str(".");
-        generated_file_name.push_str(&T::file_suffix());
+        let generated_file_name = format!("{}.{}", role.name, T::file_suffix());
 
         match fs::create_dir_all(&output_directory) {
             Ok(_) => {}
@@ -292,11 +288,9 @@ fn generate_for_directory_recursively<T: Translator>(
                 }
             };
 
-            // converting to a string may seem unnessecary but is required for code generation anyway.
+            // TODO converting to a string may seem unnessecary but is required for code generation anyway.
             // it might be good to check if we can work with a path here and do the string conversion when its actually needed for code generation
-            let mut new_rel_path = relative_path.to_string();
-            new_rel_path.push_str(file_name);
-            new_rel_path.push('/');
+            let new_rel_path = format!("{}{}/", relative_path.to_string(), file_name);
 
             // for the directory, just run this function recursively, but with an adjusted relative path
             let mut result = generate_for_directory_recursively::<T>(
@@ -418,9 +412,7 @@ fn generate_for_directory_recursively<T: Translator>(
 
             for (role, class_content) in generated_class_content_per_role {
                 // write all generated files to the disk
-                let mut generated_file_name = file_name.to_string();
-                generated_file_name.push_str(".");
-                generated_file_name.push_str(T::file_suffix().as_str());
+                let generated_file_name = format!("{}.{}", file_name.to_string(), T::file_suffix());
 
                 let parent = output_directory.join(role.clone()).join(relative_path);
                 match fs::create_dir_all(&parent) {
@@ -503,9 +495,7 @@ fn generate_for_directory_recursively<T: Translator>(
         );
 
         for (role, class_content) in generated_class_content_per_role {
-            let mut generated_file_name = file_name.to_string();
-            generated_file_name.push_str(".");
-            generated_file_name.push_str(T::file_suffix().as_str());
+            let generated_file_name = format!("{}.{}", file_name.to_string(), T::file_suffix());
 
             let mut file = match OpenOptions::new()
                 .write(true)
