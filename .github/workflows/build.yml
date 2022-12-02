@@ -5,7 +5,15 @@ on:
     types: [created]
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Run tests
+        run: cargo test --verbose
   build:
+    needs: test
     strategy:
       fail-fast: false
       matrix:
