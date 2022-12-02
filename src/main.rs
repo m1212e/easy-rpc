@@ -44,7 +44,9 @@ async fn run_main(args: Vec<String>) {
         // just log the incoming results to console
         tokio::spawn(async move {
             loop {
-                println!("{:#?}", reciever.recv().await);
+                for res in reciever.recv().await.unwrap() {
+                    println!("{}", res);
+                }
             }
         });
         run_watch(entry_path, sender, true).await;
@@ -108,8 +110,22 @@ async fn run_watch(
 
             let error_reporter = error_reporter.clone();
             handles.push(tokio::spawn(async move {
+                // channel to report changes
                 let (sender, reciever) = async_channel::bounded(1);
 
+                // instantly send an event to trigger an initial generation
+                let s1 = sender.clone();
+                tokio::spawn(async move {
+                    s1.send(Ok(notify::Event {
+                        kind: notify::EventKind::Create(notify::event::CreateKind::Any),
+                        paths: vec![],
+                        attrs: notify::event::EventAttributes::default(),
+                    }))
+                    .await
+                    .unwrap();
+                });
+
+                // run a filesystem watcher
                 let handle = Handle::current();
                 let mut watcher = match RecommendedWatcher::new(
                     move |res| {
@@ -133,6 +149,7 @@ async fn run_watch(
                     .watch(&normalized_source_path, RecursiveMode::Recursive)
                     .unwrap();
 
+                // listen for watcher changes
                 loop {
                     let event = match reciever.recv().await {
                         Ok(val) => match val {
@@ -148,6 +165,7 @@ async fn run_watch(
                         }
                     };
 
+                    // and run whenever a change occurs
                     match event.kind {
                         notify::EventKind::Create(_)
                         | notify::EventKind::Modify(_)
@@ -164,7 +182,10 @@ async fn run_watch(
                                 if report_success {
                                     error_reporter
                                         .send(vec![format!(
-                                            "Processed {}\n",
+                                            "Processed {} for {} \n",
+                                            &normalized_source_path
+                                                .to_str()
+                                                .unwrap_or("<could not unwrap path>"),
                                             root_dir.to_str().unwrap()
                                         )
                                         .into()])

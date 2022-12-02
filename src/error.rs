@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::{path::PathBuf, fmt::Display};
 
 use tower_lsp::lsp_types::Range;
 
@@ -61,6 +61,15 @@ impl From<async_channel::RecvError> for DisplayableError {
 //         ERPCError::NotifyError(err)
 //     }
 // }
+
+impl Display for DisplayableError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", match self {
+            DisplayableError::Message(v) => v.message.to_owned(),
+            DisplayableError::Diagnostic(v) => v.message.to_owned(),
+        })
+    }
+}
 
 impl DisplayableError {
     pub fn message(self) -> String {
