@@ -248,56 +248,56 @@ mod tests {
         assert_eq!(p1_values.len(), 7);
         assert_eq!(p2_values.len(), 1);
 
-        match p1_values.remove(0).literal_type {
+        match p1_values.remove(0) {
             LiteralType::String(value) => assert_eq!(value, "hello"),
             _ => {
                 panic!("should not match")
             }
         }
 
-        match p1_values.remove(0).literal_type {
+        match p1_values.remove(0) {
             LiteralType::Integer(value) => assert_eq!(value, 17),
             _ => {
                 panic!("should not match")
             }
         }
 
-        match p1_values.remove(0).literal_type {
+        match p1_values.remove(0) {
             LiteralType::Float(value) => assert_eq!(value, 16.8),
             _ => {
                 panic!("should not match")
             }
         }
 
-        match p1_values.remove(0).literal_type {
+        match p1_values.remove(0) {
             LiteralType::Integer(value) => assert_eq!(value, -155),
             _ => {
                 panic!("should not match")
             }
         }
 
-        match p1_values.remove(0).literal_type {
+        match p1_values.remove(0) {
             LiteralType::Float(value) => assert_eq!(value, -5656.45),
             _ => {
                 panic!("should not match")
             }
         }
 
-        match p1_values.remove(0).literal_type {
+        match p1_values.remove(0) {
             LiteralType::Boolean(value) => assert_eq!(value, true),
             _ => {
                 panic!("should not match")
             }
         }
 
-        match p1_values.remove(0).literal_type {
+        match p1_values.remove(0) {
             LiteralType::Boolean(value) => assert_eq!(value, false),
             _ => {
                 panic!("should not match")
             }
         }
 
-        match p2_values.remove(0).literal_type {
+        match p2_values.remove(0) {
             LiteralType::Boolean(value) => assert_eq!(value, true),
             _ => {
                 panic!("should not match")

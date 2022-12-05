@@ -98,28 +98,13 @@ mod tests {
                     optional: false,
                     field_type: Type::Enum(Enum {
                         values: vec![
-                            Literal {
-                                range: Range::default(),
-                                literal_type: LiteralType::Boolean(true),
-                            },
-                            Literal {
-                                range: Range::default(),
-                                literal_type: LiteralType::Boolean(false),
-                            },
-                            Literal {
-                                range: Range::default(),
-                                literal_type: LiteralType::String(
-                                    "hello from the other side".to_string(),
-                                ),
-                            },
-                            Literal {
-                                range: Range::default(),
-                                literal_type: LiteralType::Float(123.456),
-                            },
-                            Literal {
-                                range: Range::default(),
-                                literal_type: LiteralType::Integer(-123456),
-                            },
+                            LiteralType::Boolean(true),
+                            LiteralType::Boolean(false),
+                            LiteralType::String(
+                                "hello from the other side".to_string(),
+                            ),
+                            LiteralType::Float(123.456),
+                            LiteralType::Integer(-123456),
                         ],
                     }),
                 },

@@ -89,7 +89,7 @@ fn stringify_field_type(field_type: &Type) -> String {
         Type::Enum(en) => {
             let mut ret = String::new();
             for i in 0..en.values.len() {
-                match &en.values[i].literal_type {
+                match &en.values[i] {
                     LiteralType::Boolean(val) => ret.push_str(&val.to_string()),
                     LiteralType::String(val) => {
                         ret.push_str(&format!("\"{val}\""));

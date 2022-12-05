@@ -1,5 +1,6 @@
 TODO: in docs, explain the problem of conflicting names/structures of sources or introduce a merge mechanism
 TODO: write tests for all repos
+TODO: split node and rust parts of server
 TODO: middleware
 TODO: input/parameter validation
 TODO: check how the addon behaves while creating a project

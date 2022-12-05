@@ -43,7 +43,7 @@ pub enum PrimitiveType {
 
 #[derive(Debug)]
 pub struct Enum {
-    pub values: Vec<Literal>,
+    pub values: Vec<LiteralType>,
 }
 
 #[derive(Debug)]
@@ -115,7 +115,7 @@ fn parse_primitive_type(reader: &mut TokenReader) -> Result<Type, ParseError> {
 }
 
 fn parse_enum_type(reader: &mut TokenReader) -> Result<Type, ParseError> {
-    let mut values: Vec<Literal> = Vec::new();
+    let mut values: Vec<LiteralType> = Vec::new();
     loop {
         let token = reader.consume(1);
         if token.is_none() {
@@ -127,7 +127,7 @@ fn parse_enum_type(reader: &mut TokenReader) -> Result<Type, ParseError> {
         let token = token.unwrap().remove(0);
 
         match token {
-            Token::Literal(literal) => values.push(literal),
+            Token::Literal(literal) => values.push(literal.literal_type),
             _ => {
                 return Err(ParseError {
                     range: token.range(),

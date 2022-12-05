@@ -5,7 +5,7 @@ use self::{
     line_break::LineBreak,
 };
 
-use super::{lexer::TokenReader};
+use super::lexer::TokenReader;
 
 pub mod custom_type;
 mod disposeable_comment;
@@ -25,6 +25,9 @@ pub struct ParseResult {
     pub custom_types: Vec<CustomType>,
 }
 
+/**
+     Parses a token reader into endpoints and custom types
+ */
 pub fn parse(reader: &mut TokenReader) -> Result<ParseResult, ParseError> {
     let mut ret = ParseResult {
         endpoints: Vec::new(),

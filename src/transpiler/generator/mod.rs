@@ -567,7 +567,7 @@ fn generate_classes_per_role<T: Translator>(
     custom_types: &Vec<CustomType>,
     classes_to_import_per_role: &HashMap<String, Vec<String>>,
 ) -> HashMap<String, String> {
-    // sort endpoints by their role
+    // map endpoints by their role
     let mut endpoints_per_role: HashMap<String, Vec<Endpoint>> = HashMap::new();
     for endpoint in endpoints {
         match endpoints_per_role.entry(endpoint.role.clone()) {

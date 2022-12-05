@@ -1,3 +1,4 @@
+use serde::Serialize;
 use tower_lsp::lsp_types::{Position, Range};
 
 use crate::{
@@ -8,7 +9,10 @@ use crate::{
     },
 };
 
-use super::field_type::{parse_field_type, Type};
+use super::{
+    custom_type::CustomType,
+    field_type::{parse_field_type, Type},
+};
 
 #[derive(Debug)]
 pub struct Parameter {
