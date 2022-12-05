@@ -107,27 +107,25 @@ pub fn generate_for_directory<T: Translator>(
         "@easy-rpc/node" // currently only supports node
     };
 
-    for (role, imports) in classes_per_role.into_iter() {
-        let role = match all_roles.iter().find(|x| x.name == role) {
-            Some(v) => v,
-            None => {
-                errors.push(
-                    format!(
-                        "Could not find the specified role '{role}' in the configured role list"
-                    )
-                    .into(),
-                );
-                continue;
-            }
-        };
+    for role in all_roles {
+        let imports = classes_per_role.get(&role.name);
 
-        let generated = T::generate_client(
-            role.name != selected_role_name,
-            &imports,
-            role,
-            socket_enabled_browser_roles,
-            source,
-        );
+        let generated = match imports {
+            Some(imports) => T::generate_client(
+                role.name != selected_role_name,
+                &imports,
+                &role,
+                socket_enabled_browser_roles,
+                source,
+            ),
+            None => T::generate_client(
+                role.name != selected_role_name,
+                &vec![],
+                &role,
+                socket_enabled_browser_roles,
+                source,
+            ),
+        };
 
         let generated_file_name = format!("{}.{}", role.name, T::file_suffix());
 
