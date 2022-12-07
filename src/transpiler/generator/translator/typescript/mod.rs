@@ -5,7 +5,7 @@ use crate::transpiler::{
         parser::{
             custom_type::CustomType,
             endpoint::Endpoint,
-            field_type::{ArrayAmount, PrimitiveType, Type},
+            erpc_type::{ArrayAmount, EnumType, Primitive, PrimitiveType, Type},
         },
     },
 };
@@ -64,38 +64,28 @@ impl Translator for TypeScriptTranslator {
 
 fn stringify_field_type(field_type: &Type) -> String {
     match field_type {
-        Type::Primitive(primitive) => {
-            let mut type_string = match primitive.primitive_type {
-                PrimitiveType::Boolean => "boolean",
-                PrimitiveType::Int8 => "number",
-                PrimitiveType::Int16 => "number",
-                PrimitiveType::Int32 => "number",
-                PrimitiveType::Int64 => "number",
-                PrimitiveType::Float32 => "number",
-                PrimitiveType::Float64 => "number",
-                PrimitiveType::String => "string",
-            }
-            .to_string();
-
-            let array_string = match primitive.array_amount {
-                ArrayAmount::NoArray => "",
-                ArrayAmount::NoLengthSpecified => "[]",
-                ArrayAmount::LengthSpecified(_) => "[]",
-            };
-
-            type_string.push_str(array_string);
-            type_string
-        }
+        Type::Primitive(primitive) => stringify_primitive(primitive),
         Type::Enum(en) => {
             let mut ret = String::new();
             for i in 0..en.values.len() {
                 match &en.values[i] {
-                    LiteralType::Boolean(val) => ret.push_str(&val.to_string()),
-                    LiteralType::String(val) => {
-                        ret.push_str(&format!("\"{val}\""));
+                    EnumType::Primitive(primitive) => ret.push_str(&stringify_primitive(primitive)),
+                    EnumType::Custom(custom) => {
+                        ret.push_str(&custom.identifier);
+                        match custom.array_amount {
+                            ArrayAmount::NoArray => {}
+                            ArrayAmount::NoLengthSpecified => ret.push_str(""),
+                            ArrayAmount::LengthSpecified(_) => ret.push_str(""),
+                        };
                     }
-                    LiteralType::Float(val) => ret.push_str(&val.to_string()),
-                    LiteralType::Integer(val) => ret.push_str(&val.to_string()),
+                    EnumType::Literal(literal) => match literal {
+                        LiteralType::Boolean(val) => ret.push_str(&val.to_string()),
+                        LiteralType::String(val) => {
+                            ret.push_str(&format!("\"{val}\""));
+                        }
+                        LiteralType::Float(val) => ret.push_str(&val.to_string()),
+                        LiteralType::Integer(val) => ret.push_str(&val.to_string()),
+                    },
                 }
 
                 if i < en.values.len() - 1 {
@@ -119,4 +109,27 @@ fn stringify_field_type(field_type: &Type) -> String {
             }
         },
     }
+}
+
+fn stringify_primitive(primitive: &Primitive) -> String {
+    let mut type_string = match primitive.primitive_type {
+        PrimitiveType::Boolean => "boolean",
+        PrimitiveType::Int8 => "number",
+        PrimitiveType::Int16 => "number",
+        PrimitiveType::Int32 => "number",
+        PrimitiveType::Int64 => "number",
+        PrimitiveType::Float32 => "number",
+        PrimitiveType::Float64 => "number",
+        PrimitiveType::String => "string",
+    }
+    .to_string();
+
+    let array_string = match primitive.array_amount {
+        ArrayAmount::NoArray => "",
+        ArrayAmount::NoLengthSpecified => "[]",
+        ArrayAmount::LengthSpecified(_) => "[]",
+    };
+
+    type_string.push_str(array_string);
+    type_string
 }

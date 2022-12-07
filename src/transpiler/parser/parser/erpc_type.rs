@@ -1,9 +1,6 @@
 use crate::transpiler::parser::{
     lexer::{
-        keyword::KeywordType,
-        literal::{Literal, LiteralType},
-        operator::OperatorType,
-        token::Token,
+        keyword::KeywordType, literal::LiteralType, operator::OperatorType, token::Token,
         TokenReader,
     },
     parser::ParseError,
@@ -43,7 +40,14 @@ pub enum PrimitiveType {
 
 #[derive(Debug)]
 pub struct Enum {
-    pub values: Vec<LiteralType>,
+    pub values: Vec<EnumType>,
+}
+
+#[derive(Debug)]
+pub enum EnumType {
+    Primitive(Primitive),
+    Custom(Custom),
+    Literal(LiteralType),
 }
 
 #[derive(Debug)]
@@ -61,25 +65,36 @@ pub fn parse_field_type(reader: &mut TokenReader) -> Result<Type, ParseError> {
     if peeked.is_none() {
         return Err(ParseError {
             message: "Expected a parameter type".to_string(),
-            range: reader.last_token_range
+            range: reader.last_token_range,
         });
     }
 
     let peeked = peeked.unwrap();
 
-    return match &peeked[0].to_owned() {
-        Token::Keyword(_) => parse_primitive_type(reader),
-        Token::Literal(_) => parse_enum_type(reader),
-        Token::Identifier(_) => parse_custom_type(reader),
-        _ => Err(ParseError {
-            message: "Expected a parameter type".to_string(),
-            range: reader.last_token_range
+    return Ok(match &peeked[0].to_owned() {
+        Token::Keyword(_) => Type::Primitive({
+            let token = reader.consume(1).unwrap().remove(0);
+            process_primitive_type_token(reader, token)?
         }),
-    };
+        Token::Literal(_) => Type::Enum(parse_enum_type(reader)?),
+        Token::Identifier(_) => Type::Custom({
+            let token = reader.consume(1).unwrap().remove(0);
+            process_custom_type_token(reader, token)?
+        }),
+        _ => {
+            return Err(ParseError {
+                message: "Expected a parameter type".to_string(),
+                range: reader.last_token_range,
+            })
+        }
+    });
 }
 
-fn parse_primitive_type(reader: &mut TokenReader) -> Result<Type, ParseError> {
-    let primitive_type = match reader.consume(1).unwrap().remove(0) {
+fn process_primitive_type_token(
+    reader: &mut TokenReader,
+    token: Token,
+) -> Result<Primitive, ParseError> {
+    let primitive_type = match token {
         Token::Keyword(keyword) => match keyword.keyword_type {
             KeywordType::Boolean => PrimitiveType::Boolean,
             KeywordType::Int8 => PrimitiveType::Int8,
@@ -92,7 +107,6 @@ fn parse_primitive_type(reader: &mut TokenReader) -> Result<Type, ParseError> {
             KeywordType::Int => PrimitiveType::Int16,
             KeywordType::Float => PrimitiveType::Float32,
             _ => {
-                // should not occur
                 return Err(ParseError {
                     range: keyword.range,
                     message: "Invalid keyword for primitive type".to_string(),
@@ -108,14 +122,14 @@ fn parse_primitive_type(reader: &mut TokenReader) -> Result<Type, ParseError> {
         }
     };
 
-    return Ok(Type::Primitive(Primitive {
+    return Ok(Primitive {
         primitive_type,
         array_amount: parse_array_length(reader)?,
-    }));
+    });
 }
 
-fn parse_enum_type(reader: &mut TokenReader) -> Result<Type, ParseError> {
-    let mut values: Vec<LiteralType> = Vec::new();
+fn parse_enum_type(reader: &mut TokenReader) -> Result<Enum, ParseError> {
+    let mut values: Vec<EnumType> = Vec::new();
     loop {
         let token = reader.consume(1);
         if token.is_none() {
@@ -127,7 +141,13 @@ fn parse_enum_type(reader: &mut TokenReader) -> Result<Type, ParseError> {
         let token = token.unwrap().remove(0);
 
         match token {
-            Token::Literal(literal) => values.push(literal.literal_type),
+            Token::Literal(literal) => values.push(EnumType::Literal(literal.literal_type)),
+            Token::Keyword(_) => values.push(EnumType::Primitive(process_primitive_type_token(
+                reader, token,
+            )?)),
+            Token::Identifier(_) => {
+                values.push(EnumType::Custom(process_custom_type_token(reader, token)?))
+            }
             _ => {
                 return Err(ParseError {
                     range: token.range(),
@@ -157,11 +177,11 @@ fn parse_enum_type(reader: &mut TokenReader) -> Result<Type, ParseError> {
         };
     }
 
-    return Ok(Type::Enum(Enum { values }));
+    return Ok(Enum { values });
 }
 
-fn parse_custom_type(reader: &mut TokenReader) -> Result<Type, ParseError> {
-    let identifier = match reader.consume(1).unwrap().remove(0) {
+fn process_custom_type_token(reader: &mut TokenReader, token: Token) -> Result<Custom, ParseError> {
+    let identifier = match token {
         Token::Identifier(id) => id,
         token => {
             // should not occur
@@ -172,10 +192,10 @@ fn parse_custom_type(reader: &mut TokenReader) -> Result<Type, ParseError> {
         }
     };
 
-    return Ok(Type::Custom(Custom {
+    return Ok(Custom {
         identifier: identifier.content,
         array_amount: parse_array_length(reader)?,
-    }));
+    });
 }
 
 /**

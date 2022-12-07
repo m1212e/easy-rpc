@@ -3,12 +3,12 @@ mod tests {
     use tower_lsp::lsp_types::Range;
 
     use crate::transpiler::{
-        generator::{translator::typescript::{interface::custom_type_to_interface}},
+        generator::translator::typescript::interface::custom_type_to_interface,
         parser::{
-            lexer::literal::{Literal, LiteralType},
+            lexer::literal::LiteralType,
             parser::{
                 custom_type::{CustomType, Field},
-                field_type::{ArrayAmount, Custom, Enum, Primitive, PrimitiveType, Type},
+                erpc_type::{ArrayAmount, Custom, Enum, EnumType, Primitive, PrimitiveType, Type},
             },
         },
     };
@@ -98,13 +98,13 @@ mod tests {
                     optional: false,
                     field_type: Type::Enum(Enum {
                         values: vec![
-                            LiteralType::Boolean(true),
-                            LiteralType::Boolean(false),
-                            LiteralType::String(
+                            EnumType::Literal(LiteralType::Boolean(true)),
+                            EnumType::Literal(LiteralType::Boolean(false)),
+                            EnumType::Literal(LiteralType::String(
                                 "hello from the other side".to_string(),
-                            ),
-                            LiteralType::Float(123.456),
-                            LiteralType::Integer(-123456),
+                            )),
+                            EnumType::Literal(LiteralType::Float(123.456)),
+                            EnumType::Literal(LiteralType::Integer(-123456)),
                         ],
                     }),
                 },

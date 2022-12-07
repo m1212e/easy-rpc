@@ -5,7 +5,7 @@ mod tests {
         lexer::TokenReader,
         parser::{
             custom_type::CustomType,
-            field_type::{PrimitiveType, Type},
+            erpc_type::{PrimitiveType, Type},
         },
     };
 

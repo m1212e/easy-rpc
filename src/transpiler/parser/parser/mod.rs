@@ -10,7 +10,7 @@ use super::lexer::TokenReader;
 pub mod custom_type;
 mod disposeable_comment;
 pub mod endpoint;
-pub mod field_type;
+pub mod erpc_type;
 mod line_break;
 mod tests;
 

@@ -7,7 +7,7 @@ mod tests {
             parser::{
                 custom_type::CustomType,
                 endpoint::{Endpoint, Parameter},
-                field_type::{ArrayAmount, Primitive, PrimitiveType, Type},
+                erpc_type::{ArrayAmount, Primitive, PrimitiveType, Type},
             },
         }, generator::translator::typescript::class::generate_class,
     };

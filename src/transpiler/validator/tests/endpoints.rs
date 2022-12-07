@@ -6,7 +6,7 @@ mod tests {
         config::Role,
         parser::parser::{
             endpoint::{Endpoint, Parameter},
-            field_type::{ArrayAmount, Custom, Type},
+            erpc_type::{ArrayAmount, Custom, Type},
         },
         validator::validate,
     };

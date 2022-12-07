@@ -5,7 +5,7 @@ mod tests {
         lexer::{literal::LiteralType, TokenReader},
         parser::{
             endpoint::Endpoint,
-            field_type::{ArrayAmount, PrimitiveType, Type},
+            erpc_type::{ArrayAmount, EnumType, PrimitiveType, Type},
         },
     };
 
@@ -216,89 +216,121 @@ mod tests {
     #[test]
     fn test_enum_params_no_return_endpoint() -> Result<(), InputReaderError> {
         let mut reader = TokenReader::new(InputReader::new(
-            " Server someEndpointIdentifier(paramIdentifier? \"hello\" | 17 | 16.8 | -155 | -5656.45 | true | false, paramIdentifier? true)"
+            " Server someEndpointIdentifier(paramIdentifier? \"hello\" | 17 | 16.8 | -155 | -5656.45 | true | false | CustomTypeTest | string)"
                 .as_bytes(),
         ))?;
 
-        let result = Endpoint::parse_endpoint(&mut reader);
-
-        assert!(result.is_some());
-
-        let result = result.unwrap();
-
-        assert!(result.is_ok());
-        let mut result = result.unwrap();
-
-        assert_eq!(result.parameters.len(), 2);
-
-        let mut p1_values = match result.parameters.remove(0).parameter_type {
+        let mut result = Endpoint::parse_endpoint(&mut reader).unwrap().unwrap();
+        assert_eq!(result.parameters.len(), 1);
+        
+        let mut parameter_enum_values = match result.parameters.remove(0).parameter_type {
             Type::Enum(en) => en.values,
             _ => {
                 panic!("should not match")
             }
         };
+        assert_eq!(parameter_enum_values.len(), 9);
 
-        let mut p2_values = match result.parameters.remove(0).parameter_type {
-            Type::Enum(en) => en.values,
-            _ => {
-                panic!("should not match")
-            }
-        };
-
-        assert_eq!(p1_values.len(), 7);
-        assert_eq!(p2_values.len(), 1);
-
-        match p1_values.remove(0) {
-            LiteralType::String(value) => assert_eq!(value, "hello"),
+        match parameter_enum_values.remove(0) {
+            EnumType::Literal(value) => match value {
+                LiteralType::String(value) => assert_eq!(value, "hello"),
+                _ => {
+                    panic!("should not match")
+                }
+            },
             _ => {
                 panic!("should not match")
             }
         }
 
-        match p1_values.remove(0) {
-            LiteralType::Integer(value) => assert_eq!(value, 17),
+        match parameter_enum_values.remove(0) {
+            EnumType::Literal(value) => match value {
+                LiteralType::Integer(value) => assert_eq!(value, 17),
+                _ => {
+                    panic!("should not match")
+                }
+            },
             _ => {
                 panic!("should not match")
             }
         }
 
-        match p1_values.remove(0) {
-            LiteralType::Float(value) => assert_eq!(value, 16.8),
+        match parameter_enum_values.remove(0) {
+            EnumType::Literal(value) => match value {
+                LiteralType::Float(value) => assert_eq!(value, 16.8),
+                _ => {
+                    panic!("should not match")
+                }
+            },
             _ => {
                 panic!("should not match")
             }
         }
 
-        match p1_values.remove(0) {
-            LiteralType::Integer(value) => assert_eq!(value, -155),
+        match parameter_enum_values.remove(0) {
+            EnumType::Literal(value) => match value {
+                LiteralType::Integer(value) => assert_eq!(value, -155),
+                _ => {
+                    panic!("should not match")
+                }
+            },
             _ => {
                 panic!("should not match")
             }
         }
 
-        match p1_values.remove(0) {
-            LiteralType::Float(value) => assert_eq!(value, -5656.45),
+        match parameter_enum_values.remove(0) {
+            EnumType::Literal(value) => match value {
+                LiteralType::Float(value) => assert_eq!(value, -5656.45),
+                _ => {
+                    panic!("should not match")
+                }
+            },
             _ => {
                 panic!("should not match")
             }
         }
 
-        match p1_values.remove(0) {
-            LiteralType::Boolean(value) => assert_eq!(value, true),
+        match parameter_enum_values.remove(0) {
+            EnumType::Literal(value) => match value {
+                LiteralType::Boolean(value) => assert_eq!(value, true),
+                _ => {
+                    panic!("should not match")
+                }
+            },
             _ => {
                 panic!("should not match")
             }
         }
 
-        match p1_values.remove(0) {
-            LiteralType::Boolean(value) => assert_eq!(value, false),
+        match parameter_enum_values.remove(0) {
+            EnumType::Literal(value) => match value {
+                LiteralType::Boolean(value) => assert_eq!(value, false),
+                _ => {
+                    panic!("should not match")
+                }
+            },
             _ => {
                 panic!("should not match")
             }
         }
 
-        match p2_values.remove(0) {
-            LiteralType::Boolean(value) => assert_eq!(value, true),
+        match parameter_enum_values.remove(0) {
+            EnumType::Custom(value) => {
+                assert_eq!(value.identifier, "CustomTypeTest")
+            },
+            _ => {
+                panic!("should not match")
+            }
+        }
+
+        match parameter_enum_values.remove(0) {
+            EnumType::Primitive(value) => {
+                match value.primitive_type {
+                    PrimitiveType::String => {},
+                    _ => panic!("should not match")
+                }
+            }
             _ => {
                 panic!("should not match")
             }
@@ -660,7 +692,7 @@ mod tests {
         unsafe {
             assert_eq!(
                 result.unwrap_err_unchecked().message,
-                "Expected literal token"
+                "Expected more tokens for correct endpoint syntax"
             );
         }
 

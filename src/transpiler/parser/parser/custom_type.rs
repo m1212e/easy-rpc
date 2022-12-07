@@ -8,7 +8,7 @@ use crate::{
 };
 
 use super::{
-    field_type::{parse_field_type, Type},
+    erpc_type::{parse_field_type, Type},
     ParseError,
 };
 

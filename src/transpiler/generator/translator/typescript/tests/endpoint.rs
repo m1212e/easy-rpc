@@ -9,7 +9,7 @@ mod tests {
         parser::{
             parser::{
                 endpoint::{Endpoint, Parameter},
-                field_type::{ArrayAmount, Primitive, PrimitiveType, Type},
+                erpc_type::{ArrayAmount, Primitive, PrimitiveType, Type},
             },
         },
     };

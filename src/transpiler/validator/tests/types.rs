@@ -5,7 +5,7 @@ mod tests {
     use crate::transpiler::{
         parser::parser::{
             custom_type::{CustomType, Field},
-            field_type::{ArrayAmount, Custom, Primitive, PrimitiveType, Type},
+            erpc_type::{ArrayAmount, Custom, Primitive, PrimitiveType, Type},
         },
         validator::validate,
     };

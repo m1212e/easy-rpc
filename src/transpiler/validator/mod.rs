@@ -6,7 +6,7 @@ use tower_lsp::lsp_types::Range;
 
 use super::{
     config::Role,
-    parser::parser::{custom_type::CustomType, endpoint::Endpoint, field_type::Type},
+    parser::parser::{custom_type::CustomType, endpoint::Endpoint, erpc_type::Type},
 };
 
 #[derive(Debug)]
