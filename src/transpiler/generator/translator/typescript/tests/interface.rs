@@ -105,6 +105,14 @@ mod tests {
                             )),
                             EnumType::Literal(LiteralType::Float(123.456)),
                             EnumType::Literal(LiteralType::Integer(-123456)),
+                            EnumType::Primitive(Primitive {
+                                primitive_type: PrimitiveType::String,
+                                array_amount: ArrayAmount::NoLengthSpecified,
+                            }),
+                            EnumType::Custom(Custom {
+                                array_amount: ArrayAmount::NoLengthSpecified,
+                                identifier: "CustomTypeTest".to_string(),
+                            }),
                         ],
                     }),
                 },
@@ -156,7 +164,7 @@ docs
     field6: number
     field7: number
     field8: number
-    field9: true | false | \"hello from the other side\" | 123.456 | -123456
+    field9: true | false | \"hello from the other side\" | 123.456 | -123456 | string[] | CustomTypeTest[]
     field10: MyCustomType
     field11: MyCustomType2[]
     field12: MyCustomType3[]

@@ -74,8 +74,8 @@ fn stringify_field_type(field_type: &Type) -> String {
                         ret.push_str(&custom.identifier);
                         match custom.array_amount {
                             ArrayAmount::NoArray => {}
-                            ArrayAmount::NoLengthSpecified => ret.push_str(""),
-                            ArrayAmount::LengthSpecified(_) => ret.push_str(""),
+                            ArrayAmount::NoLengthSpecified => ret.push_str("[]"),
+                            ArrayAmount::LengthSpecified(_) => ret.push_str("[]"),
                         };
                     }
                     EnumType::Literal(literal) => match literal {
