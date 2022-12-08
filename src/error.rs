@@ -1,4 +1,4 @@
-use std::{path::PathBuf, fmt::Display};
+use std::{fmt::Display, path::PathBuf};
 
 use tower_lsp::lsp_types::Range;
 
@@ -64,10 +64,20 @@ impl From<async_channel::RecvError> for DisplayableError {
 
 impl Display for DisplayableError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", match self {
-            DisplayableError::Message(v) => v.message.to_owned(),
-            DisplayableError::Diagnostic(v) => v.message.to_owned(),
-        })
+        write!(
+            f,
+            "{}",
+            match self {
+                DisplayableError::Message(v) => v.message.to_owned(),
+                DisplayableError::Diagnostic(v) => format!(
+                    "{} in {}:{}:{}\n",
+                    v.message,
+                    v.source.to_str().unwrap_or("<could not unwrap path>"),
+                    v.range.start.line+1,
+                    v.range.start.character+1,
+                ),
+            }
+        )
     }
 }
 

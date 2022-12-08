@@ -6,7 +6,7 @@ mod tests {
         config::Role,
         parser::parser::{
             endpoint::{Endpoint, Parameter},
-            erpc_type::{ArrayAmount, Custom, Type},
+            erpc_type::{ArrayAmount, Custom, Enum, EnumType, Type},
         },
         validator::validate,
     };
@@ -200,6 +200,89 @@ mod tests {
         assert_eq!(result.len(), 1);
 
         assert_eq!(result[0].message, "Type SomeUnknownReturnType is unknown");
+        assert_eq!(result[0].range.start.character, 0);
+        assert_eq!(result[0].range.start.line, 0);
+        assert_eq!(result[0].range.end.character, 30);
+        assert_eq!(result[0].range.end.line, 0);
+    }
+
+    #[test]
+
+    fn test_unknown_enum_return_type() {
+        let result = validate(
+            &vec![Endpoint {
+                documentation: None,
+                range: Range {
+                    start: Position::default(),
+                    end: Position {
+                        line: 0,
+                        character: 30,
+                    },
+                },
+                identifier: "SuperCoolEndpoint".to_string(),
+                role: "SomeRole".to_string(),
+                return_type: Some(Type::Enum(Enum {
+                    values: vec![EnumType::Custom(Custom {
+                        array_amount: ArrayAmount::NoArray,
+                        identifier: "SomeUnknownType".to_string(),
+                    })],
+                })),
+                parameters: vec![],
+            }],
+            &vec![],
+            &vec![Role {
+                documentation: None,
+                name: "SomeRole".to_string(),
+                role_type: "browser".to_string(),
+            }],
+        );
+
+        assert_eq!(result.len(), 1);
+
+        assert_eq!(result[0].message, "Type SomeUnknownType is unknown");
+        assert_eq!(result[0].range.start.character, 0);
+        assert_eq!(result[0].range.start.line, 0);
+        assert_eq!(result[0].range.end.character, 30);
+        assert_eq!(result[0].range.end.line, 0);
+    }
+
+    #[test]
+    fn test_unknown_enum_parameter_type() {
+        let result = validate(
+            &vec![Endpoint {
+                documentation: None,
+                range: Range {
+                    start: Position::default(),
+                    end: Position {
+                        line: 0,
+                        character: 30,
+                    },
+                },
+                identifier: "SuperCoolEndpoint".to_string(),
+                role: "SomeRole".to_string(),
+                return_type: None,
+                parameters: vec![Parameter {
+                    identifier: "someParam".to_string(),
+                    optional: false,
+                    parameter_type: Type::Enum(Enum {
+                        values: vec![EnumType::Custom(Custom {
+                            array_amount: ArrayAmount::NoArray,
+                            identifier: "SomeUnknownType".to_string(),
+                        })],
+                    }),
+                }],
+            }],
+            &vec![],
+            &vec![Role {
+                documentation: None,
+                name: "SomeRole".to_string(),
+                role_type: "browser".to_string(),
+            }],
+        );
+
+        assert_eq!(result.len(), 1);
+
+        assert_eq!(result[0].message, "Type SomeUnknownType is unknown");
         assert_eq!(result[0].range.start.character, 0);
         assert_eq!(result[0].range.start.line, 0);
         assert_eq!(result[0].range.end.character, 30);

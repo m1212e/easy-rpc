@@ -60,7 +60,12 @@ pub struct Custom {
    Parses a field type. Expects the first type token, not the : operator
 */
 pub fn parse_field_type(reader: &mut TokenReader) -> Result<Type, ParseError> {
-    let peeked = reader.peek(1);
+    let mut peeked = reader.peek(2);
+
+    // try to get two chars
+    if peeked.is_none() {
+        peeked = reader.peek(1);
+    }
 
     if peeked.is_none() {
         return Err(ParseError {
@@ -70,6 +75,19 @@ pub fn parse_field_type(reader: &mut TokenReader) -> Result<Type, ParseError> {
     }
 
     let peeked = peeked.unwrap();
+
+    // check if enum
+    if peeked.len() == 2 {
+        match &peeked[1] {
+            Token::Operator(operator) => match operator.operator_type {
+                OperatorType::Pipe => {
+                    return Ok(Type::Enum(parse_enum_type(reader)?));
+                }
+                _ => {}
+            },
+            _ => {}
+        };
+    }
 
     return Ok(match &peeked[0].to_owned() {
         Token::Keyword(_) => Type::Primitive({

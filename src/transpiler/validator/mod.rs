@@ -6,7 +6,11 @@ use tower_lsp::lsp_types::Range;
 
 use super::{
     config::Role,
-    parser::parser::{custom_type::CustomType, endpoint::Endpoint, erpc_type::Type},
+    parser::parser::{
+        custom_type::CustomType,
+        endpoint::Endpoint,
+        erpc_type::{EnumType, Type},
+    },
 };
 
 #[derive(Debug)]
@@ -56,6 +60,16 @@ pub fn validate(
                 Type::Custom(val) => {
                     required_types.push((val.identifier.to_owned(), endpoint.range))
                 }
+                Type::Enum(val) => {
+                    for val in &val.values {
+                        match val {
+                            EnumType::Custom(val) => {
+                                required_types.push((val.identifier.to_owned(), endpoint.range))
+                            }
+                            _ => {}
+                        }
+                    }
+                }
                 _ => {}
             }
         }
@@ -64,6 +78,16 @@ pub fn validate(
             Some(val) => match val {
                 Type::Custom(cstm) => {
                     required_types.push((cstm.identifier.to_owned(), endpoint.range))
+                }
+                Type::Enum(val) => {
+                    for val in &val.values {
+                        match val {
+                            EnumType::Custom(val) => {
+                                required_types.push((val.identifier.to_owned(), endpoint.range))
+                            }
+                            _ => {}
+                        }
+                    }
                 }
                 _ => {}
             },
@@ -122,7 +146,12 @@ pub fn validate(
                 .filter(|f| f.identifier == field.identifier)
                 .count();
 
-            if amount > 1 && already_reported.iter().find(|r| **r == field.identifier).is_none() {
+            if amount > 1
+                && already_reported
+                    .iter()
+                    .find(|r| **r == field.identifier)
+                    .is_none()
+            {
                 errors.push(ValidationError {
                     range: custom_type.range,
                     message: format!("Field {} is defined multiple times", field.identifier),

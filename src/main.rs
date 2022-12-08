@@ -246,7 +246,7 @@ async fn run_once(entry_path: PathBuf) -> String {
                 if res.len() > 0 {
                     let mut ret = String::new();
                     for e in res {
-                        ret.push_str(&format!("{:#?}\n", e));
+                        ret.push_str(&e.to_string());
                     }
                     Err(ret)
                 } else {
@@ -260,14 +260,14 @@ async fn run_once(entry_path: PathBuf) -> String {
     for res in results {
         match res {
             Ok(v) => match v {
-                Ok(v) => println!("{}", v),
-                Err(err) => ret.push_str(&format!("{}\n", err)),
+                Ok(v) => ret.push_str(&v),
+                Err(err) => ret.push_str(&err),
             },
             Err(err) => ret.push_str(&format!("{}\n", err)),
         }
     }
 
-    "".to_string()
+    ret
 }
 
 fn read_config(root_dir: &Path) -> Result<crate::transpiler::config::Config, DisplayableError> {

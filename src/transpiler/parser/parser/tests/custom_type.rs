@@ -141,6 +141,17 @@ mod tests {
     }
 
     #[test]
+    fn test_success_enum_non_literal_start() -> Result<(), InputReaderError> {
+        let mut reader = TokenReader::new(InputReader::new(
+            "type SomeType {\nfield1 string | SomeCustomType\n}".as_bytes(),
+        ))?;
+
+        CustomType::parse_custom_type(&mut reader).unwrap().unwrap();
+
+        Ok(())
+    }
+
+    #[test]
     fn test_invalid_1() -> Result<(), InputReaderError> {
         let mut reader = TokenReader::new(InputReader::new(
             "typ SomeType {\nfield1 string\n field2 SomeCustomType\nfield3".as_bytes(),
