@@ -16,6 +16,7 @@ mod tests {
         let result = validate(
             &vec![
                 Endpoint {
+                    middleware_identifiers: vec![],
                     documentation: None,
                     range: Range {
                         start: Position::default(),
@@ -30,6 +31,7 @@ mod tests {
                     parameters: vec![],
                 },
                 Endpoint {
+                    middleware_identifiers: vec![],
                     documentation: None,
                     range: Range {
                         start: Position {
@@ -47,6 +49,7 @@ mod tests {
                     parameters: vec![],
                 },
                 Endpoint {
+                    middleware_identifiers: vec![],
                     documentation: None,
                     range: Range {
                         start: Position {
@@ -95,6 +98,7 @@ mod tests {
     fn test_unknown_role() {
         let result = validate(
             &vec![Endpoint {
+                middleware_identifiers: vec![],
                 documentation: None,
                 range: Range {
                     start: Position::default(),
@@ -132,6 +136,7 @@ mod tests {
     fn test_unknown_parameter_type() {
         let result = validate(
             &vec![Endpoint {
+                middleware_identifiers: vec![],
                 documentation: None,
                 range: Range {
                     start: Position::default(),
@@ -173,6 +178,7 @@ mod tests {
     fn test_unknown_return_type() {
         let result = validate(
             &vec![Endpoint {
+                middleware_identifiers: vec![],
                 documentation: None,
                 range: Range {
                     start: Position::default(),
@@ -211,6 +217,7 @@ mod tests {
     fn test_unknown_enum_return_type() {
         let result = validate(
             &vec![Endpoint {
+                middleware_identifiers: vec![],
                 documentation: None,
                 range: Range {
                     start: Position::default(),
@@ -250,6 +257,7 @@ mod tests {
     fn test_unknown_enum_parameter_type() {
         let result = validate(
             &vec![Endpoint {
+                middleware_identifiers: vec![],
                 documentation: None,
                 range: Range {
                     start: Position::default(),

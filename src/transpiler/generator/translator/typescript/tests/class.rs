@@ -15,6 +15,7 @@ mod tests {
     fn test_success_callback() {
         let endpoints = vec![
             Endpoint {
+                middleware_identifiers: vec![],
                 documentation: Some("some docs".to_string()),
                 range: Range::default(),
                 identifier: "MySuperCoolEndpoint1".to_string(),
@@ -43,6 +44,7 @@ mod tests {
                 ],
             },
             Endpoint {
+                middleware_identifiers: vec![],
                 documentation: None,
                 range: Range::default(),
                 identifier: "MySuperCoolEndpoint2".to_string(),
@@ -171,6 +173,7 @@ export default class MyCoolClass {
     fn test_success_foreign() {
         let endpoints = vec![
             Endpoint {
+                middleware_identifiers: vec![],
                 documentation: Some("some docs".to_string()),
                 range: Range::default(),
                 identifier: "MySuperCoolEndpoint1".to_string(),
@@ -199,6 +202,7 @@ export default class MyCoolClass {
                 ],
             },
             Endpoint {
+                middleware_identifiers: vec![],
                 documentation: None,
                 range: Range::default(),
                 identifier: "MySuperCoolEndpoint2".to_string(),

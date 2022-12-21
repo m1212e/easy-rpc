@@ -23,7 +23,7 @@ mod tests;
 pub mod translator;
 
 /**
-   Generates code in the required directory structure at the target location.
+   Generates code with the required directory structure at the target location.
 
    input_directory is the dir where the sources (.erpc files) live. It's structure is used to generate the output accordingly.
 
@@ -36,11 +36,11 @@ pub fn generate_for_directory<T: Translator>(
     output_directory: &Path,
     selected_role_name: &str,
 ) -> Vec<DisplayableError> {
-    let path = source_directory.join("roles.json");
-    if !path.exists() {
+    let roles_json_path = source_directory.join("roles.json");
+    if !roles_json_path.exists() {
         return vec![format!(
             "Could not find roles.json at {path_str}",
-            path_str = path
+            path_str = roles_json_path
                 .as_os_str()
                 .to_str()
                 .unwrap_or("<Unable to unwrap path>")
@@ -48,12 +48,13 @@ pub fn generate_for_directory<T: Translator>(
         .into()];
     }
 
-    let all_roles = match parse_roles(match File::open(path.clone()) {
+    /// roles which were configured in the roles.json for this source directory
+    let available_roles = match parse_roles(match File::open(roles_json_path.clone()) {
         Ok(v) => v,
         Err(err) => {
             return vec![format!(
                 "Could not open {path_str}: {err}",
-                path_str = path.to_str().unwrap_or("<Unable to unwrap path>")
+                path_str = roles_json_path.to_str().unwrap_or("<Unable to unwrap path>")
             )
             .into()];
         }
@@ -62,7 +63,7 @@ pub fn generate_for_directory<T: Translator>(
         Err(err) => {
             return vec![format!(
                 "Could not parse roles at {path_str}: {err}",
-                path_str = path
+                path_str = roles_json_path
                     .as_os_str()
                     .to_str()
                     .unwrap_or("<Unable to unwrap path>")
@@ -76,14 +77,14 @@ pub fn generate_for_directory<T: Translator>(
         output_directory,
         "",
         &selected_role_name,
-        &all_roles,
+        &available_roles,
     );
 
     let mut errors = result.1;
     let classes_per_role = result.0;
 
     // all roles which have endpoints and are configured as browser
-    let socket_enabled_browser_roles = &all_roles
+    let socket_enabled_browser_roles = &available_roles
         .iter()
         .filter_map(|role| {
             if classes_per_role.contains_key(&role.name)
@@ -95,7 +96,7 @@ pub fn generate_for_directory<T: Translator>(
         })
         .collect();
 
-    let source = if all_roles
+    let source = if available_roles
         .iter()
         .find(|x| x.name == selected_role_name)
         .unwrap()
@@ -107,7 +108,7 @@ pub fn generate_for_directory<T: Translator>(
         "@easy-rpc/node" // currently only supports node
     };
 
-    for role in all_roles {
+    for role in available_roles {
         let imports = classes_per_role.get(&role.name);
 
         let generated = match imports {

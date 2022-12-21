@@ -25,59 +25,82 @@ pub struct Endpoint {
     pub role: String,
     pub parameters: Vec<Parameter>,
     pub return_type: Option<Type>,
+    pub middleware_identifiers: Vec<String>,
 }
 
 impl Endpoint {
     pub fn parse_endpoint(reader: &mut TokenReader) -> Option<Result<Endpoint, ParseError>> {
         /*
-            Endpoints always consist of at least 4 tokens:
-            1      2           34
-            Server endpointName()
-
-            Optionally there could be a documentational comment before the endpoint which is often followed by a newline
+           To ensure that the function only detects a hit and starts consuming whenever its very likely that the tokens are meant to build an endpoint,
+           we need to work with peeked instead of consumed tokens until the first opening bracket is found.
         */
-        let mut peeked = reader.peek(4)?;
-        let has_docs = match &peeked[0] {
-            Token::DocumentationalComment(_) => true,
-            _ => false,
-        };
 
-        let newline_after_doc = if has_docs {
-            peeked = &peeked[1..];
+        let mut token_counter = 0;
+        let current_peek = &reader.peek(2)?;
 
-            match peeked[0] {
-                Token::LineBreak(_) => {
-                    peeked = &peeked[1..];
-                    true
+        // check if the first token is a documentational comment
+        let documentation = match &current_peek[0] {
+            Token::DocumentationalComment(documentation) => {
+                token_counter += 1;
+
+                match current_peek[1] {
+                    Token::LineBreak(_) => {
+                        token_counter += 1;
+                    }
+                    _ => {}
                 }
-                _ => false,
+
+                Some(documentation.content.to_owned())
             }
-        } else {
-            false
+            _ => None,
         };
 
-        if newline_after_doc {
-            peeked = reader.peek(6)?;
-            peeked = &peeked[2..];
-        } else if has_docs {
-            peeked = reader.peek(5)?;
-            peeked = &peeked[1..];
+        // collect all middleware identifiers
+        let mut middleware_identifiers = Vec::new();
+        loop {
+            let current_peek = match reader.peek(3 + token_counter) {
+                Some(v) => v,
+                None => break,
+            };
+
+            match &current_peek[0 + token_counter] {
+                Token::Operator(operator) => match operator.operator_type {
+                    OperatorType::Ampersand => {}
+                    _ => break,
+                },
+                _ => break,
+            };
+
+            let middleware_identifier = match &current_peek[1 + token_counter] {
+                Token::Identifier(identifier) => identifier.content.to_owned(),
+                _ => break,
+            };
+
+            match current_peek[2 + token_counter] {
+                Token::LineBreak(_) => {}
+                _ => break,
+            };
+
+            middleware_identifiers.push(middleware_identifier);
+            token_counter += 3;
         }
 
-        match &peeked[0] {
-            Token::Identifier(_) => {}
+        // now check if all required tokens for a valid endpoint are present
+        let current_peek = reader.peek(4 + token_counter)?;
+        let role = match &current_peek[0 + token_counter] {
+            Token::Identifier(v) => v.content.to_owned(),
             _ => {
                 return None;
             }
         };
 
-        match &peeked[1] {
-            Token::Identifier(_) => {}
+        let identifier = match &current_peek[1 + token_counter] {
+            Token::Identifier(v) => v.content.to_owned(),
             _ => return None,
         };
 
         // check the opening bracket
-        match &peeked[2] {
+        match &current_peek[2 + token_counter] {
             Token::Operator(value) => match value.operator_type {
                 OperatorType::OpenBracket => {}
                 _ => return None,
@@ -88,36 +111,10 @@ impl Endpoint {
         // at this point it's pretty safe that the currently parsed tokens are meant to build an endpoint, therefore we can start consuming
         // we also checked the types/order of the following tokens and can consume them directly, without re-checking
 
-        let start: Position;
-        let mut documentation: Option<String> = None;
-        let role: String;
-        let identifier: String;
-
-        if newline_after_doc {
-            let mut consumed = reader.consume(5)?;
-
-            let doc_token = consumed.remove(0);
-            start = doc_token.range().start;
-            documentation = Some(cast!(doc_token, Token::DocumentationalComment).content);
-            consumed.remove(0); // newline
-            role = cast!(consumed.remove(0), Token::Identifier).content;
-            identifier = cast!(consumed.remove(0), Token::Identifier).content;
-        } else if !newline_after_doc && has_docs {
-            let mut consumed = reader.consume(4)?;
-
-            let doc_token = consumed.remove(0);
-            start = doc_token.range().start;
-            documentation = Some(cast!(doc_token, Token::DocumentationalComment).content);
-            role = cast!(consumed.remove(0), Token::Identifier).content;
-            identifier = cast!(consumed.remove(0), Token::Identifier).content;
-        } else {
-            let mut consumed = reader.consume(3)?;
-
-            let role_token = consumed.remove(0);
-            start = role_token.range().start;
-            role = cast!(role_token, Token::Identifier).content;
-            identifier = cast!(consumed.remove(0), Token::Identifier).content;
-        }
+        // remember the start position
+        let start = reader.peek(1)?[0].range().start;
+        // and remove all already processed tokens
+        reader.consume(token_counter + 3);
 
         let mut parameters: Vec<Parameter> = Vec::new();
 
@@ -200,6 +197,7 @@ impl Endpoint {
             parameters,
             return_type,
             role,
+            middleware_identifiers,
         }))
     }
 }

@@ -13,6 +13,7 @@ mod tests {
     #[test]
     fn test_success_foreign() {
         let ep = Endpoint {
+            middleware_identifiers: vec![],
             documentation: Some("some docs".to_string()),
             range: Range::default(),
             identifier: "MySuperCoolEndpoint".to_string(),
@@ -57,6 +58,7 @@ mod tests {
     #[test]
     fn test_success_callback() {
         let ep = Endpoint {
+            middleware_identifiers: vec![],
             documentation: Some("some docs".to_string()),
             range: Range::default(),
             identifier: "MySuperCoolEndpoint".to_string(),

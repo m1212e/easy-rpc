@@ -22,6 +22,7 @@ mod tests {
                     role: "Server".to_string(),
                     return_type: None,
                     parameters: vec![],
+                    middleware_identifiers: vec![],
                 },
                 Endpoint {
                     documentation: None,
@@ -30,6 +31,7 @@ mod tests {
                     role: "Client".to_string(),
                     return_type: None,
                     parameters: vec![],
+                    middleware_identifiers: vec![],
                 },
                 Endpoint {
                     documentation: None,
@@ -38,6 +40,7 @@ mod tests {
                     role: "Client".to_string(),
                     return_type: None,
                     parameters: vec![],
+                    middleware_identifiers: vec![],
                 },
             ],
             "Server",

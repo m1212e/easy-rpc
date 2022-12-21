@@ -222,7 +222,7 @@ mod tests {
 
         let mut result = Endpoint::parse_endpoint(&mut reader).unwrap().unwrap();
         assert_eq!(result.parameters.len(), 1);
-        
+
         let mut parameter_enum_values = match result.parameters.remove(0).parameter_type {
             Type::Enum(en) => en.values,
             _ => {
@@ -318,19 +318,17 @@ mod tests {
         match parameter_enum_values.remove(0) {
             EnumType::Custom(value) => {
                 assert_eq!(value.identifier, "CustomTypeTest")
-            },
+            }
             _ => {
                 panic!("should not match")
             }
         }
 
         match parameter_enum_values.remove(0) {
-            EnumType::Primitive(value) => {
-                match value.primitive_type {
-                    PrimitiveType::String => {},
-                    _ => panic!("should not match")
-                }
-            }
+            EnumType::Primitive(value) => match value.primitive_type {
+                PrimitiveType::String => {}
+                _ => panic!("should not match"),
+            },
             _ => {
                 panic!("should not match")
             }
@@ -796,6 +794,70 @@ mod tests {
                 "Size of the array must be above or equal to 1"
             );
         }
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_middleware_endpoint() -> Result<(), InputReaderError> {
+        let mut reader = TokenReader::new(InputReader::new(
+            "&SomeValidMiddlwareIdentifier
+&AnotherValidMiddlwareIdentifier
+ Server someEndpointIdentifier()"
+                .as_bytes(),
+        ))?;
+
+        let result = Endpoint::parse_endpoint(&mut reader).unwrap().unwrap();
+
+        assert_eq!(result.range.start.character, 0);
+        assert_eq!(result.range.start.line, 0);
+        assert_eq!(result.range.end.character, 32);
+        assert_eq!(result.range.end.line, 2);
+        assert_eq!(result.documentation, None);
+        assert_eq!(
+            result.middleware_identifiers,
+            vec![
+                "SomeValidMiddlwareIdentifier",
+                "AnotherValidMiddlwareIdentifier"
+            ]
+        );
+        assert_eq!(result.identifier, "someEndpointIdentifier");
+        assert_eq!(result.role, "Server");
+        assert_eq!(result.parameters.len(), 0);
+        assert!(result.return_type.is_none());
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_middleware_endpoint_with_docs_spaces() -> Result<(), InputReaderError> {
+        let mut reader = TokenReader::new(InputReader::new(
+            "/**These are some docs*/
+&SomeValidMiddlwareIdentifier
+&AnotherValidMiddlwareIdentifier
+
+ Server someEndpointIdentifier()"
+                .as_bytes(),
+        ))?;
+
+        let result = Endpoint::parse_endpoint(&mut reader).unwrap().unwrap();
+
+        assert_eq!(result.range.start.character, 0);
+        assert_eq!(result.range.start.line, 0);
+        assert_eq!(result.range.end.character, 32);
+        assert_eq!(result.range.end.line, 4);
+        assert_eq!(result.documentation, Some("These are some docs".to_string()));
+        assert_eq!(
+            result.middleware_identifiers,
+            vec![
+                "SomeValidMiddlwareIdentifier",
+                "AnotherValidMiddlwareIdentifier"
+            ]
+        );
+        assert_eq!(result.identifier, "someEndpointIdentifier");
+        assert_eq!(result.role, "Server");
+        assert_eq!(result.parameters.len(), 0);
+        assert!(result.return_type.is_none());
 
         Ok(())
     }
