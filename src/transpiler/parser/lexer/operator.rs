@@ -31,6 +31,8 @@ pub enum OperatorType {
     Comma,
     #[strum(serialize = "?")]
     QuestionMark,
+    #[strum(serialize = "&")]
+    Ampersand,
 }
 #[derive(Clone, Debug)]
 pub struct Operator {

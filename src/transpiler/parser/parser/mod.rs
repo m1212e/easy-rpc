@@ -12,6 +12,7 @@ mod disposeable_comment;
 pub mod endpoint;
 pub mod erpc_type;
 mod line_break;
+mod middlware;
 mod tests;
 
 #[derive(Debug)]
