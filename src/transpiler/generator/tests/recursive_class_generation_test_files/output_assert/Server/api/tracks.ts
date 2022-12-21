@@ -25,7 +25,7 @@ export default class tracks {
     private _test6: () => Promise<void> = undefined as any
     set test6(value: () => Promise<void>) {
         this._test6 = value
-        this.server?.registerERPCCallbackFunction(value, "api/tracks/test6")
+        this.server?.registerERPCHandler(value, "api/tracks/test6")
     }
     get test6() {
         return this._test6

@@ -85,8 +85,10 @@ fn make_callback_endpoint(endpoint: &Endpoint, url: &str) -> String {
     let mut ret = String::new();
 
     if endpoint.documentation.is_some() {
-        
-        ret.push_str(&format!("/**{}*/\n", endpoint.documentation.as_ref().unwrap()));
+        ret.push_str(&format!(
+            "/**{}*/\n",
+            endpoint.documentation.as_ref().unwrap()
+        ));
     }
 
     ret.push_str(&format!("    private _{}: (", endpoint.identifier));
@@ -118,7 +120,10 @@ fn make_callback_endpoint(endpoint: &Endpoint, url: &str) -> String {
         ret.push_str("void");
     }
 
-    ret.push_str(&format!("> = undefined as any\n    set {}(value: ({}) => Promise<", endpoint.identifier, params_string));
+    ret.push_str(&format!(
+        "> = undefined as any\n    set {}(value: ({}) => Promise<",
+        endpoint.identifier, params_string
+    ));
     if endpoint.return_type.is_some() {
         ret.push_str(&stringify_field_type(
             endpoint.return_type.as_ref().unwrap(),
@@ -127,15 +132,18 @@ fn make_callback_endpoint(endpoint: &Endpoint, url: &str) -> String {
         ret.push_str("void");
     }
 
-    ret.push_str(&format!(">) {{
+    ret.push_str(&format!(
+        ">) {{
         this._{id} = value
-        this.server?.registerERPCCallbackFunction(value, \"{url}\")
+        this.server?.registerERPCHandler(value, \"{url}\")
     }}
     get {id}() {{
         return this._{id}
     }}
 
-", id=endpoint.identifier));
+",
+        id = endpoint.identifier
+    ));
 
     ret
 }

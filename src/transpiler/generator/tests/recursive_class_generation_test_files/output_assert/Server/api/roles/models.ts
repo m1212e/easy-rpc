@@ -25,7 +25,7 @@ export default class models {
     private _test9: () => Promise<void> = undefined as any
     set test9(value: () => Promise<void>) {
         this._test9 = value
-        this.server?.registerERPCCallbackFunction(value, "api/roles/models/test9")
+        this.server?.registerERPCHandler(value, "api/roles/models/test9")
     }
     get test9() {
         return this._test9

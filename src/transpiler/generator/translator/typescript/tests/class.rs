@@ -3,13 +3,12 @@ mod tests {
     use tower_lsp::lsp_types::Range;
 
     use crate::transpiler::{
-        parser::{
-            parser::{
-                custom_type::CustomType,
-                endpoint::{Endpoint, Parameter},
-                erpc_type::{ArrayAmount, Primitive, PrimitiveType, Type},
-            },
-        }, generator::translator::typescript::class::generate_class,
+        generator::translator::typescript::class::generate_class,
+        parser::parser::{
+            custom_type::CustomType,
+            endpoint::{Endpoint, Parameter},
+            erpc_type::{ArrayAmount, Primitive, PrimitiveType, Type},
+        },
     };
 
     #[test]
@@ -133,7 +132,7 @@ export default class MyCoolClass {
     private _MySuperCoolEndpoint1: (p1?: string[], p2: number) => Promise<string[]> = undefined as any
     set MySuperCoolEndpoint1(value: (p1?: string[], p2: number) => Promise<string[]>) {
         this._MySuperCoolEndpoint1 = value
-        this.server?.registerERPCCallbackFunction(value, \"test/test2/MyCoolClass/MySuperCoolEndpoint1\")
+        this.server?.registerERPCHandler(value, \"test/test2/MyCoolClass/MySuperCoolEndpoint1\")
     }
     get MySuperCoolEndpoint1() {
         return this._MySuperCoolEndpoint1
@@ -142,7 +141,7 @@ export default class MyCoolClass {
     private _MySuperCoolEndpoint2: () => Promise<void> = undefined as any
     set MySuperCoolEndpoint2(value: () => Promise<void>) {
         this._MySuperCoolEndpoint2 = value
-        this.server?.registerERPCCallbackFunction(value, \"test/test2/MyCoolClass/MySuperCoolEndpoint2\")
+        this.server?.registerERPCHandler(value, \"test/test2/MyCoolClass/MySuperCoolEndpoint2\")
     }
     get MySuperCoolEndpoint2() {
         return this._MySuperCoolEndpoint2

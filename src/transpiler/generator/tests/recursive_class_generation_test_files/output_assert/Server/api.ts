@@ -41,7 +41,7 @@ export default class api {
     private _test3: () => Promise<void> = undefined as any
     set test3(value: () => Promise<void>) {
         this._test3 = value
-        this.server?.registerERPCCallbackFunction(value, "api/test3")
+        this.server?.registerERPCHandler(value, "api/test3")
     }
     get test3() {
         return this._test3
@@ -50,7 +50,7 @@ export default class api {
     private _test4: () => Promise<void> = undefined as any
     set test4(value: () => Promise<void>) {
         this._test4 = value
-        this.server?.registerERPCCallbackFunction(value, "api/test4")
+        this.server?.registerERPCHandler(value, "api/test4")
     }
     get test4() {
         return this._test4

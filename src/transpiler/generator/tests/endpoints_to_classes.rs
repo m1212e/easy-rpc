@@ -89,7 +89,7 @@ export default class TestClass {
     private _MySuperCoolEndpoint: () => Promise<void> = undefined as any
     set MySuperCoolEndpoint(value: () => Promise<void>) {
         this._MySuperCoolEndpoint = value
-        this.server?.registerERPCCallbackFunction(value, \"test/test2/TestClass/MySuperCoolEndpoint\")
+        this.server?.registerERPCHandler(value, \"test/test2/TestClass/MySuperCoolEndpoint\")
     }
     get MySuperCoolEndpoint() {
         return this._MySuperCoolEndpoint

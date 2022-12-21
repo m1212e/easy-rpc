@@ -25,7 +25,7 @@ export default class api {
     private _login2: (newUser: string) => Promise<"success"> = undefined as any
     set login2(value: (newUser: string) => Promise<"success">) {
         this._login2 = value
-        this.server?.registerERPCCallbackFunction(value, "api/login2")
+        this.server?.registerERPCHandler(value, "api/login2")
     }
     get login2() {
         return this._login2
