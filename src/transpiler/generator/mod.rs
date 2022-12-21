@@ -10,7 +10,7 @@ use crate::error::{Diagnostic, DisplayableError};
 use self::translator::Translator;
 
 use super::{
-    config::{parse_roles, Role},
+    config::Role,
     parser::{
         input_reader::InputReader,
         lexer::TokenReader,
@@ -30,54 +30,23 @@ pub mod translator;
    output_directory is the target dir where the output will be generated.
 
    selected_role_name is a string which contains the name of the role which is selected through the config.json
+
+   available_roles is a vector of roles which are available to define endpoints for
 */
 pub fn generate_for_directory<T: Translator>(
     source_directory: &Path,
     output_directory: &Path,
     selected_role_name: &str,
+    available_roles: &Vec<Role>,
+    available_middleware: &Vec<Endpoint>,
 ) -> Vec<DisplayableError> {
-    let roles_json_path = source_directory.join("roles.json");
-    if !roles_json_path.exists() {
-        return vec![format!(
-            "Could not find roles.json at {path_str}",
-            path_str = roles_json_path
-                .as_os_str()
-                .to_str()
-                .unwrap_or("<Unable to unwrap path>")
-        )
-        .into()];
-    }
-
-    /// roles which were configured in the roles.json for this source directory
-    let available_roles = match parse_roles(match File::open(roles_json_path.clone()) {
-        Ok(v) => v,
-        Err(err) => {
-            return vec![format!(
-                "Could not open {path_str}: {err}",
-                path_str = roles_json_path.to_str().unwrap_or("<Unable to unwrap path>")
-            )
-            .into()];
-        }
-    }) {
-        Ok(v) => v,
-        Err(err) => {
-            return vec![format!(
-                "Could not parse roles at {path_str}: {err}",
-                path_str = roles_json_path
-                    .as_os_str()
-                    .to_str()
-                    .unwrap_or("<Unable to unwrap path>")
-            )
-            .into()];
-        }
-    };
-
     let result = generate_for_directory_recursively::<T>(
         source_directory,
         output_directory,
         "",
         &selected_role_name,
         &available_roles,
+        available_middleware,
     );
 
     let mut errors = result.1;
@@ -199,6 +168,7 @@ fn generate_for_directory_recursively<T: Translator>(
     relative_path: &str,
     selected_role: &str,
     all_roles: &Vec<Role>,
+    available_middleware: &Vec<Endpoint>,
 ) -> (HashMap<String, Vec<String>>, Vec<DisplayableError>) {
     // tracks which classes per role were generated on the current dir level
     let mut generated_classnames_per_role: HashMap<String, Vec<String>> = HashMap::new();
@@ -298,6 +268,7 @@ fn generate_for_directory_recursively<T: Translator>(
                 &new_rel_path,
                 selected_role,
                 all_roles,
+                available_middleware,
             );
 
             let generated_classes_per_role = result.0;
@@ -383,8 +354,13 @@ fn generate_for_directory_recursively<T: Translator>(
             };
 
             let mut validation_error_occurred = false;
-            for validation_error in
-                validate(&result.endpoints, &result.custom_types, all_roles).into_iter()
+            for validation_error in validate(
+                &result.endpoints,
+                &result.custom_types,
+                all_roles,
+                available_middleware,
+            )
+            .into_iter()
             {
                 validation_error_occurred = true;
                 errors.push(DisplayableError::Diagnostic(Diagnostic {

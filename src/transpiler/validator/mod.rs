@@ -26,6 +26,7 @@ pub fn validate(
     endpoints: &Vec<Endpoint>,
     custom_types: &Vec<CustomType>,
     roles: &Vec<Role>,
+    available_middleware: &Vec<Endpoint>,
 ) -> Vec<ValidationError> {
     let mut errors = vec![];
 
@@ -92,6 +93,21 @@ pub fn validate(
                 _ => {}
             },
             None => {}
+        }
+
+        for middleware in &endpoint.middleware_identifiers {
+            if available_middleware
+                .iter()
+                .find(|val| val.identifier == *middleware)
+                .is_none()
+            {
+                errors.push(ValidationError {
+                    range: endpoint.range,
+                    message: format!(
+                        "Middleware {middleware} is not configured as allowed middleware",
+                    ),
+                });
+            }
         }
     }
 

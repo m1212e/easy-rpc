@@ -45,6 +45,7 @@ mod tests {
                     role_type: "http-server".to_string(),
                 },
             ],
+            &vec![],
         );
 
         assert_eq!(result.1.len(), 0);
@@ -86,6 +87,19 @@ mod tests {
                 &test_files.join("input"),
                 &test_files.join("output"),
                 "Server",
+                &vec![
+                    Role {
+                        documentation: Some("This is some docs".to_string()),
+                        name: "Client".to_string(),
+                        role_type: "browser".to_string(),
+                    },
+                    Role {
+                        documentation: Some("This is some docs".to_string()),
+                        name: "Server".to_string(),
+                        role_type: "http-server".to_string(),
+                    },
+                ],
+                &vec![]
             )
             .len(),
             0

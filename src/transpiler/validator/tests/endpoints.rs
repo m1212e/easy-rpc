@@ -80,6 +80,7 @@ mod tests {
                     role_type: "browser".to_string(),
                 },
             ],
+            &vec![]
         );
 
         assert_eq!(result.len(), 1);
@@ -118,6 +119,7 @@ mod tests {
                 name: "SomeDifferentRole".to_string(),
                 role_type: "browser".to_string(),
             }],
+            &vec![]
         );
 
         assert_eq!(result.len(), 1);
@@ -163,6 +165,7 @@ mod tests {
                 name: "SomeRole".to_string(),
                 role_type: "browser".to_string(),
             }],
+            &vec![]
         );
 
         assert_eq!(result.len(), 1);
@@ -201,6 +204,7 @@ mod tests {
                 name: "SomeRole".to_string(),
                 role_type: "browser".to_string(),
             }],
+            &vec![]
         );
 
         assert_eq!(result.len(), 1);
@@ -242,6 +246,7 @@ mod tests {
                 name: "SomeRole".to_string(),
                 role_type: "browser".to_string(),
             }],
+            &vec![]
         );
 
         assert_eq!(result.len(), 1);
@@ -286,6 +291,7 @@ mod tests {
                 name: "SomeRole".to_string(),
                 role_type: "browser".to_string(),
             }],
+            &vec![]
         );
 
         assert_eq!(result.len(), 1);

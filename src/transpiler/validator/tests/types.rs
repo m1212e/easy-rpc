@@ -44,6 +44,7 @@ mod tests {
                 },
             ],
             &vec![],
+            &vec![]
         );
 
         assert_eq!(result.len(), 1);
@@ -83,6 +84,7 @@ mod tests {
                 identifier: "MySuperCoolType".to_string(),
             }],
             &vec![],
+            &vec![]
         );
 
         assert_eq!(result.len(), 1);
@@ -132,6 +134,7 @@ mod tests {
                 identifier: "MySuperCoolType".to_string(),
             }],
             &vec![],
+            &vec![]
         );
 
         assert_eq!(result.len(), 1);
