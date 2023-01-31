@@ -32,6 +32,8 @@ pub mod translator;
    selected_role_name is a string which contains the name of the role which is selected through the config.json
 
    available_roles is a vector of roles which are available to define endpoints for
+
+   available_middlewares is a vector of middlewares which exist and can be used
 */
 pub fn generate_for_directory<T: Translator>(
     source_directory: &Path,
@@ -297,8 +299,8 @@ fn generate_for_directory_recursively<T: Translator>(
         }
         .is_file()
         {
-            let fi_na = entry.file_name();
-            let file_name = match fi_na.to_str() {
+            let file_name = entry.file_name();
+            let file_name = match file_name.to_str() {
                 Some(val) => match val.strip_suffix(".erpc") {
                     Some(v) => v,
                     None => continue,
@@ -374,7 +376,7 @@ fn generate_for_directory_recursively<T: Translator>(
             }
 
             // generate class strings per role
-            let generated_class_content_per_role = generate_classes_per_role::<T>(
+            let mut generated_class_content_per_role = generate_classes_per_role::<T>(
                 file_name,
                 relative_path,
                 result.endpoints,
@@ -384,6 +386,11 @@ fn generate_for_directory_recursively<T: Translator>(
                     .get(file_name)
                     .unwrap_or(&HashMap::new()),
             );
+
+            // if the middleware source file at root level is processed, we only need to generate callback handlers to register the middleware on
+            if relative_path == "" && file_name == "middleware" {
+                generated_class_content_per_role.retain(|key, _| key == selected_role);
+            }
 
             for (role, class_content) in generated_class_content_per_role {
                 // write all generated files to the disk

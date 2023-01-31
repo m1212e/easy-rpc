@@ -1,3 +1,6 @@
+TODO: add max 20 params to endpoint in validator
+TODO: document that by default credentials are sent
+TODO: validator add checks for double param names
 TODO: in docs, explain the problem of conflicting names/structures of sources or introduce a merge mechanism
 TODO: write tests for all repos
 TODO: split node and rust parts of server
@@ -6,6 +9,7 @@ TODO: input/parameter validation
 TODO: check how the addon behaves while creating a project
 TODO: organize all repositories (node, browser etc.)
 TODO: for ssr frameworks, find a way to make calls to the local machine without http requests etc.
+    TODO: adapter kind of thing for integration with express etc
 TODO: remove all .unwrap() calls
     TODO: increase rubustness, especially in ls mode
 TODO: make enums for configuration stuff like types, filenames etc.
@@ -21,3 +25,31 @@ TODO: Refactor main.rs + transpiler/generator/mod.rs
 TODO: check the use of all .clone() and .to_owned() calls
 TODO: prevent spaces in files paths/warn when they occur (leads to invalid syntax)
 TODO: validation for .json config files/LS support
+TODO: logging library?
+
+Potential predefined types:
+cookies
+info
+    hostname: example.com:3000
+    ip
+
+Middleware:
+separate middleware.erpc at source root (potential merge/naming conflicts in multi source setup?)
+parsing before endpoint generation
+type signatures of middleware must be kept in memory
+middleware chaining
+middleware can abort the request
+builtin middleware for stuff like cookies
+pre/post middleware for setting header e.g. when authenticating
+builtin types for Request/Response which just can be used/global namespace
+
+type Cookie {
+    key string
+    value string
+}
+
+parseCookies(req Request) Cookie[]
+isAuthorized(cookies Cookie[]) string
+isAdmin(email string)
+
+handler

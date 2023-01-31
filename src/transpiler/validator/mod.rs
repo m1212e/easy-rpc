@@ -95,19 +95,42 @@ pub fn validate(
             None => {}
         }
 
+        let mut visited_middlewares = HashSet::<String>::new();
         for middleware in &endpoint.middleware_identifiers {
-            if available_middleware
+            if visited_middlewares.contains(middleware) {
+                errors.push(ValidationError {
+                    range: endpoint.range,
+                    message: format!(
+                        "Middleware {middleware} is already defined for this endpoint",
+                    ),
+                });
+            }
+
+            match available_middleware
                 .iter()
                 .find(|val| val.identifier == *middleware)
-                .is_none()
             {
-                errors.push(ValidationError {
+                Some(val) => {
+                    if val.role != endpoint.role {
+                        errors.push(ValidationError {
+                            range: endpoint.range,
+                            message: format!(
+                                "Middleware {middleware} is not allowed on role {} since it is defined on role {}",
+                                endpoint.role,
+                                val.role
+                            ),
+                        });
+                    }
+                }
+                None => errors.push(ValidationError {
                     range: endpoint.range,
                     message: format!(
                         "Middleware {middleware} is not configured as allowed middleware",
                     ),
-                });
+                }),
             }
+
+            visited_middlewares.insert(middleware.to_owned());
         }
     }
 
