@@ -1,0 +1,17 @@
+{
+  "name": "@easy-rpc/node-linux-arm-gnueabihf",
+  "os": [
+    "linux"
+  ],
+  "cpu": [
+    "arm"
+  ],
+  "main": "node.linux-arm-gnueabihf.node",
+  "files": [
+    "node.linux-arm-gnueabihf.node"
+  ],
+  "engines": {
+    "node": ">= 10"
+  },
+  "version": "0.1.0"
+}

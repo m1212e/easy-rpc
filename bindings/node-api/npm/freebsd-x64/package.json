@@ -1,0 +1,18 @@
+{
+  "name": "@easy-rpc/node-freebsd-x64",
+  "os": [
+    "freebsd"
+  ],
+  "cpu": [
+    "x64"
+  ],
+  "main": "node.freebsd-x64.node",
+  "files": [
+    "node.freebsd-x64.node"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">= 10"
+  },
+  "version": "0.1.0"
+}

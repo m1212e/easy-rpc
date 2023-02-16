@@ -1,0 +1,17 @@
+{
+  "name": "@easy-rpc/node-darwin-arm64",
+  "os": [
+    "darwin"
+  ],
+  "cpu": [
+    "arm64"
+  ],
+  "main": "node.darwin-arm64.node",
+  "files": [
+    "node.darwin-arm64.node"
+  ],
+  "engines": {
+    "node": ">= 10"
+  },
+  "version": "0.1.0"
+}

@@ -1,0 +1,17 @@
+{
+  "name": "@easy-rpc/node-win32-x64-msvc",
+  "os": [
+    "win32"
+  ],
+  "cpu": [
+    "x64"
+  ],
+  "main": "node.win32-x64-msvc.node",
+  "files": [
+    "node.win32-x64-msvc.node"
+  ],
+  "engines": {
+    "node": ">= 10"
+  },
+  "version": "0.1.0"
+}

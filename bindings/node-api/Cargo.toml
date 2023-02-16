@@ -1,0 +1,22 @@
+[package]
+name = "node-api"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+napi = { version = "2.11.1", features = ["full"] }
+napi-derive = "2.9"
+serde = { version = "1.0" }
+serde_json = "1.0"
+log = "0.4"
+tokio = { version = "1", features = ["full"] }
+backend = { path = "../../backend" }
+
+[build-dependencies]
+napi-build = "2.0.1"
+
+[profile.release]
+lto = true

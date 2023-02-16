@@ -1,0 +1,20 @@
+{
+  "name": "@easy-rpc/node-linux-x64-musl",
+  "os": [
+    "linux"
+  ],
+  "cpu": [
+    "x64"
+  ],
+  "main": "node.linux-x64-musl.node",
+  "files": [
+    "node.linux-x64-musl.node"
+  ],
+  "engines": {
+    "node": ">= 10"
+  },
+  "libc": [
+    "musl"
+  ],
+  "version": "0.1.0"
+}

@@ -1,0 +1,29 @@
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "transpiler/**"
+
+jobs:
+  transpiler_coverage:
+    name: coverage
+    defaults:
+      run:
+        working-directory: transpiler
+    runs-on: ubuntu-latest
+    container:
+      image: xd009642/tarpaulin:develop-nightly
+      options: --security-opt seccomp=unconfined
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Generate code coverage
+        run: |
+          cargo +nightly tarpaulin --verbose --all-features --workspace --timeout 120 --out Xml
+
+      - name: Upload to codecov.io
+        uses: codecov/codecov-action@v2
+        with:
+          token: ${{secrets.CODECOV_TOKEN}} # not required for public repos
+          fail_ci_if_error: true

@@ -1,0 +1,20 @@
+{
+  "name": "@easy-rpc/node-linux-x64-gnu",
+  "os": [
+    "linux"
+  ],
+  "cpu": [
+    "x64"
+  ],
+  "main": "node.linux-x64-gnu.node",
+  "files": [
+    "node.linux-x64-gnu.node"
+  ],
+  "engines": {
+    "node": ">= 10"
+  },
+  "libc": [
+    "glibc"
+  ],
+  "version": "0.1.0"
+}
