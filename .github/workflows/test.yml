@@ -16,6 +16,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+      - name: Install dependencies
+        working-directory: ./bindings/node-api
+        run: npm ci
       - name: Run tests
         working-directory: ./bindings/node-api
         run: npm run test

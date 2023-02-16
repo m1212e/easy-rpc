@@ -26,6 +26,7 @@ TODO: check the use of all .clone() and .to_owned() calls
 TODO: prevent spaces in files paths/warn when they occur (leads to invalid syntax)
 TODO: validation for .json config files/LS support
 TODO: logging library?
+TODO: setup clippy, linting, etc.
 
 Potential predefined types:
 cookies
