@@ -1,0 +1,21 @@
+on:
+  push:
+    branches: ["main"]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  cargo_test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Run tests
+        run: cargo test
+  node-api_test:
+    runs-on: ubuntu-latest
+      working-directory: bindings/node-api
+    steps:
+      - uses: actions/checkout@v3
+      - name: Run tests
+        run: npm run test
