@@ -3,7 +3,7 @@ on:
     branches: ["main"]
 
 jobs:
-  tarpaulin_coverage:
+  rust_coverage:
     name: coverage
     runs-on: ubuntu-latest
     container:
@@ -15,7 +15,7 @@ jobs:
       - name: Install sudo package
         run: apt update && apt install sudo
       - name: Set up GCC
-        run: sudo apt install gcc-multilib
+        run: sudo apt install gcc-multilib -y
       - name: Generate code coverage
         env:
           RUSTFLAGS: -Cinstrument-coverage
