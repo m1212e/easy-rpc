@@ -12,6 +12,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
+      - name: Install sudo package
+        run: apt update && apt install sudo
       - name: Set up GCC
         run: sudo apt install gcc-multilib
       - name: Generate code coverage
