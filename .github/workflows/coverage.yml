@@ -14,11 +14,17 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Generate code coverage
-        run: |
-          cargo +nightly tarpaulin --all-features --workspace --timeout 120 --out Xml
-
+        env:
+          RUSTFLAGS: -Cinstrument-coverage
+          LLVM_PROFILE_FILE: coverage/tmp/cargo-test-%p-%m.profraw
+        run: | 
+             rustup component add llvm-tools-preview
+             cargo build
+             cargo test
+             grcov coverage/tmp --binary-path ./target/debug -s . -t lcov --branch --ignore-not-existing --ignore "/*" -o coverage/lcov.info
       - name: Upload to codecov.io
         uses: codecov/codecov-action@v2
         with:
-          token: ${{secrets.CODECOV_TOKEN}} # not required for public repos
+          files: ./coverage/lcov.info
+          token: ${{secrets.CODECOV_TOKEN}}
           fail_ci_if_error: true
