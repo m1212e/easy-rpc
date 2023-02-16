@@ -14,8 +14,9 @@ jobs:
         run: cargo test
   node-api_test:
     runs-on: ubuntu-latest
-    working-directory: bindings/node-api
     steps:
       - uses: actions/checkout@v3
+      - name: cd
+        run: cd ./bindings/node-api
       - name: Run tests
         run: npm run test
