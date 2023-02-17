@@ -20,9 +20,9 @@ jobs:
         run: rustup component add llvm-tools-preview
       - name: cargo build 
         run: cargo build
-        env:
-          RUSTFLAGS: -Cinstrument-coverage
-          LLVM_PROFILE_FILE: coverage/tmp/cargo-test-%p-%m.profraw
+        # env:
+        #   RUSTFLAGS: -Cinstrument-coverage
+        #   LLVM_PROFILE_FILE: coverage/tmp/cargo-test-%p-%m.profraw
       - name: cargo test 
         run: cargo test
         env:
