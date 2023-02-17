@@ -1,10 +1,6 @@
 on:
   push:
     branches: ["main"]
-# env:
-#   RUSTFLAGS: -Cinstrument-coverage
-#   CARGO_INCREMENTAL: '0'
-#   LLVM_PROFILE_FILE: coverage/tmp/cargo-test-%p-%m.profraw
 jobs:
   rust_coverage:
     name: coverage
@@ -15,8 +11,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
-      # - name: gcc
-      #   run: sudo apt install gcc-multilib -y
       - name: Rust toolchain
         uses: actions-rs/toolchain@v1
         with:
@@ -27,6 +21,10 @@ jobs:
         with:
           command: test
           args: --all-features --no-fail-fast
+        env:
+          CARGO_INCREMENTAL: '0'
+          RUSTFLAGS: '-Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Cpanic=abort -Zpanic_abort_tests'
+          RUSTDOCFLAGS: '-Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Cpanic=abort -Zpanic_abort_tests'
       - id: coverage  
         uses: actions-rs/grcov@v0.1
       - name: Upload to codecov.io
