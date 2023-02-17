@@ -1,7 +1,9 @@
 on:
   push:
     branches: ["main"]
-
+env:
+  RUSTFLAGS: -Cinstrument-coverage
+  LLVM_PROFILE_FILE: coverage/tmp/cargo-test-%p-%m.profraw
 jobs:
   rust_coverage:
     name: coverage
@@ -12,27 +14,21 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
-      - name: Install sudo package
-        run: apt update && apt install sudo
-      - name: Set up GCC
-        run: sudo apt install gcc-multilib -y
-      - name: Install llvm-tools-preview
+      # - name: Install sudo package
+      #   run: apt update && apt install sudo
+      # - name: Set up GCC
+      #   run: sudo apt install gcc-multilib -y
+      # - name: Install llvm-tools-preview
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
         run: rustup component add llvm-tools-preview
       - name: cargo build 
         run: cargo build
-        # env:
-        #   RUSTFLAGS: -Cinstrument-coverage
-        #   LLVM_PROFILE_FILE: coverage/tmp/cargo-test-%p-%m.profraw
       - name: cargo test 
         run: cargo test
-        env:
-          RUSTFLAGS: -Cinstrument-coverage
-          LLVM_PROFILE_FILE: coverage/tmp/cargo-test-%p-%m.profraw
       - name: grcov
         run: grcov coverage/tmp --binary-path ./target/debug -s . -t lcov --branch --ignore-not-existing --ignore "/*" -o coverage/lcov.info
-        env:
-          RUSTFLAGS: -Cinstrument-coverage
-          LLVM_PROFILE_FILE: coverage/tmp/cargo-test-%p-%m.profraw
       - name: Upload to codecov.io
         uses: codecov/codecov-action@v2
         with:
