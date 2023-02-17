@@ -16,15 +16,23 @@ jobs:
         run: apt update && apt install sudo
       - name: Set up GCC
         run: sudo apt install gcc-multilib -y
-      - name: Generate code coverage
+      - name: Install llvm-tools-preview
+        run: rustup component add llvm-tools-preview
+      - name: cargo build 
+        run: cargo build
         env:
           RUSTFLAGS: -Cinstrument-coverage
           LLVM_PROFILE_FILE: coverage/tmp/cargo-test-%p-%m.profraw
-        run: | 
-             rustup component add llvm-tools-preview
-             cargo build
-             cargo test
-             grcov coverage/tmp --binary-path ./target/debug -s . -t lcov --branch --ignore-not-existing --ignore "/*" -o coverage/lcov.info
+      - name: cargo test 
+        run: cargo test
+        env:
+          RUSTFLAGS: -Cinstrument-coverage
+          LLVM_PROFILE_FILE: coverage/tmp/cargo-test-%p-%m.profraw
+      - name: grcov
+        run: grcov coverage/tmp --binary-path ./target/debug -s . -t lcov --branch --ignore-not-existing --ignore "/*" -o coverage/lcov.info
+        env:
+          RUSTFLAGS: -Cinstrument-coverage
+          LLVM_PROFILE_FILE: coverage/tmp/cargo-test-%p-%m.profraw
       - name: Upload to codecov.io
         uses: codecov/codecov-action@v2
         with:
