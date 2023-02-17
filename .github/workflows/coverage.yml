@@ -3,6 +3,7 @@ on:
     branches: ["main"]
 env:
   RUSTFLAGS: -Cinstrument-coverage
+  CARGO_INCREMENTAL: '0'
   LLVM_PROFILE_FILE: coverage/tmp/cargo-test-%p-%m.profraw
 jobs:
   rust_coverage:
@@ -14,24 +15,21 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
-      # - name: Install sudo package
-      #   run: apt update && apt install sudo
-      # - name: Set up GCC
-      #   run: sudo apt install gcc-multilib -y
-      - uses: actions-rs/toolchain@v1
+      - name: Rust toolchain
+        uses: actions-rs/toolchain@v1
         with:
-          toolchain: stable
-      - name: Install llvm-tools-preview
-        run: rustup component add llvm-tools-preview
-      - name: cargo build 
-        run: cargo build
-      - name: cargo test 
-        run: cargo test
-      - name: grcov
-        run: grcov coverage/tmp --binary-path ./target/debug -s . -t lcov --branch --ignore-not-existing --ignore "/*" -o coverage/lcov.info
+          toolchain: nightly
+          override: true
+          command: clean
+      - uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --all-features --no-fail-fast
+      - id: coverage  
+        uses: actions-rs/grcov@v0.1
       - name: Upload to codecov.io
         uses: codecov/codecov-action@v2
         with:
-          files: ./coverage/lcov.info
+          files: ${{ steps.coverage.outputs.report }}
           token: ${{secrets.CODECOV_TOKEN}}
           fail_ci_if_error: true
