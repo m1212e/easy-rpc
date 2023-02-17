@@ -18,10 +18,10 @@ jobs:
       #   run: apt update && apt install sudo
       # - name: Set up GCC
       #   run: sudo apt install gcc-multilib -y
-      # - name: Install llvm-tools-preview
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
+      - name: Install llvm-tools-preview
         run: rustup component add llvm-tools-preview
       - name: cargo build 
         run: cargo build
