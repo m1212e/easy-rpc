@@ -1,10 +1,10 @@
 on:
   push:
     branches: ["main"]
-env:
-  RUSTFLAGS: -Cinstrument-coverage
-  CARGO_INCREMENTAL: '0'
-  LLVM_PROFILE_FILE: coverage/tmp/cargo-test-%p-%m.profraw
+# env:
+#   RUSTFLAGS: -Cinstrument-coverage
+#   CARGO_INCREMENTAL: '0'
+#   LLVM_PROFILE_FILE: coverage/tmp/cargo-test-%p-%m.profraw
 jobs:
   rust_coverage:
     name: coverage
@@ -15,8 +15,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
-      - name: gcc
-        run: sudo apt install gcc-multilib -y
+      # - name: gcc
+      #   run: sudo apt install gcc-multilib -y
       - name: Rust toolchain
         uses: actions-rs/toolchain@v1
         with:
