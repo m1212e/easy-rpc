@@ -27,6 +27,7 @@ TODO: prevent spaces in files paths/warn when they occur (leads to invalid synta
 TODO: validation for .json config files/LS support
 TODO: logging library?
 TODO: setup clippy, linting, etc.
+TODO: when evaluating circular types, make sure that the type is optional otherwise the message would be impossibly big
 
 Potential predefined types:
 cookies
