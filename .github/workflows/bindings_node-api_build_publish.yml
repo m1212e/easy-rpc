@@ -132,9 +132,6 @@ jobs:
           cache: yarn
           architecture: x86
           cache-dependency-path: bindings/node-api
-      - run: echo ${{ github.workspace }}
-      - run: pwd
-      - run: ls -l
       - name: Build in docker
         uses: addnab/docker-run-action@v3
         if: ${{ matrix.settings.docker }}
@@ -162,7 +159,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
-          name: bindings-${{ matrix.settings.target }}
+          name: /build/bindings/bindings-${{ matrix.settings.target }}
           path: ${{ env.APP_NAME }}.*.node
           if-no-files-found: error
   build-freebsd:
