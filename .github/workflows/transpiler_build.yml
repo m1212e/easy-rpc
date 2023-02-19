@@ -14,9 +14,6 @@ jobs:
         run: cargo test --verbose
   transpiler_build:
     needs: transpiler_test
-    defaults:
-      run:
-        working-directory: transpiler
     strategy:
       fail-fast: false
       matrix:
@@ -59,23 +56,19 @@ jobs:
             target/
           key: ${{ matrix.platform.target }}-cargo-${{ matrix.platform.host }}
       - name: Build
-        run: cargo build --release
+        run: cargo build --package transpiler --release
       - name: Rename
-        working-directory: .
         if: matrix.platform.host != 'windows-latest'
-        run: mv target/release/easy-rpc /target/release/easy-rpc-${{ matrix.platform.target }}
+        run: mv target/release/easy-rpc target/release/easy-rpc-${{ matrix.platform.target }}
       - name: Rename WIN
-        working-directory: .
         if: matrix.platform.host == 'windows-latest'
-        run: mv target/release/easy-rpc.exe /target/release/easy-rpc-${{ matrix.platform.target }}.exe
+        run: mv target/release/easy-rpc.exe target/release/easy-rpc-${{ matrix.platform.target }}.exe
       - name: Upload
-        working-directory: .
         if: matrix.platform.host != 'windows-latest'
         uses: softprops/action-gh-release@v1
         with:
           files: target/release/easy-rpc-${{ matrix.platform.target }}
       - name: Upload WIN
-        working-directory: .
         if: matrix.platform.host == 'windows-latest'
         uses: softprops/action-gh-release@v1
         with:
