@@ -160,7 +160,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: bindings-${{ matrix.settings.target }}
-          path: /bindings/node-api/${{ env.APP_NAME }}.*.node
+          path: bindings/node-api/${{ env.APP_NAME }}.*.node
           if-no-files-found: error
   build-freebsd:
     runs-on: macos-12
