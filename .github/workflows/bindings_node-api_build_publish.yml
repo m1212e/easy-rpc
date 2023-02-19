@@ -196,6 +196,7 @@ jobs:
             rm -rf node_modules
             rm -rf target
       - name: Upload artifact
+      - run: ls -l
         uses: actions/upload-artifact@v3
         with:
           name: bindings-freebsd
