@@ -152,6 +152,9 @@ jobs:
   build-freebsd:
     runs-on: macos-12
     name: Build FreeBSD
+    defaults:
+      run:
+        working-directory: bindings/node-api
     steps:
       - uses: actions/checkout@v3
       - name: Build
