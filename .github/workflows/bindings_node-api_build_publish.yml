@@ -145,7 +145,7 @@ jobs:
         shell: pwsh
         run: |
           @('', '[patch.crates-io]',
-          'ring = { git = "https://github.com/awakecoding/ring", branch = "0.16.20_alpha" }') | % {
+          'ring = { git = "https://github.com/awakecoding/ring", branch = "0.16.20_patched" }') | % {
             Add-Content -Path "Cargo.toml" -Value $_
           }
           $VSINSTALLDIR = $(vswhere.exe -latest -requires Microsoft.VisualStudio.Component.VC.Llvm.Clang -property installationPath)
@@ -209,7 +209,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: bindings-freebsd
-          path: ${{ env.APP_NAME }}.*.node
+          path: bindings/node-api/${{ env.APP_NAME }}.*.node
           if-no-files-found: error
   test-macOS-windows-binding:
     name: Test bindings on ${{ matrix.settings.target }} - node@${{ matrix.node }}
