@@ -62,10 +62,10 @@ jobs:
         run: cargo build --release
       - name: Rename
         if: matrix.platform.host != 'windows-latest'
-        run: mv  target/release/easy-rpc target/release/easy-rpc-${{ matrix.platform.target }}
+        run: mv ./target/release/easy-rpc ./target/release/easy-rpc-${{ matrix.platform.target }}
       - name: Rename WIN
         if: matrix.platform.host == 'windows-latest'
-        run: mv  target/release/easy-rpc.exe target/release/easy-rpc-${{ matrix.platform.target }}.exe
+        run: mv ./target/release/easy-rpc.exe ./target/release/easy-rpc-${{ matrix.platform.target }}.exe
       - name: Upload
         if: matrix.platform.host != 'windows-latest'
         uses: softprops/action-gh-release@v1
