@@ -139,19 +139,6 @@ jobs:
           image: ${{ matrix.settings.docker }}
           options: '--user 0:0 -v ${{ github.workspace }}/.cargo-cache/git/db:/usr/local/cargo/git/db -v ${{ github.workspace }}/.cargo/registry/cache:/usr/local/cargo/registry/cache -v ${{ github.workspace }}/.cargo/registry/index:/usr/local/cargo/registry/index -v ${{ github.workspace }}:/build -w /build/bindings/node-api'
           run: ${{ matrix.settings.build }}
-      - name: Fix ring dependency for Windows ARM64
-      #TODO https://github.com/briansmith/ring/issues/1514#issuecomment-1258562375
-        if: matrix.settings.target == 'aarch64-pc-windows-msvc'
-        shell: pwsh
-        run: |
-          @('', '[patch.crates-io]',
-          'ring = { git = "https://github.com/awakecoding/ring", branch = "0.16.20_patched" }') | % {
-            Add-Content -Path "Cargo.toml" -Value $_
-          }
-          $VSINSTALLDIR = $(vswhere.exe -latest -requires Microsoft.VisualStudio.Component.VC.Llvm.Clang -property installationPath)
-          $VCINSTALLDIR = Join-Path $VSINSTALLDIR "VC"
-          $LLVM_ROOT = Join-Path $VCINSTALLDIR "Tools\Llvm\x64"
-          echo "PATH=$Env:PATH;${LLVM_ROOT}\bin" >> $Env:GITHUB_ENV
       - name: Build
         run: ${{ matrix.settings.build }}
         if: ${{ !matrix.settings.docker }}
