@@ -132,6 +132,8 @@ jobs:
           cache: yarn
           architecture: x86
           cache-dependency-path: bindings/node-api
+      - run: echo ${{ github.workspace }}
+      - run: ls -l
       - name: Build in docker
         uses: addnab/docker-run-action@v3
         if: ${{ matrix.settings.docker }}
