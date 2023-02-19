@@ -159,7 +159,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
-          name: /build/bindings/bindings-${{ matrix.settings.target }}
+          name: /bindings/node-api/bindings-${{ matrix.settings.target }}
           path: ${{ env.APP_NAME }}.*.node
           if-no-files-found: error
   build-freebsd:
