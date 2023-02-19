@@ -85,6 +85,7 @@ jobs:
           node-version: 16
           check-latest: true
           cache: yarn
+          cache-dependency-path: bindings/node-api
       - name: Install
         uses: actions-rs/toolchain@v1
         if: ${{ !matrix.settings.docker }}
