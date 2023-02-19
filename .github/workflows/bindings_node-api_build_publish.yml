@@ -133,6 +133,7 @@ jobs:
           architecture: x86
           cache-dependency-path: bindings/node-api
       - run: echo ${{ github.workspace }}
+      - run: pwd
       - run: ls -l
       - name: Build in docker
         uses: addnab/docker-run-action@v3
