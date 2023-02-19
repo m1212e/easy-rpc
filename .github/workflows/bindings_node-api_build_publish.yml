@@ -195,8 +195,8 @@ jobs:
             yarn test
             rm -rf node_modules
             rm -rf target
-      - name: Upload artifact
       - run: ls -l
+      - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
           name: bindings-freebsd
