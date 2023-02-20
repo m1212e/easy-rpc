@@ -189,6 +189,7 @@ jobs:
             whoami
             env
             freebsd-version
+            cd binding/node-api
             yarn install
             yarn build
             strip -x *.node
