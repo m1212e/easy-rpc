@@ -7,5 +7,6 @@ rustflags = ["-C", "target-feature=-crt-static"]
 linker = "arm-linux-gnueabihf-gcc"
 
 # https://github.com/briansmith/ring/issues/1514#issuecomment-1258562375
-[target.aarch64-pc-windows-msvc.patch.crates-io]
-ring = { git="https://github.com/awakecoding/ring", branch="0.16.20_alpha" }
+[target.aarch64-pc-windows-msvc.patch.crates-io.ring]
+git="https://github.com/awakecoding/ring"
+branch="0.16.20_alpha"
