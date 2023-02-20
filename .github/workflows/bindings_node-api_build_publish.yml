@@ -152,9 +152,6 @@ jobs:
   build-freebsd:
     runs-on: macos-12
     name: Build FreeBSD
-    defaults:
-      run:
-        working-directory: bindings/node-api
     steps:
       - uses: actions/checkout@v3
       - name: Build
@@ -189,19 +186,18 @@ jobs:
             whoami
             env
             freebsd-version
-            cd binding/node-api
+            cd bindings/node-api
             yarn install
             yarn build
             strip -x *.node
             yarn test
             rm -rf node_modules
             rm -rf target
-      - run: ls -l
       - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
           name: bindings-freebsd
-          path: ${{ env.APP_NAME }}.*.node
+          path: bindings/node-api/${{ env.APP_NAME }}.*.node
           if-no-files-found: error
   test-macOS-windows-binding:
     name: Test bindings on ${{ matrix.settings.target }} - node@${{ matrix.node }}
