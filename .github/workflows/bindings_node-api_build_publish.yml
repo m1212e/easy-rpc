@@ -187,6 +187,8 @@ jobs:
             env
             freebsd-version
             cd bindings/node-api
+            ls -lah
+            pwd
             yarn install
             yarn build
             strip -x *.node
