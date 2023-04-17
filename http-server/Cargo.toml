@@ -1,5 +1,5 @@
 [package]
-name = "backend"
+name = "http-server"
 version = "0.1.0"
 edition = "2021"
 
@@ -13,5 +13,8 @@ serde = { version = "1.0", features = ["derive"] }
 tokio = { version = "1", features = ["full"] }
 warp = "0.3"
 serde_json = "1.0"
-erased-serde = "0.3"
+# erased-serde = "0.3"
 nanoid = "0.4.0"
+erpc = { path = "../erpc" }
+log = "0.4"
+lazy_static = "1.4"

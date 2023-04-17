@@ -8,8 +8,8 @@ use serde::{Deserialize, Serialize};
 */
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Request {
-  pub identifier: String,
-  pub parameters: Vec<serde_json::Value>,
+    pub identifier: String,
+    pub parameters: Vec<serde_json::Value>,
 }
 
 /**
@@ -17,5 +17,5 @@ pub struct Request {
 */
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Response {
-  pub body: serde_json::Value,
+    pub body: serde_json::Value,
 }

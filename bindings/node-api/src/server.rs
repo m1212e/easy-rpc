@@ -5,7 +5,7 @@
 
 use std::convert::Infallible;
 
-use backend::Socket;
+use http_server::Socket;
 use napi::{
     bindgen_prelude::{FromNapiValue, Promise},
     Env, JsFunction, JsUnknown, NapiRaw,
@@ -20,7 +20,7 @@ pub struct ServerOptions {
 
 #[napi(js_name = "ERPCServer")]
 pub struct ERPCServer {
-    server: backend::ERPCServer,
+    server: http_server::Server,
 }
 
 #[napi]
@@ -33,7 +33,7 @@ impl ERPCServer {
         _role: String, // might become handy in the future
     ) -> Self {
         ERPCServer {
-            server: backend::ERPCServer::new(
+            server: http_server::Server::new(
                 options.port,
                 options.allowed_cors_origins,
                 enable_sockets,
@@ -114,7 +114,7 @@ impl ERPCServer {
             Box::new(move |input| {
                 let (sender, reciever) = oneshot::channel::<serde_json::Value>();
                 let r = tsf.call(
-                    (input, sender),
+                    (input.parameters, sender),
                     crate::threadsafe_function::ThreadsafeFunctionCallMode::Blocking,
                 );
 
@@ -123,9 +123,15 @@ impl ERPCServer {
                         napi::Status::Ok => {}
                         _ => return Err(format!("Threadsafe function status not ok: {r}")),
                     };
-                    reciever
+                    let v = reciever
                         .await
-                        .map_err(|err| format!("Could not receive response: {err}"))
+                        .map_err(|err| format!("Could not receive response: {err}"))?;
+
+                    Ok(erpc::protocol::Response{
+                        body: v
+                    })
+
+
                 })
             }),
             &identifier,

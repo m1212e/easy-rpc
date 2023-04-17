@@ -1,7 +1,8 @@
 [workspace]
 
 members = [
+    "erpc",
+    "http-server",
     "transpiler",
-    "backend",
     "bindings/node-api"
 ]
