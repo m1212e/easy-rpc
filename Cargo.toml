@@ -4,5 +4,6 @@ members = [
     "erpc",
     "http-server",
     "transpiler",
-    "bindings/node-api"
+    "bindings/node-api",
+    "bindings/browser-api"
 ]

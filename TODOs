@@ -28,30 +28,4 @@ TODO: validation for .json config files/LS support
 TODO: logging library?
 TODO: setup clippy, linting, etc.
 TODO: when evaluating circular types, make sure that the type is optional otherwise the message would be impossibly big
-
-Potential predefined types:
-cookies
-info
-    hostname: example.com:3000
-    ip
-
-Middleware:
-separate middleware.erpc at source root (potential merge/naming conflicts in multi source setup?)
-parsing before endpoint generation
-type signatures of middleware must be kept in memory
-middleware chaining
-middleware can abort the request
-builtin middleware for stuff like cookies
-pre/post middleware for setting header e.g. when authenticating
-builtin types for Request/Response which just can be used/global namespace
-
-type Cookie {
-    key string
-    value string
-}
-
-parseCookies(req Request) Cookie[]
-isAuthorized(cookies Cookie[]) string
-isAdmin(email string)
-
-handler
+TODO: add more comments and documenation

@@ -13,3 +13,4 @@ pub struct Socket {
 
 pub use server::Server;
 pub use target::Target;
+pub use target::TargetType;

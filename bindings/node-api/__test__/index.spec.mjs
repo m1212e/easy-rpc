@@ -51,11 +51,11 @@ test('test handler calls', async (t) => {
   }, "http-server")
 
   setTimeout(async () => {
-    let r = await target.call("some/handler/identifier", ["p1", 17, -17, -17.6, true, {a: 17}])
-    t.assert(r === "helllloooo")
+    const r = await target.call("some/handler/identifier", ["p1", 17, -17, -17.6, true, {a: 17}])
+    t.deepEqual(r, {body: "helllloooo"})
 
-    let r2 = await target.call("some/handler/identifier/two")
-    t.assert(!r2)
+    const r2 = await target.call("some/handler/identifier/two")
+    t.deepEqual(r2, {body: null})
   }, 1000);
 
   await server.run();

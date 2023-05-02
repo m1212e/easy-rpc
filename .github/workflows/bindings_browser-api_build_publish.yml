@@ -1,0 +1,27 @@
+on:
+  release:
+    types: [created]
+
+name: Deploy package
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v1
+        with:
+          node-version: 16
+      - uses: jetli/wasm-pack-action@v0.4.0
+      - name: test
+        run: cargo test
+      - name: build
+        run: wasm-pack build
+      - name:
+        run: node ci.js
+        env:
+          REF_NAME: ${{ github.ref_name }}
+      - uses: JS-DevTools/npm-publish@v1
+        with:
+          token: ${{ secrets.NPM_TOKEN }}
+          access: public
+          package: ./pkg/package.json

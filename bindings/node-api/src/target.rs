@@ -1,7 +1,6 @@
+use http_server::Socket;
 use napi::{Env, JsObject, JsUnknown};
 
-use backend::target::TargetType;
-use backend::Socket;
 
 #[napi(object)]
 pub struct TargetOptions {
@@ -11,7 +10,7 @@ pub struct TargetOptions {
 
 #[napi(js_name = "ERPCTarget")]
 pub struct ERPCTarget {
-  target: backend::ERPCTarget,
+  target: http_server::Target,
 }
 
 #[napi]
@@ -19,13 +18,13 @@ impl ERPCTarget {
   #[napi(constructor)]
   pub fn new(options: TargetOptions, target_type: String) -> Self {
     let target_type = match target_type.as_str() {
-      "browser" => TargetType::Browser,
-      "http-server" => TargetType::HTTPServer,
+      "browser" => http_server::TargetType::Browser,
+      "http-server" => http_server::TargetType::HTTPServer,
       _ => panic!("Unsupported target type {}", target_type),
     };
 
     ERPCTarget {
-      target: backend::target::ERPCTarget::new(options.address, options.port, target_type),
+      target: http_server::Target::new(options.address, options.port, target_type),
     }
   }
 
