@@ -29,3 +29,4 @@ TODO: logging library?
 TODO: setup clippy, linting, etc.
 TODO: when evaluating circular types, make sure that the type is optional otherwise the message would be impossibly big
 TODO: add more comments and documenation
+TODO: work on the apis of the various packages to enable easy switch of the serialization format

@@ -1,4 +1,5 @@
-use wasm_bindgen::{prelude::wasm_bindgen, JsValue, JsCast};
+use erpc::protocol;
+use wasm_bindgen::{prelude::wasm_bindgen, JsCast, JsValue};
 use wasm_bindgen_futures::JsFuture;
 use web_sys::{Request, RequestInit, RequestMode, Response};
 
@@ -21,7 +22,7 @@ pub struct ERPCTarget {
 
 impl ERPCTarget {
     pub fn new(mut options: Options, target_type: TargetType) -> Self {
-        let mut address = options.address.trim().trim_end_matches("/").to_string();
+        let mut address = options.address.trim().trim_end_matches('/').to_string();
         if address.starts_with("http") {
             address = format!("https://{}", address);
         }
@@ -34,30 +35,30 @@ impl ERPCTarget {
     }
 
     // #[wasm_bindgen(skip_typescript)]
-    pub async fn call(
-        &self,
-        methodIdentifier: String,
-        parameters: Vec<JsValue>,
-    ) -> Result<JsValue, JsValue> {
+    pub async fn call(&self, identifier: String, parameters: JsValue) -> Result<JsValue, JsValue> {
         match self.target_type {
             TargetType::Server => {}
             TargetType::Browser => {
-                return Err(
-                    JsValue::from_str("Sending requests to other browsers is currently unsupported"),
-                )
+                return Err(JsValue::from_str(
+                    "Sending requests to other browsers is currently unsupported",
+                ))
             }
+        };
+
+        //TODO this is probably not ideal
+        // make sure the request struct is created to break this when the protocol should change in the future
+        let _ = erpc::protocol::Request {
+            identifier: identifier.clone(),
+            parameters: serde_wasm_bindgen::from_value(parameters.clone())?,
         };
 
         let mut opts = RequestInit::new();
         opts.method("POST");
         opts.mode(RequestMode::Cors);
+        opts.body(Some(&parameters));
 
-        let url = format!("{}/{}", self.options.address, methodIdentifier);
+        let url = format!("{}/{}", self.options.address, identifier);
         let request = Request::new_with_str_and_init(&url, &opts)?;
-
-        // request
-        //     .headers()
-        //     .set("Accept", "application/vnd.github.v3+json")?;
 
         let window = web_sys::window().expect("Cold not access window object");
         let resp_value = JsFuture::from(window.fetch_with_request(&request)).await?;
@@ -66,12 +67,12 @@ impl ERPCTarget {
         assert!(resp_value.is_instance_of::<Response>());
         let resp: Response = resp_value.dyn_into().expect("Cannot convert into response");
 
-        let b = JsFuture::from(resp.blob()?).await?;
+        let buffer_promise = resp.array_buffer()?;
+        let value: protocol::Response =
+            serde_wasm_bindgen::from_value(JsFuture::from(buffer_promise).await?)?;
 
-        // Convert this other `Promise` into a rust `Future`.
-        // let response_value: Vec<u8> = JsFuture::from(resp.json()?).await?;
-
-        // Send the JSON response back to JS.
-        Ok(response_value.body)
+        serde_wasm_bindgen::to_value(&value.body).map_err(|err| {
+            JsValue::from_str(&format!("Could not serialize response body to js: {err}"))
+        })
     }
 }

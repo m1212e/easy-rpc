@@ -23,7 +23,6 @@ pub enum TargetType {
 #[derive(Debug, Clone)]
 pub struct Target {
     address: String,
-    port: u16,
     target_type: TargetType,
     socket: Arc<Mutex<Option<Socket>>>,
     requests: Arc<Mutex<HashMap<String, oneshot::Sender<protocol::socket::Response>>>>,
@@ -37,7 +36,6 @@ impl Target {
 
         Target {
             address,
-            port,
             target_type,
             socket: Arc::new(Mutex::new(None::<Socket>)),
             requests: Arc::new(Mutex::new(HashMap::new())),
@@ -63,8 +61,8 @@ impl Target {
             TargetType::HTTPServer => {
                 let r = REQWEST_CLIENT
                     .post(format!(
-                        "{}:{}/handlers/{}",
-                        self.address, self.port, request.identifier
+                        "{}/handlers/{}",
+                        self.address, request.identifier
                     ))
                     .header("Content-Type", "application/json")
                     .body(
