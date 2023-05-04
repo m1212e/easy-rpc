@@ -1,7 +1,6 @@
 use crate::Socket;
 use erpc::protocol::{self, socket::SocketMessage};
 use nanoid::nanoid;
-use serde::{de::DeserializeOwned, Serialize};
 use std::{
     collections::HashMap,
     fmt::Debug,
@@ -29,7 +28,7 @@ pub struct Target {
 }
 
 impl Target {
-    pub fn new(mut address: String, port: u16, target_type: TargetType) -> Self {
+    pub fn new(mut address: String, target_type: TargetType) -> Self {
         if address.ends_with('/') {
             address.pop();
         }

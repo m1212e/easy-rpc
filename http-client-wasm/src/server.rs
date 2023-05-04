@@ -1,51 +1,16 @@
-use std::sync::{Arc, RwLock};
+use std::future::Future;
 
-use erpc::protocol::socket::SocketMessage;
-use futures_util::{Future, SinkExt, StreamExt};
-use log::{error, warn};
 use serde::{de::DeserializeOwned, Serialize};
-use tokio::sync::oneshot;
-use warp::{
-    hyper::{Body, Method, StatusCode},
-    path::Peek,
-    Filter,
-};
 
-use crate::Socket;
-
-//TODO: include in docs that credentials are sent by default
-
-type SocketChannel = (flume::Sender<Socket>, flume::Receiver<Socket>);
-
-//TODO: check where rwlock/mutex is necessary
 #[derive(Clone)]
 pub struct Server {
-    /**
-     * The erpc server
-     */
     server: erpc::Server,
-    /**
-      Shutdown signal to exit the webserver gracefully
-    */
-    shutdown_signal: Arc<RwLock<Option<oneshot::Sender<()>>>>,
-    /**
-      Channel to broadcast connected sockets
-    */
-    socket_channel: SocketChannel,
-    enabled_sockets: bool,
-    allowed_cors_origins: Vec<String>,
-    port: u16,
 }
 
 impl Server {
-    pub fn new(port: u16, allowed_cors_origins: Vec<String>, enabled_sockets: bool) -> Self {
+    pub fn new() -> Self {
         Self {
             server: erpc::Server::new(),
-            shutdown_signal: Arc::new(RwLock::new(None)),
-            socket_channel: flume::unbounded(),
-            enabled_sockets,
-            allowed_cors_origins,
-            port,
         }
     }
 

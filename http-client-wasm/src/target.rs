@@ -2,6 +2,8 @@ use erpc::protocol;
 use wasm_bindgen_futures::JsFuture;
 use web_sys::{Request, RequestInit, RequestMode, Response};
 
+use crate::CREATED_TARGETS;
+
 #[derive(Debug, Clone)]
 pub enum TargetType {
     HTTPServer,
@@ -20,10 +22,12 @@ impl Target {
             address.pop();
         }
 
-        Target {
+        let t = Target {
             address,
             target_type,
-        }
+        };
+        CREATED_TARGETS.send(t.clone());
+        t
     }
 
     pub async fn call(&self, request: protocol::Request) -> Result<protocol::Response, String> {

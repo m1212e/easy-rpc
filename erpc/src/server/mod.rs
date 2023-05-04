@@ -77,3 +77,9 @@ impl Server {
         handler(request).await
     }
 }
+
+impl Default for Server {
+    fn default() -> Self {
+        Self::new()
+    }
+}
