@@ -655,6 +655,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "http-client-wasm"
+version = "0.1.0"
+dependencies = [
+ "erpc",
+ "serde",
+ "serde-wasm-bindgen",
+ "serde_json",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "web-sys",
+]
+
+[[package]]
 name = "http-server"
 version = "0.1.0"
 dependencies = [
@@ -2067,8 +2080,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "31f8dcbc21f30d9b8f2ea926ecb58f6b91192c17e9d33594b3df58b2007ca53b"
 dependencies = [
  "cfg-if 1.0.0",
- "serde",
- "serde_json",
  "wasm-bindgen-macro",
 ]
 

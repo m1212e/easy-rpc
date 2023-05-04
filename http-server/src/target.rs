@@ -42,28 +42,14 @@ impl Target {
         }
     }
 
-    pub async fn call<P: Serialize, R: DeserializeOwned + Debug>(
+    pub async fn call(
         &self,
-        identifier: String,
-        parameters: Vec<P>,
-    ) -> Result<R, String> {
-        // making sure that the protocol::Request is used to break this if the protocol should ever change
-        let request = protocol::Request {
-            identifier,
-            parameters: parameters
-                .iter()
-                .map(serde_json::to_value)
-                .collect::<Result<Vec<_>, _>>()
-                .map_err(|err| format!("Could not parse parameters: {err}"))?,
-        };
-
+        request: protocol::Request,
+    ) -> Result<protocol::Response, String> {
         match self.target_type {
             TargetType::HTTPServer => {
                 let r = REQWEST_CLIENT
-                    .post(format!(
-                        "{}/handlers/{}",
-                        self.address, request.identifier
-                    ))
+                    .post(format!("{}/handlers/{}", self.address, request.identifier))
                     .header("Content-Type", "application/json")
                     .body(
                         serde_json::to_vec(&request.parameters)

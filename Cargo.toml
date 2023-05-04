@@ -3,6 +3,7 @@
 members = [
     "erpc",
     "http-server",
+    "http-client-wasm",
     "transpiler",
     "bindings/node-api",
     "bindings/browser-api"
