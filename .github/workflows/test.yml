@@ -31,3 +31,11 @@ jobs:
         run: |
           wasm-pack test --headless --chrome
           wasm-pack test --headless --firefox
+  integration_test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build integration test project
+        working-directory: ./integration-test-project
+        run: |
+          npm run build
