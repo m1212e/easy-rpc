@@ -109,14 +109,8 @@ name = "browser-api"
 version = "0.1.0"
 dependencies = [
  "console_error_panic_hook",
- "erpc",
- "serde",
- "serde-wasm-bindgen",
- "serde_json",
  "wasm-bindgen",
- "wasm-bindgen-futures",
  "wasm-bindgen-test",
- "web-sys",
  "wee_alloc",
 ]
 
@@ -660,10 +654,13 @@ version = "0.1.0"
 dependencies = [
  "erpc",
  "flume",
+ "js-sys",
  "lazy_static",
+ "log",
  "serde",
  "serde-wasm-bindgen",
  "serde_json",
+ "tokio",
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "web-sys",

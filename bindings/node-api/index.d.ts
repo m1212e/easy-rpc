@@ -8,7 +8,6 @@ export interface ServerOptions {
   allowedCorsOrigins: Array<string>
 }
 export interface TargetOptions {
-  port: number
   address: string
 }
 export class ERPCServer {

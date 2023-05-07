@@ -1,0 +1,11 @@
+
+[
+	{
+		"name": "Frontend",
+		"type": "browser"
+	},
+	{
+		"name": "Backend",
+		"type": "http-server"
+	}
+]

@@ -1,4 +1,8 @@
+use std::fmt::format;
+
 use erpc::protocol;
+use flume::r#async;
+use wasm_bindgen::{JsCast, JsError, JsValue};
 use wasm_bindgen_futures::JsFuture;
 use web_sys::{Request, RequestInit, RequestMode, Response};
 
@@ -17,7 +21,7 @@ pub struct Target {
 }
 
 impl Target {
-    pub fn new(mut address: String, port: u16, target_type: TargetType) -> Self {
+    pub async fn new(mut address: String, port: u16, target_type: TargetType) -> Self {
         if address.ends_with('/') {
             address.pop();
         }
@@ -26,33 +30,48 @@ impl Target {
             address,
             target_type,
         };
-        CREATED_TARGETS.send(t.clone());
+        //TODO
+        CREATED_TARGETS.send(t.clone()).await;
         t
     }
 
-    pub async fn call(&self, request: protocol::Request) -> Result<protocol::Response, String> {
+    pub async fn call(&self, request: protocol::Request) -> Result<protocol::Response, JsValue> {
         match self.target_type {
             TargetType::HTTPServer => {
                 let mut opts = RequestInit::new();
                 opts.method("POST");
                 opts.mode(RequestMode::Cors);
-                opts.body(Some(&request.parameters));
+                let body = serde_wasm_bindgen::to_value(&request.parameters)
+                    .map_err(|err| format!("Could not serialize body: {err}"))?;
+                opts.body(Some(&body));
 
-                let url = format!("{}/{}", self.options.address, request.identifier);
-                let request = Request::new_with_str_and_init(&url, &opts)?;
+                let url = format!("{}/{}", self.address, request.identifier);
+                let request = Request::new_with_str_and_init(&url, &opts)
+                    .map_err(|err| format!("Could not create request: {:#?}", err))?;
 
                 let window = web_sys::window().ok_or("Could not access window object")?;
-                let resp_value = JsFuture::from(window.fetch_with_request(&request)).await?;
+                let resp_value = JsFuture::from(window.fetch_with_request(&request))
+                    .await
+                    .map_err(|err| format!("Could not fetch: {:#?}", err))?;
 
                 // `resp_value` is a `Response` object.
                 assert!(resp_value.is_instance_of::<Response>());
                 let resp: Response = resp_value.dyn_into().expect("Cannot convert into response");
 
-                Ok(serde_wasm_bindgen::from_value(
-                    JsFuture::from(resp.array_buffer()?).await?,
-                ))
+                let data = JsFuture::from(resp.array_buffer()?).await?;
+                let response = protocol::Response {
+                    body: serde_wasm_bindgen::from_value(data)?,
+                };
+
+                Ok(response)
             }
-            TargetType::Browser => Err("Requests to other browsers are not supported yet"),
+            TargetType::Browser => {
+                Err(JsError::new("Browser to browser is not supported yet").into())
+            }
         }
+    }
+
+    pub fn address(&self) -> &str {
+        &self.address
     }
 }

@@ -3,7 +3,6 @@ use napi::{Env, JsObject, JsUnknown};
 
 #[napi(object)]
 pub struct TargetOptions {
-    pub port: u16,
     pub address: String,
 }
 
@@ -23,7 +22,7 @@ impl ERPCTarget {
         };
 
         ERPCTarget {
-            target: http_server::Target::new(options.address, options.port, target_type),
+            target: http_server::Target::new(options.address, target_type),
         }
     }
 

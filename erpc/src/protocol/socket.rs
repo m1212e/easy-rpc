@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 /**
    A socket message
 */
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 #[serde(untagged)]
 pub enum SocketMessage {
     Request(Request),
@@ -37,7 +37,7 @@ pub struct Response {
     pub id: String,
     /**
        A result containing the response or an error string if there has been an internal error while processing the request.
-       The error does not indicate a user defined error (e.g. wrongPassword) but a internal error (e.g. could not parse body).
+       The error does not indicate a user defined error (e.g. wrongPassword) but an internal error (e.g. could not parse body).
        We need this error type because when requesting via sockets there is no way of indicating an error via the http status code.
        The user should not be able to set the error value, this is reserved to indicate an actual internal error.
     */

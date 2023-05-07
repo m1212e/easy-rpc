@@ -1,0 +1,3 @@
+
+Backend ping(msg string) string
+Frontend ping(msg string) string

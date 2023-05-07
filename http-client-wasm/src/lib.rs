@@ -1,6 +1,7 @@
-use std::sync::{Arc, RwLock};
+use std::sync::Arc;
 
 use target::Target;
+use tokio::sync::RwLock;
 
 mod server;
 mod target;
@@ -24,43 +25,23 @@ impl<T: Clone> StorageChannel<T> {
         }
     }
 
-    pub async fn send(&self, value: T) -> Result<(), String> {
-        let mut r = self
-            .stored_values
-            .write()
-            .map_err(|err| format!("The storage channel lock is poisoned"))?;
-
-        let senders = self
-            .senders
-            .read()
-            .map_err(|err| format!("The senders lock is poisoned"))?;
-
-        for sender in senders {
+    pub async fn send(&self, value: T) {
+        for sender in self.senders.read().await.iter() {
+            //TODO
             sender.send_async(value.to_owned()).await;
         }
 
-        r.push(value);
-        Ok(())
+        self.stored_values.write().await.push(value);
     }
 
     pub async fn reciever(&self) -> Result<flume::Receiver<T>, String> {
         let (rx, tx) = flume::unbounded();
 
-        let mut senders = self
-            .senders
-            .write()
-            .map_err(|err| format!("The senders lock is poisoned"))?;
-
-        let stored_values = self
-            .stored_values
-            .read()
-            .map_err(|err| format!("The storage channel lock is poisoned"))?;
-
-        for stored_value in stored_values {
-            rx.send_async(stored_value.to_owned()).await
+        for stored_value in self.stored_values.read().await.iter() {
+            rx.send_async(stored_value.to_owned()).await;
         }
 
-        senders.push(rx);
+        self.senders.write().await.push(rx);
 
         Ok(tx)
     }
