@@ -43,7 +43,7 @@ impl ERPCServer {
 
     #[napi(skip_typescript, js_name = "registerERPCHandler")]
     pub fn register_erpc_handler(
-        &mut self,
+        &self,
         env: Env,
         func: JsFunction,
         identifier: String,
@@ -134,7 +134,7 @@ impl ERPCServer {
 
                 })
             }),
-            &identifier,
+            identifier,
         );
         Ok(())
     }

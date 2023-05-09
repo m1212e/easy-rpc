@@ -32,8 +32,8 @@ class Backend extends node_1.ERPCServer {
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore
         super.onSocketConnection((role, socket) => {
-            if (role == "Frontend") {
-                const ret = new Frontend_1.default({ address: "", port: 0 });
+            if (role === "Frontend") {
+                const ret = new Frontend_1.default({ address: "" });
                 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
                 // @ts-ignore
                 ret.setERPCSocket(socket);

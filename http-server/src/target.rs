@@ -1,5 +1,5 @@
 use crate::Socket;
-use erpc::protocol::{self, socket::SocketMessage};
+use erpc::{protocol::{self, socket::SocketMessage}, target::TargetType};
 use nanoid::nanoid;
 use std::{
     collections::HashMap,
@@ -10,12 +10,6 @@ use tokio::sync::oneshot;
 
 lazy_static::lazy_static! {
   static ref REQWEST_CLIENT: reqwest::Client = reqwest::Client::new();
-}
-
-#[derive(Debug, Clone)]
-pub enum TargetType {
-    HTTPServer,
-    Browser,
 }
 
 //TODO find a better/faster way to store open requests
@@ -41,10 +35,7 @@ impl Target {
         }
     }
 
-    pub async fn call(
-        &self,
-        request: protocol::Request,
-    ) -> Result<protocol::Response, String> {
+    pub async fn call(&self, request: protocol::Request) -> Result<protocol::Response, String> {
         match self.target_type {
             TargetType::HTTPServer => {
                 let r = REQWEST_CLIENT

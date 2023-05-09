@@ -6,5 +6,5 @@ members = [
     "http-client-wasm",
     "transpiler",
     "bindings/node-api",
-    "bindings/browser-api"
+    "bindings/browser"
 ]

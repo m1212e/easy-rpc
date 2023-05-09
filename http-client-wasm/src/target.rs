@@ -1,6 +1,6 @@
 use std::fmt::format;
 
-use erpc::protocol;
+use erpc::{protocol, target::TargetType};
 use flume::r#async;
 use wasm_bindgen::{JsCast, JsError, JsValue};
 use wasm_bindgen_futures::JsFuture;
@@ -9,19 +9,14 @@ use web_sys::{Request, RequestInit, RequestMode, Response};
 use crate::CREATED_TARGETS;
 
 #[derive(Debug, Clone)]
-pub enum TargetType {
-    HTTPServer,
-    Browser,
-}
-
-#[derive(Debug, Clone)]
 pub struct Target {
     address: String,
     target_type: TargetType,
 }
 
+//TODO remove unwraps
 impl Target {
-    pub async fn new(mut address: String, port: u16, target_type: TargetType) -> Self {
+    pub fn new(mut address: String, target_type: TargetType) -> Self {
         if address.ends_with('/') {
             address.pop();
         }
@@ -30,8 +25,7 @@ impl Target {
             address,
             target_type,
         };
-        //TODO
-        CREATED_TARGETS.send(t.clone()).await;
+        CREATED_TARGETS.send(t.clone()).unwrap();
         t
     }
 

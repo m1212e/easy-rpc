@@ -8,6 +8,6 @@
   "devDependencies": {
     "typescript": "^5.0.2",
     "vite": "^4.3.2",
-    "@easy-rpc/browser": "file:../../../bindings/browser-api/pkg"
+    "@easy-rpc/browser": "file:../../bindings/browser/pkg"
   }
 }

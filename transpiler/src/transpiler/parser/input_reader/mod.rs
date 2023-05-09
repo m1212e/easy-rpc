@@ -175,7 +175,7 @@ impl<T: Read> InputReader<T> {
     pub fn is_done(&mut self) -> bool {
         // since the self.done is only set AFTER the EOF was detected, try to fill the buffer to detect a possible EOF and return a correct result
         let _ = self.extend_buffer_by(1);
-        return self.done && self.buffer.len() == 0;
+        self.done && self.buffer.is_empty()
     }
 
     /**

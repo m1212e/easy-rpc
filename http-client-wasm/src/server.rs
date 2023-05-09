@@ -1,52 +1,39 @@
-use std::future::Future;
+use std::{collections::HashMap};
 
 //TODO think of some clever error handling
 //TODO this could use some optimizations to improve performance
 
 use erpc::protocol;
 use log::{error, info};
-use serde::{de::DeserializeOwned, Serialize};
 use wasm_bindgen::{prelude::Closure, JsCast};
-use wasm_bindgen_futures::JsFuture;
 use web_sys::{ErrorEvent, MessageEvent, WebSocket};
 
 use crate::CREATED_TARGETS;
 
-#[derive(Clone)]
+type InternalHandler = Box<dyn Fn(protocol::Request) -> Result<protocol::Response, String>>;
+
 pub struct Server {
-    server: erpc::Server,
+    handlers: HashMap<String, InternalHandler>,
 }
 
 impl Server {
     pub fn new() -> Self {
         Self {
-            server: erpc::Server::new(),
+            handlers: HashMap::new(),
         }
     }
 
-    #[allow(dead_code)]
     pub fn register_raw_handler(
         &mut self,
-        handler: erpc::server::InternalHandler,
-        identifier: &str,
+        handler: InternalHandler,
+        identifier: String,
     ) {
-        self.server.register_raw_handler(handler, identifier)
-    }
-
-    #[allow(dead_code)]
-    pub fn register_handler<H, P>(&mut self, handler: H, identifier: &str)
-    where
-        H: erpc::Handler<P> + 'static,
-        P: DeserializeOwned + Send + Sync,
-        H::Output: Serialize,
-        H::Future: Future<Output = H::Output> + Send + Sync,
-    {
-        self.server.register_handler(handler, identifier)
+        self.handlers.insert(identifier, handler);
     }
 
     pub fn run(&self) {
-        tokio::spawn(async {
-            let reciever = match CREATED_TARGETS.reciever().await {
+        wasm_bindgen_futures::spawn_local(async {
+            let reciever = match CREATED_TARGETS.reciever() {
                 Ok(v) => v,
                 Err(err) => {
                     error!("{}", err);
@@ -80,65 +67,64 @@ impl Server {
                 // create callback
                 let cloned_ws = ws.clone();
                 let onmessage_callback = Closure::<dyn FnMut(_)>::new(move |e: MessageEvent| {
-                    let message: protocol::socket::SocketMessage = if let Ok(abuf) =
-                        e.data().dyn_into::<js_sys::ArrayBuffer>()
-                    {
-                        let array = js_sys::Uint8Array::new(&abuf);
+                    let message: protocol::socket::SocketMessage =
+                        if let Ok(abuf) = e.data().dyn_into::<js_sys::ArrayBuffer>() {
+                            let array = js_sys::Uint8Array::new(&abuf);
 
-                        match serde_json::from_slice(array.to_vec().as_slice()) {
-                            Ok(v) => v,
-                            Err(err) => {
-                                error!("Could not deserialize incoming message: {:#?}", err);
-                                return;
+                            match serde_json::from_slice(array.to_vec().as_slice()) {
+                                Ok(v) => v,
+                                Err(err) => {
+                                    error!("Could not deserialize incoming message: {:#?}", err);
+                                    return;
+                                }
                             }
-                        }
-                    } else if let Ok(blob) = e.data().dyn_into::<web_sys::Blob>() {
-                        return;
-                        //TODO
-                        // let array_buffer = match JsFuture::from(blob.array_buffer()).await {
-                        //     Ok(v) => v,
-                        //     Err(err) => {
-                        //         error!("Could not convert blob to array buffer: {:#?}", err);
-                        //         return;
-                        //     }
-                        // };
+                        } else if let Ok(blob) = e.data().dyn_into::<web_sys::Blob>() {
+                            return;
+                            //TODO
+                            // let array_buffer = match JsFuture::from(blob.array_buffer()).await {
+                            //     Ok(v) => v,
+                            //     Err(err) => {
+                            //         error!("Could not convert blob to array buffer: {:#?}", err);
+                            //         return;
+                            //     }
+                            // };
 
-                        // let array_buffer = match array_buffer.dyn_into::<js_sys::ArrayBuffer>() {
-                        //     Ok(v) => v,
-                        //     Err(err) => {
-                        //         error!("Could not cast converted blob to array buffer: {:#?}", err);
-                        //         return;
-                        //     }
-                        // };
+                            // let array_buffer = match array_buffer.dyn_into::<js_sys::ArrayBuffer>() {
+                            //     Ok(v) => v,
+                            //     Err(err) => {
+                            //         error!("Could not cast converted blob to array buffer: {:#?}", err);
+                            //         return;
+                            //     }
+                            // };
 
-                        // match serde_json::from_slice(
-                        //     js_sys::Uint8Array::new(&array_buffer).to_vec().as_slice(),
-                        // ) {
-                        //     Ok(v) => v,
-                        //     Err(err) => {
-                        //         error!("Could not deserialize incoming message: {:#?}", err);
-                        //         return;
-                        //     }
-                        // }
-                    } else if let Ok(txt) = e.data().dyn_into::<js_sys::JsString>() {
-                        let txt = match txt.as_string() {
-                            Some(v) => v,
-                            None => {
-                                error!("Could not convert string");
-                                return;
+                            // match serde_json::from_slice(
+                            //     js_sys::Uint8Array::new(&array_buffer).to_vec().as_slice(),
+                            // ) {
+                            //     Ok(v) => v,
+                            //     Err(err) => {
+                            //         error!("Could not deserialize incoming message: {:#?}", err);
+                            //         return;
+                            //     }
+                            // }
+                        } else if let Ok(txt) = e.data().dyn_into::<js_sys::JsString>() {
+                            let txt = match txt.as_string() {
+                                Some(v) => v,
+                                None => {
+                                    error!("Could not convert string");
+                                    return;
+                                }
+                            };
+                            match serde_json::from_str(&txt) {
+                                Ok(v) => v,
+                                Err(err) => {
+                                    error!("Could not deserialize incoming message: {:#?}", err);
+                                    return;
+                                }
                             }
+                        } else {
+                            error!("message event, received Unknown: {:?}", e.data());
+                            return;
                         };
-                        match serde_json::from_str(&txt) {
-                            Ok(v) => v,
-                            Err(err) => {
-                                error!("Could not deserialize incoming message: {:#?}", err);
-                                return;
-                            }
-                        }
-                    } else {
-                        error!("message event, received Unknown: {:?}", e.data());
-                        return;
-                    };
 
                     info!("got {:#?}", message);
                 });
@@ -174,5 +160,11 @@ impl Server {
     pub fn stop(&self) -> Result<(), String> {
         //TODO
         Err("Stopping not supported yet".to_string())
+    }
+}
+
+impl Default for Server {
+    fn default() -> Self {
+        Self::new()
     }
 }

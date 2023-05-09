@@ -339,7 +339,7 @@ fn get_root_dirs(start_dir: PathBuf) -> Result<Vec<PathBuf>, DisplayableError> {
         }
     };
 
-    if start_dirs.len() == 0 {
+    if start_dirs.is_empty() {
         return Err("Could not find any easy-rpc project root. Make sure the project contains an erpc.json at its root.".to_string().into());
     }
 

@@ -30,5 +30,4 @@ wasm-bindgen-futures = "0.4"
 js-sys = "0.3"
 flume = "0.10"
 lazy_static = "1.4"
-tokio = { version = "1", features = ["full"] }
 log = "0.4"

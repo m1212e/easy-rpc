@@ -388,7 +388,7 @@ fn generate_for_directory_recursively<T: Translator>(
             );
 
             // if the middleware source file at root level is processed, we only need to generate callback handlers to register the middleware on
-            if relative_path == "" && file_name == "middleware" {
+            if relative_path.is_empty() && file_name == "middleware" {
                 generated_class_content_per_role.retain(|key, _| key == selected_role);
             }
 

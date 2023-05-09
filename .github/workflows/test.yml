@@ -22,7 +22,7 @@ jobs:
       - name: Run tests
         working-directory: ./bindings/node-api
         run: npm run test
-  browser-api_test:
+  browser_test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3

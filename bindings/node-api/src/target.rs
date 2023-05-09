@@ -1,3 +1,4 @@
+use erpc::target::TargetType;
 use http_server::Socket;
 use napi::{Env, JsObject, JsUnknown};
 
@@ -16,8 +17,8 @@ impl ERPCTarget {
     #[napi(constructor)]
     pub fn new(options: TargetOptions, target_type: String) -> Self {
         let target_type = match target_type.as_str() {
-            "browser" => http_server::TargetType::Browser,
-            "http-server" => http_server::TargetType::HTTPServer,
+            "browser" => TargetType::Browser,
+            "http-server" => TargetType::HTTPServer,
             _ => panic!("Unsupported target type {}", target_type),
         };
 

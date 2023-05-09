@@ -4,3 +4,5 @@ const backend = new Backend({
 	address: "http://localhost",
 	port: 1234,
 });
+
+backend.api.ping("hello");

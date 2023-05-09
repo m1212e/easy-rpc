@@ -1,5 +1,6 @@
 mod server;
 mod target;
+mod handler;
 mod tests;
 
 //TODO write tests && integrate in CI
@@ -13,4 +14,3 @@ pub struct Socket {
 
 pub use server::Server;
 pub use target::Target;
-pub use target::TargetType;

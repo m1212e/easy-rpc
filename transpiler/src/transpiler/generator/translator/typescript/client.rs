@@ -8,14 +8,14 @@ pub fn generate_client(
     library_source: &str,
 ) -> String {
     if foreign {
-        generate_foreign_client(
+        generate_target(
             class_imports,
             role,
             socket_enabled_browser_roles,
             library_source,
         )
     } else {
-        generate_callback_client(
+        generate_server(
             class_imports,
             role,
             socket_enabled_browser_roles,
@@ -24,7 +24,7 @@ pub fn generate_client(
     }
 }
 
-fn generate_callback_client(
+fn generate_server(
     class_imports: &Vec<String>,
     role: &Role,
     socket_enabled_browser_roles: &Vec<String>,
@@ -47,7 +47,7 @@ fn generate_callback_client(
     // websockets can be enabled in two cases:
     // 1: the client belongs to a server and there is at least one browser which has endpoints (socket_enabled_browser_roles.len() > 0)
     // 2: the client belongs to a browser and the role has endpoints (socket_enabled_browser_roles.contains(&role.name))
-    let enable_websockets = (socket_enabled_browser_roles.len() > 0
+    let enable_websockets = (!socket_enabled_browser_roles.is_empty()
         && role.role_type.contains(&"http-server".to_string()))
         || (socket_enabled_browser_roles.contains(&role.name)
             && role.role_type.contains(&"browser".to_string()));
@@ -130,7 +130,7 @@ fn generate_callback_client(
         );
         for role in socket_enabled_browser_roles {
             ret.push_str(&format!(
-                "            if (role == \"{role}\") {{\n                const ret = new {role}({{address: \"\", port: 0}})\n                // eslint-disable-next-line @typescript-eslint/ban-ts-comment\n                // @ts-ignore\n                ret.setERPCSocket(socket)\n                callback(ret)\n            }}"
+                "            if (role === \"{role}\") {{\n                const ret = new {role}({{address: \"\"}})\n                // eslint-disable-next-line @typescript-eslint/ban-ts-comment\n                // @ts-ignore\n                ret.setERPCSocket(socket)\n                callback(ret)\n            }}"
             ));
         }
         ret.push_str("\n        })\n    }");
@@ -141,7 +141,7 @@ fn generate_callback_client(
     ret
 }
 
-fn generate_foreign_client(
+fn generate_target(
     class_imports: &Vec<String>,
     role: &Role,
     socket_enabled_browser_roles: &Vec<String>,

@@ -3,7 +3,7 @@ pub mod socket;
 use serde::{Deserialize, Serialize};
 
 /**
-   In incoming erpc request.
+   An incoming erpc request.
    When no parameters are sent, the vec is empty
 */
 #[derive(Serialize, Deserialize, Debug)]
