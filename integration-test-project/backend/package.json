@@ -1,11 +1,15 @@
 {
 	"scripts": {
 		"start": "ts-node src/main.ts",
+		"dev": "ts-node-dev src/main.ts",
 		"build": "tsc"
 	},
 	"dependencies": {
 		"@easy-rpc/node": "file:../../bindings/node-api",
 		"ts-node": "^10.9.1",
 		"typescript": "^5.0.4"
+	},
+	"devDependencies": {
+		"ts-node-dev": "^2.0.0"
 	}
 }

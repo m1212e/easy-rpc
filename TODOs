@@ -34,3 +34,5 @@ TODO: for best performance, channels should be sending boxes to prevent unnecess
 TODO: improve logs in transpiler (when in non ls mode)
 TODO: error the process when something fails instead of just outputting the error message
 TODO: include in docs that credentials are sent by default
+TODO: prevent manual creation of frontends from backend/better way of hiding so user is more driven to use on connect
+TODO: make roles case insensitive

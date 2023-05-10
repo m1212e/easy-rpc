@@ -1,11 +1,23 @@
 import Backend from "../.erpc/generated/Backend";
+const port = 1234;
 const backend = new Backend({
 	allowedCorsOrigins: ["*"],
-	port: 1234,
+	port,
 });
 
 backend.api.ping = async (msg) => {
+	console.log(`Got message from frontend: ${msg}`);
+
 	return "PONG";
 };
 
 backend.run();
+console.log(`Running backend on port ${port}`);
+
+setTimeout(() => {
+	backend.onConnection(async (frontend) => {
+		console.log("Frontend connected");
+		
+		console.log("returned from frontend: ", await frontend.api.ping("PING"));
+	});
+}, 1000);

@@ -10,7 +10,7 @@ use log::{error, warn};
 use serde::{de::DeserializeOwned, Serialize};
 use tokio::sync::oneshot;
 use warp::{
-    hyper::{Body, Method, StatusCode},
+    hyper::{body::Bytes, Body, Method, StatusCode},
     path::Peek,
     Filter,
 };
@@ -122,10 +122,9 @@ impl Server {
         let http = warp::path!("handlers" / ..)
             .and(handlers)
             .and(warp::path::peek())
-            .and(warp::body::json())
+            .and(warp::body::bytes())
             .and(warp::body::content_length_limit(1024 * 64))
-            .then(Self::http_handler)
-            .with(cors.clone());
+            .then(Self::http_handler);
 
         let ws = warp::path!("ws" / String)
             .and(enabled_sockets)
@@ -133,8 +132,7 @@ impl Server {
             .and(warp::ws())
             .map(|role, enabled_sockets, socket_channel, ws| {
                 Self::socket_handler(role, enabled_sockets, socket_channel, ws)
-            })
-            .with(cors.clone());
+            });
 
         let (sender, reciever) = oneshot::channel::<()>();
         self.shutdown_signal
@@ -187,7 +185,7 @@ impl Server {
     async fn http_handler(
         handlers: HandlerMap,
         path: Peek,
-        parameters: Vec<serde_json::Value>,
+        parameters: Bytes,
     ) -> warp::reply::Response {
         let mut response = warp::reply::Response::default();
         *response.status_mut() = StatusCode::INTERNAL_SERVER_ERROR;
@@ -206,12 +204,21 @@ impl Server {
                 Some(v) => v,
                 None => {
                     error!("Could not find a handler for path: {}", path.as_str());
+                    *response.status_mut() = StatusCode::NOT_FOUND;
                     return response;
                 }
             };
+
             handler(protocol::Request {
                 identifier: path.as_str().to_string(),
-                parameters,
+                parameters: match serde_json::from_slice(&parameters) {
+                    Ok(v) => v,
+                    Err(err) => {
+                        error!("Could not parse request parameters: {}", err);
+                        *response.status_mut() = StatusCode::BAD_REQUEST;
+                        return response;
+                    }
+                },
             })
         };
 
@@ -223,16 +230,15 @@ impl Server {
             }
         };
 
-        let serialized_response = match serde_json::to_vec(&result) {
-            Ok(v) => v,
-            Err(err) => {
-                error!("Could not serialize response: {err}");
-                return response;
-            }
-        };
 
         *response.status_mut() = StatusCode::OK;
-        *response.body_mut() = Body::from(serialized_response);
+        *response.body_mut() = Body::from(match serde_json::to_vec(&result.body) {
+            Ok(v) => v,
+            Err(err) => {
+                error!("Could not serialize response body: {err}");
+                return response;
+            },
+        });
 
         response
     }

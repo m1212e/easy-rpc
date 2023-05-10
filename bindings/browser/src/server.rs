@@ -4,16 +4,21 @@ use erpc::protocol;
 use log::error;
 use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
 
+#[wasm_bindgen(typescript_custom_section)]
+const SERVER_OPTIONS: &'static str = r#"
+interface ServerOptions {}
+"#;
+
+#[wasm_bindgen]
+extern "C" {
+    #[wasm_bindgen(typescript_type = "ServerOptions")]
+    pub type ServerOptions;
+}
+
 #[wasm_bindgen]
 pub struct ERPCServer {
     server: http_client_wasm::Server,
 }
-
-#[wasm_bindgen]
-pub struct ServerOptions {
-}
-
-
 
 //TODO remove unwraps
 #[wasm_bindgen]

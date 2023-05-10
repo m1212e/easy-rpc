@@ -2,6 +2,7 @@ use std::fmt::format;
 
 use erpc::{protocol, target::TargetType};
 use flume::r#async;
+use log::{error, warn};
 use wasm_bindgen::{JsCast, JsError, JsValue};
 use wasm_bindgen_futures::JsFuture;
 use web_sys::{Request, RequestInit, RequestMode, Response};
@@ -35,11 +36,16 @@ impl Target {
                 let mut opts = RequestInit::new();
                 opts.method("POST");
                 opts.mode(RequestMode::Cors);
-                let body = serde_wasm_bindgen::to_value(&request.parameters)
-                    .map_err(|err| format!("Could not serialize body: {err}"))?;
+
+                let body = serde_wasm_bindgen::to_value(
+                    &serde_json::to_string(&request.parameters).map_err(|err| {
+                        JsError::new(&format!("Could not serialize parameters: {err}"))
+                    })?,
+                )
+                .map_err(|err| format!("Could not serialize body: {err}"))?;
                 opts.body(Some(&body));
 
-                let url = format!("{}/{}", self.address, request.identifier);
+                let url = format!("{}/handlers/{}", self.address, request.identifier);
                 let request = Request::new_with_str_and_init(&url, &opts)
                     .map_err(|err| format!("Could not create request: {:#?}", err))?;
 
@@ -52,10 +58,12 @@ impl Target {
                 assert!(resp_value.is_instance_of::<Response>());
                 let resp: Response = resp_value.dyn_into().expect("Cannot convert into response");
 
-                let data = JsFuture::from(resp.array_buffer()?).await?;
-                let response = protocol::Response {
-                    body: serde_wasm_bindgen::from_value(data)?,
-                };
+                let body = JsFuture::from(resp.array_buffer()?).await?;
+                let body: serde_json::Value =
+                    serde_json::from_slice(&js_sys::Uint8Array::new(&body).to_vec())
+                        .map_err(|err| format!("Failed to parse JSON: {}", err))?;
+
+                let response = protocol::Response { body };
 
                 Ok(response)
             }

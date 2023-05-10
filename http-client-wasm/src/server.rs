@@ -1,10 +1,12 @@
-use std::{collections::HashMap};
+use std::collections::HashMap;
 
 //TODO think of some clever error handling
 //TODO this could use some optimizations to improve performance
+//TODO ideally we recycle already existing ws connections to a backend when two frontend server are connecting to the
+// same machine
 
 use erpc::protocol;
-use log::{error, info};
+use log::{error, info, warn};
 use wasm_bindgen::{prelude::Closure, JsCast};
 use web_sys::{ErrorEvent, MessageEvent, WebSocket};
 
@@ -13,26 +15,25 @@ use crate::CREATED_TARGETS;
 type InternalHandler = Box<dyn Fn(protocol::Request) -> Result<protocol::Response, String>>;
 
 pub struct Server {
+    role: String,
     handlers: HashMap<String, InternalHandler>,
 }
 
 impl Server {
-    pub fn new() -> Self {
+    pub fn new(role: String) -> Self {
         Self {
+            role,
             handlers: HashMap::new(),
         }
     }
 
-    pub fn register_raw_handler(
-        &mut self,
-        handler: InternalHandler,
-        identifier: String,
-    ) {
+    pub fn register_raw_handler(&mut self, handler: InternalHandler, identifier: String) {
         self.handlers.insert(identifier, handler);
     }
 
     pub fn run(&self) {
-        wasm_bindgen_futures::spawn_local(async {
+        let role = self.role.clone();
+        wasm_bindgen_futures::spawn_local(async move {
             let reciever = match CREATED_TARGETS.reciever() {
                 Ok(v) => v,
                 Err(err) => {
@@ -54,6 +55,7 @@ impl Server {
                     .address()
                     .replace("http://", "ws://")
                     .replace("https://", "wss://");
+                let address = format!("{address}/ws/{}", role);
 
                 let ws = match WebSocket::new(&address) {
                     Ok(v) => v,
@@ -79,6 +81,7 @@ impl Server {
                                 }
                             }
                         } else if let Ok(blob) = e.data().dyn_into::<web_sys::Blob>() {
+                            warn!("Recieved blob message, ignoring. Blob type not yet supported");
                             return;
                             //TODO
                             // let array_buffer = match JsFuture::from(blob.array_buffer()).await {
@@ -160,11 +163,5 @@ impl Server {
     pub fn stop(&self) -> Result<(), String> {
         //TODO
         Err("Stopping not supported yet".to_string())
-    }
-}
-
-impl Default for Server {
-    fn default() -> Self {
-        Self::new()
     }
 }

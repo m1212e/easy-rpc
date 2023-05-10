@@ -29,6 +29,8 @@ js-sys = "0.3"
 erpc = { path = "../../erpc" }
 wasm-bindgen-futures = "0.4"
 log = "0.4"
+serde = { version = "1.0", features = ["derive"] }
+console_log = "1.0"
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3.13"

@@ -6,8 +6,10 @@
     "preview": "vite preview"
   },
   "devDependencies": {
+    "@easy-rpc/browser": "file:../../bindings/browser/pkg",
     "typescript": "^5.0.2",
     "vite": "^4.3.2",
-    "@easy-rpc/browser": "file:../../bindings/browser/pkg"
+    "vite-plugin-top-level-await": "^1.3.0",
+    "vite-plugin-wasm": "^3.2.2"
   }
 }

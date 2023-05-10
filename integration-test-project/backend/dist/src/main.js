@@ -13,12 +13,21 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const Backend_1 = __importDefault(require("../.erpc/generated/Backend"));
+const port = 1234;
 const backend = new Backend_1.default({
     allowedCorsOrigins: ["*"],
-    port: 1234,
+    port,
 });
 backend.api.ping = (msg) => __awaiter(void 0, void 0, void 0, function* () {
+    console.log(`Got message from frontend: ${msg}`);
     return "PONG";
 });
 backend.run();
+console.log(`Running backend on port ${port}`);
+setTimeout(() => {
+    backend.onConnection((frontend) => __awaiter(void 0, void 0, void 0, function* () {
+        console.log("Frontend connected");
+        console.log("returned from frontend: ", yield frontend.api.ping("PING"));
+    }));
+}, 1000);
 //# sourceMappingURL=main.js.map
