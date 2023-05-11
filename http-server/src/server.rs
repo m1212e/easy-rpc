@@ -1,12 +1,13 @@
 use std::{
     collections::HashMap,
     pin::Pin,
-    sync::{Arc, RwLock},
+    sync::{Arc},
 };
 
 use erpc::protocol::{self, socket::SocketMessage};
 use futures_util::{Future, SinkExt, StreamExt};
 use log::{error, warn};
+use parking_lot::RwLock;
 use serde::{de::DeserializeOwned, Serialize};
 use tokio::sync::oneshot;
 use warp::{
@@ -61,7 +62,7 @@ impl Server {
     //TODO implement a way to enable compile time handler registration
     #[allow(dead_code)]
     pub fn register_raw_handler(&self, handler: InternalHandler, identifier: String) {
-        self.handlers.write().unwrap().insert(identifier, handler);
+        self.handlers.write().insert(identifier, handler);
     }
 
     #[allow(dead_code)]
@@ -94,7 +95,6 @@ impl Server {
             //TODO: remove unwrap
             //TODO check if blocking here is a problem
             .write()
-            .unwrap()
             .insert(identifier.to_string(), v);
     }
 
@@ -137,7 +137,6 @@ impl Server {
         let (sender, reciever) = oneshot::channel::<()>();
         self.shutdown_signal
             .write()
-            .map_err(|err| format!("Could not set shutdown signal: {err}"))?
             .replace(sender);
 
         let (_, server) = warp::serve(http.or(ws).with(cors)).bind_with_graceful_shutdown(
@@ -153,8 +152,7 @@ impl Server {
     pub fn stop(&self) -> Result<(), String> {
         let mut w = self
             .shutdown_signal
-            .write()
-            .map_err(|err| format!("Could not set shutdown signal: {err}"))?;
+            .write();
         let sender = match w.take() {
             Some(v) => v,
             None => {
@@ -192,13 +190,7 @@ impl Server {
 
         // introduce extra scope to drop the lock handle before await is called
         let handler_fut = {
-            let lock = match handlers.read() {
-                Ok(v) => v,
-                Err(err) => {
-                    error!("Could not access lock: {err}");
-                    return response;
-                }
-            };
+            let lock = handlers.read();
 
             let handler = match lock.get(path.as_str()) {
                 Some(v) => v,

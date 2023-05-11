@@ -27,6 +27,7 @@ pub struct ERPCTarget {
 
 #[wasm_bindgen]
 impl ERPCTarget {
+
     #[wasm_bindgen(constructor)]
     pub fn new(options: TargetOptions, target_type: &str) -> Result<ERPCTarget, JsValue> {
         let js_value: JsValue = options.into();

@@ -19,3 +19,4 @@ nanoid = "0.4.0"
 erpc = { path = "../erpc" }
 log = "0.4"
 lazy_static = "1.4"
+parking_lot = { version = "0.12", features = [ "hardware-lock-elision" ] }

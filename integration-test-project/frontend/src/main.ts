@@ -16,3 +16,5 @@ frontend.api.ping = async (message) => {
 	console.log(`got from backed: ${message}`);
 	return "PONG";
 };
+
+frontend.run()

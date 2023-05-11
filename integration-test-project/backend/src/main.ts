@@ -11,13 +11,12 @@ backend.api.ping = async (msg) => {
 	return "PONG";
 };
 
+backend.onConnection(async (frontend) => {
+	console.log("Frontend connected");
+
+	console.log("returned from frontend: ", await frontend.api.ping("PING"));
+});
+
 backend.run();
 console.log(`Running backend on port ${port}`);
 
-setTimeout(() => {
-	backend.onConnection(async (frontend) => {
-		console.log("Frontend connected");
-		
-		console.log("returned from frontend: ", await frontend.api.ping("PING"));
-	});
-}, 1000);

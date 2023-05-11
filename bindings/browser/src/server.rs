@@ -23,10 +23,18 @@ pub struct ERPCServer {
 //TODO remove unwraps
 #[wasm_bindgen]
 impl ERPCServer {
+    #[wasm_bindgen(skip_typescript)]
+    pub fn free(&self) {}
+
     #[wasm_bindgen(constructor)]
-    pub fn new(options: ServerOptions, server_type: String, enable_sockets: bool, role: String) -> Self {
+    pub fn new(
+        options: ServerOptions,
+        server_type: String,
+        enable_sockets: bool,
+        role: String,
+    ) -> Self {
         Self {
-            server: http_client_wasm::Server::new()
+            server: http_client_wasm::Server::new(role),
         }
     }
 
@@ -55,4 +63,14 @@ impl ERPCServer {
             identifier,
         );
     }
+
+    #[wasm_bindgen]
+    pub fn run(&self) {
+        self.server.run();
+    }
+
+    // #[wasm_bindgen]
+    // pub fn stop(&self) {
+    //     self.server.stop();
+    // }
 }
