@@ -36,3 +36,5 @@ TODO: error the process when something fails instead of just outputting the erro
 TODO: include in docs that credentials are sent by default
 TODO: prevent manual creation of frontends from backend/better way of hiding so user is more driven to use on connect
 TODO: make roles case insensitive
+TODO: implement some kind of retry if a request has not gotten a response (ws)
+TODO: improve runtime error handling/messages

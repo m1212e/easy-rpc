@@ -127,11 +127,7 @@ impl ERPCServer {
                         .await
                         .map_err(|err| format!("Could not receive response: {err}"))?;
 
-                    Ok(erpc::protocol::Response{
-                        body: v
-                    })
-
-
+                    Ok(erpc::protocol::Response { body: v })
                 })
             }),
             identifier,

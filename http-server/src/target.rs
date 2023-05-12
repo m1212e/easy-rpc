@@ -1,5 +1,8 @@
 use crate::Socket;
-use erpc::{protocol::{self, socket::SocketMessage}, target::TargetType};
+use erpc::{
+    protocol::{self, socket::SocketMessage},
+    target::TargetType,
+};
 use nanoid::nanoid;
 use std::{
     collections::HashMap,
@@ -30,7 +33,7 @@ impl Target {
         Target {
             address,
             target_type,
-            socket: Arc::new(Mutex::new(None::<Socket>)),
+            socket: Arc::new(Mutex::new(None)),
             requests: Arc::new(Mutex::new(HashMap::new())),
         }
     }
@@ -102,7 +105,7 @@ impl Target {
         }
     }
 
-    pub async fn listen_on_socket(&mut self, socket: Socket) {
+    pub async fn set_socket(&mut self, socket: Socket) {
         match self.socket.lock() {
             Ok(mut v) => {
                 *v = Some(socket.clone());
@@ -125,14 +128,14 @@ impl Target {
             match msg {
                 SocketMessage::Request(_) => {
                     eprintln!("Requests via websocket not supported yet!");
-                    return;
+                    break;
                 }
                 SocketMessage::Response(res) => {
                     let mut requests = match self.requests.lock() {
                         Ok(v) => v,
                         Err(err) => {
                             eprintln!("Could not access requests (1): {err}");
-                            return;
+                            break;
                         }
                     };
 
@@ -140,7 +143,7 @@ impl Target {
                         Some(v) => v,
                         None => {
                             eprintln!("Could not find open request for id {}", res.id);
-                            return;
+                            break;
                         }
                     };
 

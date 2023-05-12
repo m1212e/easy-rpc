@@ -43,3 +43,12 @@ pub struct Response {
     */
     pub body: Result<super::Response, String>,
 }
+
+impl SocketMessage {
+    pub fn id(&self) -> &str {
+        match self {
+            SocketMessage::Request(r) => &r.id,
+            SocketMessage::Response(r) => &r.id,
+        }
+    }
+}

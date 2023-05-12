@@ -1,8 +1,4 @@
-use std::{
-    collections::HashMap,
-    pin::Pin,
-    sync::{Arc},
-};
+use std::{collections::HashMap, pin::Pin, sync::Arc};
 
 use erpc::protocol::{self, socket::SocketMessage};
 use futures_util::{Future, SinkExt, StreamExt};
@@ -13,7 +9,7 @@ use tokio::sync::oneshot;
 use warp::{
     hyper::{body::Bytes, Body, Method, StatusCode},
     path::Peek,
-    Filter,
+    Filter, Reply,
 };
 
 use crate::{handler, Socket};
@@ -135,11 +131,9 @@ impl Server {
             });
 
         let (sender, reciever) = oneshot::channel::<()>();
-        self.shutdown_signal
-            .write()
-            .replace(sender);
+        self.shutdown_signal.write().replace(sender);
 
-        let (_, server) = warp::serve(http.or(ws).with(cors)).bind_with_graceful_shutdown(
+        let (_, server) = warp::serve(ws.or(http).with(cors)).bind_with_graceful_shutdown(
             ([127, 0, 0, 1], self.port),
             async {
                 reciever.await.ok();
@@ -150,9 +144,7 @@ impl Server {
     }
 
     pub fn stop(&self) -> Result<(), String> {
-        let mut w = self
-            .shutdown_signal
-            .write();
+        let mut w = self.shutdown_signal.write();
         let sender = match w.take() {
             Some(v) => v,
             None => {
@@ -173,9 +165,6 @@ impl Server {
         Ok(())
     }
 
-    /**
-      A channel containing all previously connected sockets and broadcasting new socket connections
-    */
     pub fn get_socket_notifier(&self) -> &flume::Receiver<Socket> {
         &self.socket_channel.1
     }
@@ -222,14 +211,13 @@ impl Server {
             }
         };
 
-
         *response.status_mut() = StatusCode::OK;
         *response.body_mut() = Body::from(match serde_json::to_vec(&result.body) {
             Ok(v) => v,
             Err(err) => {
                 error!("Could not serialize response body: {err}");
                 return response;
-            },
+            }
         });
 
         response
@@ -241,11 +229,14 @@ impl Server {
         socket_channel: SocketChannel,
         ws: warp::ws::Ws,
     ) -> warp::reply::Response {
-        let mut response = warp::reply::Response::default();
+        //TODO ideally check what roles are allowed here
         if !enabled_sockets {
-            *response.status_mut() = StatusCode::NOT_IMPLEMENTED;
             warn!("Tried to connect to disabled websocket server");
-            return response;
+            return warp::reply::with_status(
+                "Tried to connect to disabled websocket server",
+                StatusCode::NOT_IMPLEMENTED,
+            )
+            .into_response();
         }
 
         ws.on_upgrade(|socket| async move {
@@ -261,14 +252,14 @@ impl Server {
                                 Ok(v) => v,
                                 Err(err) => {
                                     eprintln!("Websocket message parse error: {err}");
-                                    return;
+                                    break;
                                 }
                             };
                             m
                         }
                         Err(err) => {
                             eprintln!("Websocket message error: {err}");
-                            return;
+                            break;
                         }
                     };
 
@@ -295,7 +286,7 @@ impl Server {
                         Ok(v) => v,
                         Err(err) => {
                             eprintln!("Could not serialize ws message: {err}");
-                            return;
+                            break;
                         }
                     };
                     socket_sender
@@ -314,9 +305,7 @@ impl Server {
                 })
                 .await
                 .unwrap();
-        });
-
-        *response.status_mut() = StatusCode::OK;
-        response
+        })
+        .into_response()
     }
 }

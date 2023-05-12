@@ -7,16 +7,13 @@ const backend = new Backend({
 
 backend.api.ping = async (msg) => {
 	console.log(`Got message from frontend: ${msg}`);
-
 	return "PONG";
 };
 
 backend.onConnection(async (frontend) => {
-	console.log("Frontend connected");
-
+	console.log("Frontend connected, sending ping request");
 	console.log("returned from frontend: ", await frontend.api.ping("PING"));
 });
 
 backend.run();
 console.log(`Running backend on port ${port}`);
-

@@ -3,7 +3,7 @@ mod target;
 mod handler;
 mod tests;
 
-//TODO write tests && integrate in CI
+//TODO write tests && integrate them in CI
 
 #[derive(Clone, Debug)]
 pub struct Socket {

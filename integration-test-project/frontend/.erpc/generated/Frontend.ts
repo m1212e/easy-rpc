@@ -25,7 +25,4 @@ export default class Frontend extends ERPCServer {
         }
     }
 
-    // private free() {
-    //     super.free()
-    // }
 }

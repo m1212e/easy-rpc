@@ -31,3 +31,4 @@ js-sys = "0.3"
 flume = "0.10"
 lazy_static = "1.4"
 log = "0.4"
+parking_lot = { version = "0.12" }

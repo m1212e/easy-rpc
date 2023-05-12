@@ -67,7 +67,7 @@ impl ERPCTarget {
         let socket = socket.clone();
         env.execute_tokio_future(
             async move {
-                t.listen_on_socket(socket).await;
+                t.set_socket(socket).await;
                 Ok(())
             },
             |_, _| Ok(()),

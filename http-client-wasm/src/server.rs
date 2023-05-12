@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc};
 
 //TODO think of some clever error handling
 //TODO this could use some optimizations to improve performance
@@ -7,6 +7,7 @@ use std::collections::HashMap;
 
 use erpc::protocol;
 use log::{error, info, warn};
+use parking_lot::RwLock;
 use wasm_bindgen::{prelude::Closure, JsCast};
 use web_sys::{ErrorEvent, MessageEvent, WebSocket};
 
@@ -16,23 +17,25 @@ type InternalHandler = Box<dyn Fn(protocol::Request) -> Result<protocol::Respons
 
 pub struct Server {
     role: String,
-    handlers: HashMap<String, InternalHandler>,
+    handlers: Arc<RwLock<HashMap<String, InternalHandler>>>,
 }
 
 impl Server {
     pub fn new(role: String) -> Self {
         Self {
             role,
-            handlers: HashMap::new(),
+            handlers: Arc::new(RwLock::new(HashMap::new())),
         }
     }
 
     pub fn register_raw_handler(&mut self, handler: InternalHandler, identifier: String) {
-        self.handlers.insert(identifier, handler);
+        warn!("inserting handler for identifier {}", identifier);
+        self.handlers.write().insert(identifier, handler);
     }
 
     pub fn run(&self) {
         let role = self.role.clone();
+        let handlers = self.handlers.clone();
         wasm_bindgen_futures::spawn_local(async move {
             let reciever = match CREATED_TARGETS.reciever() {
                 Ok(v) => v,
@@ -64,10 +67,9 @@ impl Server {
                         return;
                     }
                 };
-                // For small binary messages, like CBOR, Arraybuffer is more efficient than Blob handling
                 ws.set_binary_type(web_sys::BinaryType::Arraybuffer);
-                // create callback
                 let cloned_ws = ws.clone();
+                let handlers = handlers.clone();
                 let onmessage_callback = Closure::<dyn FnMut(_)>::new(move |e: MessageEvent| {
                     let message: protocol::socket::SocketMessage =
                         if let Ok(abuf) = e.data().dyn_into::<js_sys::ArrayBuffer>() {
@@ -129,7 +131,29 @@ impl Server {
                             return;
                         };
 
-                    info!("got {:#?}", message);
+                    let id = message.id().to_string();
+                    let response: Result<protocol::Response, String> = match message {
+                        protocol::socket::SocketMessage::Request(req) => handlers
+                            .read()
+                            .get(&req.request.identifier)
+                            .ok_or(format!(
+                                "Could not find handler for request {}",
+                                req.request.identifier
+                            ))
+                            .and_then(|handler| handler(req.request)),
+                        protocol::socket::SocketMessage::Response(res) => {
+                            error!("Recieved websocket message of response type. This is not supported yet");
+                            Err("Recieved websocket message of response type. This is not supported yet".to_string())
+                        }
+                    };
+
+                    //TODO remove unwrap
+                    cloned_ws
+                        .send_with_u8_array(
+                            &serde_json::to_vec(&protocol::socket::Response { id, body: response })
+                                .unwrap(),
+                        )
+                        .unwrap();
                 });
                 // set message event handler on WebSocket
                 ws.set_onmessage(Some(onmessage_callback.as_ref().unchecked_ref()));
@@ -143,19 +167,6 @@ impl Server {
                 onerror_callback.forget();
 
                 let cloned_ws = ws.clone();
-                let onopen_callback = Closure::<dyn FnMut()>::new(move || {
-                    // match cloned_ws.send_with_str("ping") {
-                    //     Ok(_) => console_log!("message successfully sent"),
-                    //     Err(err) => console_log!("error sending message: {:?}", err),
-                    // }
-                    // // send off binary message
-                    // match cloned_ws.send_with_u8_array(&vec![0, 1, 2, 3]) {
-                    //     Ok(_) => console_log!("binary message successfully sent"),
-                    //     Err(err) => console_log!("error sending message: {:?}", err),
-                    // }
-                });
-                ws.set_onopen(Some(onopen_callback.as_ref().unchecked_ref()));
-                onopen_callback.forget();
             }
         });
     }
