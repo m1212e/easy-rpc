@@ -1,5 +1,5 @@
-mod server;
 mod target;
+mod server;
 mod handler;
 mod tests;
 
@@ -12,5 +12,5 @@ pub struct Socket {
     pub role: String,
 }
 
-pub use server::Server;
 pub use target::Target;
+pub use server::Server;

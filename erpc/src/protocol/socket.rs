@@ -3,15 +3,13 @@ use serde::{Deserialize, Serialize};
 /**
    A socket message
 */
-#[derive(Serialize, Deserialize, Debug)]
-#[serde(untagged)]
 pub enum SocketMessage {
     Request(Request),
     Response(Response),
 }
 
 /**
-    A request via websockets
+    A request via websockets. Wraps around the basic request to add an ID to assign a response to this request
 */
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Request {
@@ -26,22 +24,15 @@ pub struct Request {
 }
 
 /*
-    A response to a websocket request
+    A response to a websocket request. Wraps around the basic response to add an ID to assign this response to a request
 */
-#[derive(Serialize, Deserialize, Debug)]
-#[serde(tag = "type")]
+#[derive(Debug)]
 pub struct Response {
     /**
         The id of the request this response refers to
     */
     pub id: String,
-    /**
-       A result containing the response or an error string if there has been an internal error while processing the request.
-       The error does not indicate a user defined error (e.g. wrongPassword) but an internal error (e.g. could not parse body).
-       We need this error type because when requesting via sockets there is no way of indicating an error via the http status code.
-       The user should not be able to set the error value, this is reserved to indicate an actual internal error.
-    */
-    pub body: Result<super::Response, String>,
+    pub body: super::Response,
 }
 
 impl SocketMessage {

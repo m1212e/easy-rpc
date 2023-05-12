@@ -12,6 +12,8 @@ use napi::{
 };
 use tokio::sync::oneshot;
 
+use crate::INITIALIZED;
+
 #[napi(object)]
 pub struct ServerOptions {
     pub port: u16,
@@ -32,6 +34,8 @@ impl ERPCServer {
         enable_sockets: bool,
         _role: String, // might become handy in the future
     ) -> Self {
+        if *INITIALIZED {}
+
         ERPCServer {
             server: http_server::Server::new(
                 options.port,
@@ -121,13 +125,23 @@ impl ERPCServer {
                 Box::pin(async move {
                     match r {
                         napi::Status::Ok => {}
-                        _ => return Err(format!("Threadsafe function status not ok: {r}")),
+                        _ => {
+                            return erpc::protocol::Response {
+                                body: Err(format!("Threadsafe function status not ok: {r}")),
+                            }
+                        }
                     };
-                    let v = reciever
-                        .await
-                        .map_err(|err| format!("Could not receive response: {err}"))?;
 
-                    Ok(erpc::protocol::Response { body: v })
+                    let v = match reciever.await {
+                        Ok(v) => v,
+                        Err(err) => {
+                            return erpc::protocol::Response {
+                                body: Err(format!("Could not receive response: {err}")),
+                            }
+                        }
+                    };
+
+                    erpc::protocol::Response { body: Ok(v) }
                 })
             }),
             identifier,
@@ -192,17 +206,10 @@ impl ERPCServer {
     */
     #[napi]
     pub async fn run(&self) -> Result<(), napi::Error> {
-        let fut = match self.server.run() {
-            Ok(v) => v,
-            Err(err) => {
-                return Err(napi::Error::from_reason(format!(
-                    "Could not start server: {err}"
-                )))
-            }
-        };
-
-        fut.await;
-        Ok(())
+        self.server
+            .run()
+            .await
+            .map_err(|err| napi::Error::from_reason(format!("Could not start server: {err}")))
     }
 
     /**

@@ -1,24 +1,24 @@
-use std::{collections::HashMap, pin::Pin, sync::Arc};
+use std::convert::Infallible;
+use std::{collections::HashMap, net::SocketAddr, pin::Pin, sync::Arc};
 
 use erpc::protocol::{self, socket::SocketMessage};
 use futures_util::{Future, SinkExt, StreamExt};
+use http_body_util::Full;
+use hyper::body::{Bytes, Incoming};
+use hyper::http::Error;
+use hyper::server::conn::http1;
+use hyper::service::service_fn;
+use hyper::{client::conn::http2, Response};
 use log::{error, warn};
 use parking_lot::RwLock;
 use serde::{de::DeserializeOwned, Serialize};
-use tokio::sync::oneshot;
-use warp::{
-    hyper::{body::Bytes, Body, Method, StatusCode},
-    path::Peek,
-    Filter, Reply,
-};
+use tokio::{net::TcpListener, sync::oneshot};
+use tokio_tungstenite::accept_async;
 
 use crate::{handler, Socket};
 
 pub type InternalHandler = Box<
-    dyn Fn(
-            protocol::Request,
-        )
-            -> Pin<Box<dyn Future<Output = Result<protocol::Response, String>> + Send + Sync>>
+    dyn Fn(protocol::Request) -> Pin<Box<dyn Future<Output = protocol::Response> + Send + Sync>>
         + Send
         + Sync,
 >;
@@ -40,7 +40,7 @@ pub struct Server {
     enabled_sockets: bool,
     allowed_cors_origins: Vec<String>,
     port: u16,
-    handlers: HandlerMap,
+    handler_map: HandlerMap,
 }
 
 impl Server {
@@ -51,14 +51,14 @@ impl Server {
             enabled_sockets,
             allowed_cors_origins,
             port,
-            handlers: Arc::new(RwLock::new(HashMap::new())),
+            handler_map: Arc::new(RwLock::new(HashMap::new())),
         }
     }
 
     //TODO implement a way to enable compile time handler registration
     #[allow(dead_code)]
     pub fn register_raw_handler(&self, handler: InternalHandler, identifier: String) {
-        self.handlers.write().insert(identifier, handler);
+        self.handler_map.write().insert(identifier, handler);
     }
 
     #[allow(dead_code)]
@@ -69,78 +69,75 @@ impl Server {
         H::Output: Serialize,
         H::Future: Future<Output = H::Output> + Send + Sync,
     {
-        let v: InternalHandler = Box::new(move |parameters| {
+        let v: InternalHandler = Box::new(move |request| {
             let handler = handler.clone();
             Box::pin(async move {
-                let parameters = serde_json::to_value(parameters)
-                    .map_err(|err| format!("Could not convert to value: {err}"))?;
+                let parameters = match serde_json::to_value(request.parameters) {
+                    Ok(v) => v,
+                    Err(err) => {
+                        return protocol::Response {
+                            body: Err(err.into()),
+                        }
+                    }
+                };
 
-                let parameters = serde_json::from_value::<P>(parameters)
-                    .map_err(|err| format!("Could not parse parameters: {err}"))?;
+                let parameters = match serde_json::from_value::<P>(parameters) {
+                    Ok(v) => v,
+                    Err(err) => {
+                        return protocol::Response {
+                            body: Err(err.into()),
+                        }
+                    }
+                };
 
                 let result = handler.call(parameters).await;
 
-                let serialized = serde_json::to_value(&result)
-                    .map_err(|err| format!("Could not serialize response: {err}"))?;
+                let serialized = match serde_json::to_value(&result) {
+                    Ok(v) => v,
+                    Err(err) => {
+                        return protocol::Response {
+                            body: Err(err.into()),
+                        };
+                    }
+                };
 
-                Ok(protocol::Response { body: serialized })
+                protocol::Response {
+                    body: Ok(serialized),
+                }
             })
         });
 
-        self.handlers
-            //TODO: remove unwrap
+        self.handler_map
             //TODO check if blocking here is a problem
             .write()
             .insert(identifier.to_string(), v);
     }
 
-    pub fn run(&self) -> Result<impl futures_util::Future<Output = ()> + Send + Sync, String> {
-        let enabled_sockets = self.enabled_sockets;
-        let socket_channel = self.socket_channel.clone();
-        let handlers = self.handlers.clone();
+    pub async fn run(&self) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        let addr = SocketAddr::from(([127, 0, 0, 1], self.port));
+        let listener = TcpListener::bind(addr).await?;
 
-        let socket_channel = warp::any().map(move || socket_channel.clone());
-        let enabled_sockets = warp::any().map(move || enabled_sockets);
-        let handlers = warp::any().map(move || handlers.clone());
-
-        let mut cors = warp::cors()
-            .allow_methods(vec![Method::GET, Method::POST])
-            .allow_credentials(true);
-
-        if self.allowed_cors_origins.contains(&"*".to_string()) {
-            cors = cors.allow_any_origin();
-        } else {
-            for origin in &self.allowed_cors_origins {
-                cors = cors.allow_origin(origin.as_str());
-            }
-        }
-
-        let http = warp::path!("handlers" / ..)
-            .and(handlers)
-            .and(warp::path::peek())
-            .and(warp::body::bytes())
-            .and(warp::body::content_length_limit(1024 * 64))
-            .then(Self::http_handler);
-
-        let ws = warp::path!("ws" / String)
-            .and(enabled_sockets)
-            .and(socket_channel)
-            .and(warp::ws())
-            .map(|role, enabled_sockets, socket_channel, ws| {
-                Self::socket_handler(role, enabled_sockets, socket_channel, ws)
+        let handler_map = self.handler_map.clone();
+        loop {
+            let handler_map = handler_map.clone();
+            let (stream, _) = listener.accept().await?;
+            tokio::task::spawn(async move {
+                if let Err(err) = http1::Builder::new()
+                    .serve_connection(
+                        stream,
+                        service_fn(|req| {
+                            let handler_map = handler_map.clone();
+                            async move {
+                                Ok::<_, Infallible>(Server::http_handler(req, handler_map).await)
+                            }
+                        }),
+                    )
+                    .await
+                {
+                    error!("Error serving http1 connection: {:?}", err);
+                }
             });
-
-        let (sender, reciever) = oneshot::channel::<()>();
-        self.shutdown_signal.write().replace(sender);
-
-        let (_, server) = warp::serve(ws.or(http).with(cors)).bind_with_graceful_shutdown(
-            ([127, 0, 0, 1], self.port),
-            async {
-                reciever.await.ok();
-            },
-        );
-
-        Ok(server)
+        }
     }
 
     pub fn stop(&self) -> Result<(), String> {
@@ -170,142 +167,51 @@ impl Server {
     }
 
     async fn http_handler(
+        request: hyper::Request<Incoming>,
         handlers: HandlerMap,
-        path: Peek,
-        parameters: Bytes,
-    ) -> warp::reply::Response {
-        let mut response = warp::reply::Response::default();
-        *response.status_mut() = StatusCode::INTERNAL_SERVER_ERROR;
-
-        // introduce extra scope to drop the lock handle before await is called
-        let handler_fut = {
-            let lock = handlers.read();
-
-            let handler = match lock.get(path.as_str()) {
-                Some(v) => v,
-                None => {
-                    error!("Could not find a handler for path: {}", path.as_str());
-                    *response.status_mut() = StatusCode::NOT_FOUND;
-                    return response;
+    ) -> hyper::Response<Full<Bytes>> {
+        if request.uri().path().starts_with("/ws/") {
+            let ws_stream = match accept_async(request.).await {
+                Ok(ws_stream) => ws_stream,
+                Err(e) => {
+                    eprintln!("Failed to accept WebSocket connection: {}", e);
+                    return Ok(Response::new(Body::empty()));
                 }
             };
 
-            handler(protocol::Request {
-                identifier: path.as_str().to_string(),
-                parameters: match serde_json::from_slice(&parameters) {
-                    Ok(v) => v,
-                    Err(err) => {
-                        error!("Could not parse request parameters: {}", err);
-                        *response.status_mut() = StatusCode::BAD_REQUEST;
-                        return response;
-                    }
-                },
-            })
-        };
-
-        let result = match handler_fut.await {
+        }
+        let request = match protocol::Request::try_from_hyper_request(request).await {
             Ok(v) => v,
             Err(err) => {
-                error!("Handler call errored: {err}");
-                return response;
+                return err.into();
             }
         };
 
-        *response.status_mut() = StatusCode::OK;
-        *response.body_mut() = Body::from(match serde_json::to_vec(&result.body) {
+        let handler_result = Server::handle_request(request, handlers).await;
+        match handler_result.try_into() {
             Ok(v) => v,
-            Err(err) => {
-                error!("Could not serialize response body: {err}");
-                return response;
-            }
-        });
-
-        response
+            Err(err) => err.into(),
+        }
     }
 
-    fn socket_handler(
-        role: String,
-        enabled_sockets: bool,
-        socket_channel: SocketChannel,
-        ws: warp::ws::Ws,
-    ) -> warp::reply::Response {
-        //TODO ideally check what roles are allowed here
-        if !enabled_sockets {
-            warn!("Tried to connect to disabled websocket server");
-            return warp::reply::with_status(
-                "Tried to connect to disabled websocket server",
-                StatusCode::NOT_IMPLEMENTED,
-            )
-            .into_response();
-        }
-
-        ws.on_upgrade(|socket| async move {
-            let (mut socket_sender, mut socket_reciever) = socket.split();
-            let (incoming_sender, incoming_reciever) = flume::unbounded::<SocketMessage>();
-            let (outgoing_sender, outgoing_reciever) = flume::unbounded::<SocketMessage>();
-
-            tokio::spawn(async move {
-                while let Some(message) = socket_reciever.next().await {
-                    let message = match message {
-                        Ok(v) => {
-                            let m: SocketMessage = match serde_json::from_slice(v.as_bytes()) {
-                                Ok(v) => v,
-                                Err(err) => {
-                                    eprintln!("Websocket message parse error: {err}");
-                                    break;
-                                }
-                            };
-                            m
-                        }
-                        Err(err) => {
-                            eprintln!("Websocket message error: {err}");
-                            break;
-                        }
-                    };
-
-                    match incoming_sender.send(message) {
-                        Ok(_) => {}
-                        Err(err) => {
-                            eprintln!("Could not broadcast incoming socket message: {err}")
-                        }
+    async fn handle_request(
+        request: protocol::Request,
+        handlers: HandlerMap,
+    ) -> protocol::Response {
+        let handler_result_future = {
+            let handlers_lock = handlers.read();
+            let handler = match handlers_lock.get(&request.identifier) {
+                Some(v) => v,
+                None => {
+                    return protocol::Response {
+                        body: Err(protocol::error::Error::NotFound),
                     };
                 }
-            });
+            };
 
-            tokio::spawn(async move {
-                loop {
-                    let message = match outgoing_reciever.recv_async().await {
-                        Ok(v) => v,
-                        Err(err) => {
-                            eprintln!("Error while processing outgoing socket message: {err}");
-                            break;
-                        }
-                    };
+            handler(request)
+        };
 
-                    let text = match serde_json::to_string(&message) {
-                        Ok(v) => v,
-                        Err(err) => {
-                            eprintln!("Could not serialize ws message: {err}");
-                            break;
-                        }
-                    };
-                    socket_sender
-                        .send(warp::ws::Message::text(text))
-                        .await
-                        .unwrap();
-                }
-            });
-
-            socket_channel
-                .0
-                .send_async(Socket {
-                    sender: outgoing_sender.clone(),
-                    reciever: incoming_reciever.clone(),
-                    role: role.clone(),
-                })
-                .await
-                .unwrap();
-        })
-        .into_response()
+        handler_result_future.await
     }
 }

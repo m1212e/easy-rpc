@@ -63,7 +63,7 @@ impl Target {
                     serde_json::from_slice(&js_sys::Uint8Array::new(&body).to_vec())
                         .map_err(|err| format!("Failed to parse JSON: {}", err))?;
 
-                let response = protocol::Response { body };
+                let response = protocol::Response { body: Ok(body) };
 
                 Ok(response)
             }

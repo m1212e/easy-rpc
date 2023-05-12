@@ -4,7 +4,7 @@ mod tests {
 
     use tokio::time::sleep;
 
-    use crate::server::Server;
+    use crate::Server;
 
     #[test]
     fn creation() {
@@ -19,6 +19,6 @@ mod tests {
             sleep(Duration::from_millis(3000)).await;
             s2.stop().unwrap();
         });
-        server.run().unwrap().await;
+        server.run().await.unwrap();
     }
 }

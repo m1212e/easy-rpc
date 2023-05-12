@@ -38,27 +38,37 @@ impl Target {
         }
     }
 
-    pub async fn call(&self, request: protocol::Request) -> Result<protocol::Response, String> {
+    pub async fn call(&self, request: protocol::Request) -> protocol::Response {
         match self.target_type {
             TargetType::HTTPServer => {
                 let r = REQWEST_CLIENT
                     .post(format!("{}/handlers/{}", self.address, request.identifier))
-                    .header("Content-Type", "application/json")
                     .body(
                         serde_json::to_vec(&request.parameters)
                             .expect("Vec of json::Value should be ok"),
                     );
 
-                let response = r
-                    .send()
-                    .await
-                    .map_err(|err| format!("Request errored: {err}"))?
-                    .bytes()
-                    .await
-                    .map_err(|err| format!("Error while awaiting request body: {err}"))?;
+                let response = match r.send().await {
+                    Ok(v) => v,
+                    Err(err) => {
+                        return protocol::Response {
+                            body: Err(err.into()),
+                        }
+                    }
+                };
 
-                serde_json::from_slice(&response)
-                    .map_err(|err| format!("Could not deserialize response: {err}"))
+                let bytes = match response.bytes().await {
+                    Ok(v) => v,
+                    Err(err) => {
+                        return protocol::Response {
+                            body: Err(err.into()),
+                        }
+                    }
+                };
+
+                protocol::Response {
+                    body: serde_json::from_slice(&bytes).map_err(|err| err.into()),
+                }
             }
             TargetType::Browser => {
                 let socket = {
@@ -97,9 +107,10 @@ impl Target {
                     .await
                     .map_err(|err| format!("RecvError in socket response channel: {err}"))?;
 
-                let response = response.body?;
+                let response = response.body;
 
-                serde_json::from_value(response.body)
+                //TODO this unwrap
+                serde_json::from_value(response.body.unwrap())
                     .map_err(|err| format!("Could not parse socket response: {err}"))?
             }
         }

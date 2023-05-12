@@ -150,7 +150,7 @@ impl Server {
                     //TODO remove unwrap
                     cloned_ws
                         .send_with_u8_array(
-                            &serde_json::to_vec(&protocol::socket::Response { id, body: response })
+                            &serde_json::to_vec(&protocol::socket::Response { id, body: response.unwrap() })
                                 .unwrap(),
                         )
                         .unwrap();
