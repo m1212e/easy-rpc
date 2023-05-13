@@ -3,14 +3,14 @@ pub mod socket;
 
 use http_body_util::{BodyExt, Full};
 use hyper::body::Bytes;
-use serde::{Deserialize, Serialize};
+use serde::{Serialize, Deserialize};
 
-use self::error::Error;
+use self::error::{Error, SendableError};
 
 /**
    The most basic kind of request. Used to pass around request info internally, e.g. to pass into the handlers
 */
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct Request {
     pub identifier: String,
     pub parameters: Vec<serde_json::Value>,
@@ -43,13 +43,13 @@ impl Request {
 /**
     The most basic kind of response. Used to pass around request info internally, e.g. to return from handlers
 */
-#[derive(Debug)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct Response {
     /**
        An error in the result indicates an actual system error and not a user defined error.
        E.g. "connection closed" but not "wrong password"
     */
-    pub body: Result<serde_json::Value, Error>,
+    pub body: Result<serde_json::Value, SendableError>,
 }
 
 impl TryInto<hyper::Response<Full<Bytes>>> for Response {
@@ -65,6 +65,8 @@ impl TryInto<hyper::Response<Full<Bytes>>> for Response {
 
 impl From<Error> for Response {
     fn from(value: Error) -> Self {
-        Response { body: Err(value) }
+        Response {
+            body: Err(value.into()),
+        }
     }
 }

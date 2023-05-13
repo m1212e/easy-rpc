@@ -38,3 +38,4 @@ TODO: prevent manual creation of frontends from backend/better way of hiding so 
 TODO: make roles case insensitive
 TODO: implement some kind of retry if a request has not gotten a response (ws)
 TODO: improve runtime error handling/messages
+TODO: add some sort of request timeout

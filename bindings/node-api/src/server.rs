@@ -166,7 +166,7 @@ impl ERPCServer {
             },
         )?;
 
-        let socket_notifier_channel = self.server.get_socket_notifier().clone();
+        let socket_notifier_channel = self.server.new_socket_connected_broadcast_channel().clone();
         env.execute_tokio_future(
             async move {
                 loop {

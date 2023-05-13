@@ -1,9 +1,10 @@
 use http_body_util::Full;
 use hyper::{body::Bytes, Response, StatusCode};
 use log::error;
+use serde::{Deserialize, Serialize};
 
 /**
-   Server only errors which cannot be sent to the user and must be transferred to some handler error
+   Server only errors which cannot be sent to the user and must be transferred to some sendable error
 */
 #[derive(Debug)]
 pub enum Error {
@@ -45,6 +46,12 @@ impl From<String> for Error {
     }
 }
 
+impl From<&str> for Error {
+    fn from(value: &str) -> Self {
+        Error::Custom(value.to_string())
+    }
+}
+
 impl From<Error> for Response<Full<Bytes>> {
     fn from(val: Error) -> Self {
         error!("Request errored: {:#?}", val);
@@ -59,5 +66,29 @@ impl From<Error> for Response<Full<Bytes>> {
                 )),
         }
         .expect("Could not even send error response")
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub enum SendableError {
+    NotFound,
+    Internal,
+}
+
+impl From<SendableError> for Error {
+    fn from(value: SendableError) -> Self {
+        match value {
+            SendableError::NotFound => Error::NotFound,
+            SendableError::Internal => Error::Custom("Internal error".to_string()),
+        }
+    }
+}
+
+impl From<Error> for SendableError {
+    fn from(value: Error) -> Self {
+        match value {
+            Error::NotFound => Self::NotFound,
+            _ => Self::Internal,
+        }
     }
 }

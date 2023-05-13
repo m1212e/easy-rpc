@@ -1,16 +1,16 @@
-mod target;
-mod server;
 mod handler;
+mod server;
+mod target;
 mod tests;
 
 //TODO write tests && integrate them in CI
 
 #[derive(Clone, Debug)]
 pub struct Socket {
-    pub sender: flume::Sender<erpc::protocol::socket::SocketMessage>,
-    pub reciever: flume::Receiver<erpc::protocol::socket::SocketMessage>,
+    pub requests: flume::Sender<erpc::protocol::socket::Request>,
+    pub responses: flume::Receiver<erpc::protocol::socket::Response>,
     pub role: String,
 }
 
-pub use target::Target;
 pub use server::Server;
+pub use target::Target;

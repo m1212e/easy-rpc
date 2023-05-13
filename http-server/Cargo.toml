@@ -21,3 +21,5 @@ parking_lot = { version = "0.12", features = [ "hardware-lock-elision" ] }
 hyper = { version = "1.0.0-rc.3", features = ["full"] }
 http-body-util = "0.1.0-rc.2" 
 tokio-tungstenite = "0.18"
+tower-http = {version = "0.4", features = ["full"] }
+tower = "0.4"

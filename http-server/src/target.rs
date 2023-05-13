@@ -1,8 +1,9 @@
 use crate::Socket;
 use erpc::{
-    protocol::{self, socket::SocketMessage},
+    protocol::{self, error::Error},
     target::TargetType,
 };
+use log::error;
 use nanoid::nanoid;
 use std::{
     collections::HashMap,
@@ -20,7 +21,8 @@ lazy_static::lazy_static! {
 pub struct Target {
     address: String,
     target_type: TargetType,
-    socket: Arc<Mutex<Option<Socket>>>,
+    socket: Option<Socket>,
+    //TODO check if this is optimal
     requests: Arc<Mutex<HashMap<String, oneshot::Sender<protocol::socket::Response>>>>,
 }
 
@@ -33,7 +35,7 @@ impl Target {
         Target {
             address,
             target_type,
-            socket: Arc::new(Mutex::new(None)),
+            socket: None,
             requests: Arc::new(Mutex::new(HashMap::new())),
         }
     }
@@ -50,119 +52,96 @@ impl Target {
 
                 let response = match r.send().await {
                     Ok(v) => v,
-                    Err(err) => {
-                        return protocol::Response {
-                            body: Err(err.into()),
-                        }
-                    }
+                    Err(err) => return Error::from(err).into(),
                 };
 
                 let bytes = match response.bytes().await {
                     Ok(v) => v,
-                    Err(err) => {
-                        return protocol::Response {
-                            body: Err(err.into()),
-                        }
-                    }
+                    Err(err) => return Error::from(err).into(),
                 };
 
                 protocol::Response {
-                    body: serde_json::from_slice(&bytes).map_err(|err| err.into()),
+                    body: serde_json::from_slice(&bytes).map_err(|err| Error::from(err).into()),
                 }
             }
             TargetType::Browser => {
-                let socket = {
-                    let socket = self
-                        .socket
-                        .lock()
-                        .map_err(|err| format!("Could not lock socket mutex: {err}"))?;
-
-                    match &*socket {
-                        Some(v) => v.clone(),
-                        None => return Err("Socket not set for this target".to_string()),
-                    }
+                let request_over_socket_channel = match &self.socket {
+                    Some(v) => v.requests.clone(),
+                    None => return Error::from("Socket not set for this target").into(),
                 };
 
                 let id = nanoid!();
                 let (sender, reciever) = oneshot::channel::<protocol::socket::Response>();
                 {
                     // scope to drop the requests lock
-                    let mut requests = self
-                        .requests
-                        .lock()
-                        .map_err(|err| format!("Could not access sockets: {err}"))?;
+                    let mut requests = match self.requests.lock() {
+                        Ok(v) => v,
+                        Err(err) => {
+                            return Error::from(format!("Could not get lock on request map: {err}"))
+                                .into()
+                        }
+                    };
 
                     requests.insert(id.clone(), sender);
                 }
 
-                socket
-                    .sender
-                    .send(SocketMessage::Request(protocol::socket::Request {
-                        id,
-                        request,
-                    }))
-                    .unwrap();
+                match request_over_socket_channel.send(protocol::socket::Request {
+                    id: id.clone(),
+                    request,
+                }) {
+                    Ok(_) => {}
+                    Err(err) => {
+                        let mut requests = match self.requests.lock() {
+                            Ok(v) => v,
+                            Err(err) => {
+                                return Error::from(format!(
+                                    "Could not get lock on request map: {err}"
+                                ))
+                                .into()
+                            }
+                        };
 
-                let response = reciever
-                    .await
-                    .map_err(|err| format!("RecvError in socket response channel: {err}"))?;
+                        requests.remove(&id);
 
-                let response = response.body;
+                        return Error::from(format!("Could not send request on socket: {err}"))
+                            .into();
+                    }
+                }
 
-                //TODO this unwrap
-                serde_json::from_value(response.body.unwrap())
-                    .map_err(|err| format!("Could not parse socket response: {err}"))?
+                let response = match reciever.await {
+                    Ok(v) => v,
+                    Err(err) => {
+                        return Error::from(format!("Could not await response channel: {err}"))
+                            .into()
+                    }
+                };
+
+                response.response
             }
         }
     }
 
     pub async fn set_socket(&mut self, socket: Socket) {
-        match self.socket.lock() {
-            Ok(mut v) => {
-                *v = Some(socket.clone());
-            }
-            Err(err) => {
-                eprintln!("Socket lock error: {err}");
-                return;
-            }
-        }
-
-        loop {
-            let msg = match socket.reciever.recv_async().await {
+        while let Ok(response) = socket.responses.recv_async().await {
+            let mut requests = match self.requests.lock() {
                 Ok(v) => v,
                 Err(err) => {
-                    eprintln!("Socket stream error: {err}");
-                    return;
+                    error!("Could not access requests (1): {err}");
+                    continue;
                 }
             };
 
-            match msg {
-                SocketMessage::Request(_) => {
-                    eprintln!("Requests via websocket not supported yet!");
-                    break;
+            let return_channel = match requests.remove(&response.id) {
+                Some(v) => v,
+                None => {
+                    error!("Could not find open request for id {}", response.id);
+                    continue;
                 }
-                SocketMessage::Response(res) => {
-                    let mut requests = match self.requests.lock() {
-                        Ok(v) => v,
-                        Err(err) => {
-                            eprintln!("Could not access requests (1): {err}");
-                            break;
-                        }
-                    };
+            };
 
-                    let return_channel = match requests.remove(&res.id) {
-                        Some(v) => v,
-                        None => {
-                            eprintln!("Could not find open request for id {}", res.id);
-                            break;
-                        }
-                    };
-
-                    match return_channel.send(res) {
-                        Ok(_) => {}
-                        Err(ret_res) => eprintln!("Could not send response for {}", ret_res.id),
-                    };
-                }
+            match return_channel.send(response) {
+                Ok(_) => {}
+                Err(ret_res) => error!("Could not send response for {}", ret_res.id),
             };
         }
     }
