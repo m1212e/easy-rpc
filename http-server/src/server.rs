@@ -18,8 +18,6 @@ use parking_lot::RwLock;
 use serde::{de::DeserializeOwned, Serialize};
 use tokio::{net::TcpListener, sync::oneshot};
 use tokio_tungstenite::WebSocketStream;
-use tower::ServiceBuilder;
-use tower_http::ServiceBuilderExt;
 
 //TODO: check the channels for optimal tool for the problem (e.g. swithc to broadcast, mpsc where applicable)
 
@@ -80,6 +78,7 @@ impl Server {
         let v: InternalHandler = Box::new(move |request| {
             let handler = handler.clone();
             Box::pin(async move {
+                //TODO there should be a macro for this
                 let parameters = match serde_json::to_value(request.parameters) {
                     Ok(v) => v,
                     Err(err) => return Error::from(err).into(),
@@ -116,35 +115,62 @@ impl Server {
         let handler_map = self.handler_map.clone();
         let enabled_sockets = self.enabled_sockets;
         let socket_broadcaster = self.socket_broadcaster.0.clone();
+        let allowed_cors_origins = self.allowed_cors_origins.clone();
         loop {
             let handler_map = handler_map.clone();
             let socket_broadcaster = socket_broadcaster.clone();
             let (stream, _) = listener.accept().await?;
+            let allowed_cors_origins = allowed_cors_origins.clone();
 
             tokio::task::spawn(async move {
                 if let Err(err) = http1::Builder::new()
                     .serve_connection(
                         stream,
-                        ServiceBuilder::new()
-                            // .layer(tower_http::cors::AllowCredentials::yes())
-                            .layer(tower_http::catch_panic::CatchPanicLayer::new())
-                            .compression()
-                            .service(service_fn(move |req| {
-                                let handler_map = handler_map.clone();
-                                let socket_broadcaster = socket_broadcaster.clone();
-                                async move {
-                                    Ok::<_, Infallible>(
-                                        Server::http_handler(
-                                            req,
-                                            handler_map,
-                                            enabled_sockets,
-                                            socket_broadcaster,
-                                        )
-                                        .await,
-                                    )
+                        service_fn(move |req| {
+                            let handler_map = handler_map.clone();
+                            let socket_broadcaster = socket_broadcaster.clone();
+                            let allowed_cors_origins = allowed_cors_origins.clone();
+                            async move {
+                                let headers = req.headers().clone();
+                                let mut response = Server::http_handler(
+                                    req,
+                                    handler_map,
+                                    enabled_sockets,
+                                    socket_broadcaster,
+                                )
+                                .await;
+
+                                // TODO put CORS code somewhere else
+                                response.headers_mut().append(
+                                    "Access-Control-Allow-Credentials",
+                                    HeaderValue::from_static("true"),
+                                );
+                                response.headers_mut().append(
+                                    "Access-Control-Allow-Methods",
+                                    HeaderValue::from_static("POST"),
+                                );
+                                if allowed_cors_origins.contains(&"*".to_string()) {
+                                    response.headers_mut().append(
+                                        "Access-Control-Allow-Origin",
+                                        HeaderValue::from_static("*"),
+                                    );
+                                } else if let Some(origin) = headers.get("Origin") {
+                                    if let Ok(origin) = origin.to_str() {
+                                        if allowed_cors_origins.contains(&origin.to_string()) {
+                                            if let Ok(header_value) = HeaderValue::from_str(origin)
+                                            {
+                                                response.headers_mut().append(
+                                                    "Access-Control-Allow-Origin",
+                                                    header_value,
+                                                );
+                                            }
+                                        }
+                                    }
                                 }
-                            }))
-                            .into_inner(),
+
+                                Ok::<_, Infallible>(response)
+                            }
+                        }),
                     )
                     .with_upgrades()
                     .await

@@ -6,14 +6,14 @@ use std::{collections::HashMap, sync::Arc};
 // same machine
 
 use erpc::protocol;
-use log::{error, info, warn};
+use log::{error, warn};
 use parking_lot::RwLock;
 use wasm_bindgen::{prelude::Closure, JsCast};
 use web_sys::{ErrorEvent, MessageEvent, WebSocket};
 
 use crate::CREATED_TARGETS;
 
-type InternalHandler = Box<dyn Fn(protocol::Request) -> Result<protocol::Response, String>>;
+type InternalHandler = Box<dyn Fn(protocol::Request) -> protocol::Response>;
 
 pub struct Server {
     role: String,
@@ -29,7 +29,6 @@ impl Server {
     }
 
     pub fn register_raw_handler(&mut self, handler: InternalHandler, identifier: String) {
-        warn!("inserting handler for identifier {}", identifier);
         self.handlers.write().insert(identifier, handler);
     }
 

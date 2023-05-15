@@ -1,7 +1,9 @@
 use http_body_util::Full;
-use hyper::{body::Bytes, Response, StatusCode};
+use hyper::body::Bytes;
 use log::error;
 use serde::{Deserialize, Serialize};
+
+use super::Response;
 
 /**
    Server only errors which cannot be sent to the user and must be transferred to some sendable error
@@ -40,6 +42,19 @@ impl From<reqwest::Error> for Error {
     }
 }
 
+impl From<serde_wasm_bindgen::Error> for Error {
+    fn from(value: serde_wasm_bindgen::Error) -> Self {
+        Error::Custom(value.to_string())
+    }
+}
+
+impl From<wasm_bindgen::JsValue> for Error {
+    fn from(value: wasm_bindgen::JsValue) -> Self {
+        // since the to string is not implemented on JsValue we just use the one provided by the serde crate
+        Error::Custom(serde_wasm_bindgen::Error::from(value).to_string())
+    }
+}
+
 impl From<String> for Error {
     fn from(value: String) -> Self {
         Error::Custom(value)
@@ -52,20 +67,10 @@ impl From<&str> for Error {
     }
 }
 
-impl From<Error> for Response<Full<Bytes>> {
+impl From<Error> for hyper::Response<Full<Bytes>> {
     fn from(val: Error) -> Self {
-        error!("Request errored: {:#?}", val);
-        match val {
-            Error::NotFound => Response::builder()
-                .status(StatusCode::NOT_FOUND)
-                .body(Full::new("Not found".to_string().into_bytes().into())),
-            _ => Response::builder()
-                .status(StatusCode::INTERNAL_SERVER_ERROR)
-                .body(Full::new(
-                    "Internal server error".to_string().into_bytes().into(),
-                )),
-        }
-        .expect("Could not even send error response")
+        let sendable: SendableError = val.into();
+        sendable.into()
     }
 }
 
@@ -86,9 +91,19 @@ impl From<SendableError> for Error {
 
 impl From<Error> for SendableError {
     fn from(value: Error) -> Self {
+        // At this point data contained in the error would be lost, so we log it to the error channel
+        error!("{:#?}", value);
         match value {
             Error::NotFound => Self::NotFound,
             _ => Self::Internal,
         }
+    }
+}
+
+impl From<SendableError> for hyper::Response<Full<Bytes>> {
+    fn from(val: SendableError) -> Self {
+        Response { body: Err(val) }
+            .try_into()
+            .expect("Error conversion should not fail")
     }
 }

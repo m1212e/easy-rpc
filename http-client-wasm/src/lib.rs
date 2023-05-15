@@ -9,6 +9,12 @@ use parking_lot::RwLock;
 pub use server::Server;
 pub use target::Target;
 
+#[derive(Clone, Debug)]
+pub struct Socket {
+    pub requests: flume::Sender<erpc::protocol::socket::Request>,
+    pub responses: flume::Receiver<erpc::protocol::socket::Response>,
+}
+
 lazy_static::lazy_static! {
     static ref CREATED_TARGETS: StorageChannel<Target> = StorageChannel::new();
 }

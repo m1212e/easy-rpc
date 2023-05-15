@@ -5,11 +5,8 @@ use erpc::{
 };
 use log::error;
 use nanoid::nanoid;
-use std::{
-    collections::HashMap,
-    fmt::Debug,
-    sync::{Arc, Mutex},
-};
+use parking_lot::Mutex;
+use std::{collections::HashMap, fmt::Debug, sync::Arc};
 use tokio::sync::oneshot;
 
 lazy_static::lazy_static! {
@@ -23,7 +20,7 @@ pub struct Target {
     target_type: TargetType,
     socket: Option<Socket>,
     //TODO check if this is optimal
-    requests: Arc<Mutex<HashMap<String, oneshot::Sender<protocol::socket::Response>>>>,
+    open_socket_requests: Arc<Mutex<HashMap<String, oneshot::Sender<protocol::socket::Response>>>>,
 }
 
 impl Target {
@@ -36,7 +33,7 @@ impl Target {
             address,
             target_type,
             socket: None,
-            requests: Arc::new(Mutex::new(HashMap::new())),
+            open_socket_requests: Arc::new(Mutex::new(HashMap::new())),
         }
     }
 
@@ -74,13 +71,7 @@ impl Target {
                 let (sender, reciever) = oneshot::channel::<protocol::socket::Response>();
                 {
                     // scope to drop the requests lock
-                    let mut requests = match self.requests.lock() {
-                        Ok(v) => v,
-                        Err(err) => {
-                            return Error::from(format!("Could not get lock on request map: {err}"))
-                                .into()
-                        }
-                    };
+                    let mut requests = self.open_socket_requests.lock();
 
                     requests.insert(id.clone(), sender);
                 }
@@ -91,15 +82,7 @@ impl Target {
                 }) {
                     Ok(_) => {}
                     Err(err) => {
-                        let mut requests = match self.requests.lock() {
-                            Ok(v) => v,
-                            Err(err) => {
-                                return Error::from(format!(
-                                    "Could not get lock on request map: {err}"
-                                ))
-                                .into()
-                            }
-                        };
+                        let mut requests = self.open_socket_requests.lock();
 
                         requests.remove(&id);
 
@@ -123,13 +106,7 @@ impl Target {
 
     pub async fn set_socket(&mut self, socket: Socket) {
         while let Ok(response) = socket.responses.recv_async().await {
-            let mut requests = match self.requests.lock() {
-                Ok(v) => v,
-                Err(err) => {
-                    error!("Could not access requests (1): {err}");
-                    continue;
-                }
-            };
+            let mut requests = self.open_socket_requests.lock();
 
             let return_channel = match requests.remove(&response.id) {
                 Some(v) => v,
