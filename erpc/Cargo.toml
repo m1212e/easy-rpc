@@ -14,3 +14,4 @@ reqwest = { version = "0.11"}
 tokio-tungstenite = "0.18"
 wasm-bindgen = { version = "0.2"}
 serde-wasm-bindgen = "0.5"
+thiserror = "1.0"

@@ -1,3 +1,6 @@
+use std::fmt::Display;
+
+use thiserror::Error;
 use http_body_util::Full;
 use hyper::body::Bytes;
 use log::error;
@@ -8,7 +11,7 @@ use super::Response;
 /**
    Server only errors which cannot be sent to the user and must be transferred to some sendable error
 */
-#[derive(Debug)]
+#[derive(Debug, Error)]
 pub enum Error {
     Hyper(hyper::Error),
     HTTP(hyper::http::Error),
@@ -16,6 +19,12 @@ pub enum Error {
     Reqwest(reqwest::Error),
     NotFound,
     Custom(String),
+}
+
+impl Display for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self)
+    }
 }
 
 impl From<hyper::Error> for Error {
@@ -74,10 +83,16 @@ impl From<Error> for hyper::Response<Full<Bytes>> {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Error)]
 pub enum SendableError {
     NotFound,
     Internal,
+}
+
+impl Display for SendableError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self)
+    }
 }
 
 impl From<SendableError> for Error {

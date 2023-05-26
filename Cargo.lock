@@ -377,6 +377,7 @@ dependencies = [
  "serde",
  "serde-wasm-bindgen",
  "serde_json",
+ "thiserror",
  "tokio-tungstenite",
  "wasm-bindgen",
 ]
