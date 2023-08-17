@@ -52,13 +52,12 @@ impl ERPCServer {
                 let result = handler
                     .apply(&JsValue::null(), &parameters)
                     .map_err(|err| {
-                        error!("Apply call failed: {:#?}", err);
-                        "Aplly call failed".to_string()
-                    })?;
+                        protocol::error::Error::from(format!("Apply call failed: {:#?}", err))
+                            .into()
+                    })
+                    .map(|v| serde_wasm_bindgen::from_value(v).unwrap());
 
-                Ok(protocol::Response {
-                    body: serde_wasm_bindgen::from_value(result).unwrap(),
-                })
+                protocol::Response { body: result }
             }),
             identifier,
         );

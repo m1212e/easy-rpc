@@ -40,3 +40,6 @@ TODO: implement some kind of retry if a request has not gotten a response (ws)
 TODO: improve runtime error handling/messages
 TODO: add some sort of request timeout
 TODO: parking lot rwlock is blocking this may cause problems
+TODO: check for memory leaks by not removing things from hashmaps e.g. pending requests
+TODO: remove the protocol::error::Error::from calls/no manual calls to error! but let the error converter log it
+TODO: replace function argument lists with objects so the order can be switched

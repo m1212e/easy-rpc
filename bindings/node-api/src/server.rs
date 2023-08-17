@@ -5,6 +5,7 @@
 
 use std::convert::Infallible;
 
+use erpc::protocol;
 use http_server::Socket;
 use napi::{
     bindgen_prelude::{FromNapiValue, Promise},
@@ -127,7 +128,10 @@ impl ERPCServer {
                         napi::Status::Ok => {}
                         _ => {
                             return erpc::protocol::Response {
-                                body: Err(format!("Threadsafe function status not ok: {r}")),
+                                body: Err(protocol::error::Error::from(format!(
+                                    "Threadsafe function status not ok: {r}"
+                                ))
+                                .into()),
                             }
                         }
                     };
@@ -136,7 +140,10 @@ impl ERPCServer {
                         Ok(v) => v,
                         Err(err) => {
                             return erpc::protocol::Response {
-                                body: Err(format!("Could not receive response: {err}")),
+                                body: Err(protocol::error::Error::from(format!(
+                                    "Could not receive response: {err}"
+                                ))
+                                .into()),
                             }
                         }
                     };
@@ -166,7 +173,7 @@ impl ERPCServer {
             },
         )?;
 
-        let socket_notifier_channel = self.server.new_socket_connected_broadcast_channel().clone();
+        let socket_notifier_channel = self.server.socket_broadcaster().clone();
         env.execute_tokio_future(
             async move {
                 loop {

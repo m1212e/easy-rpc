@@ -39,7 +39,7 @@ impl Target {
 
     pub async fn call(&self, request: protocol::Request) -> protocol::Response {
         match self.target_type {
-            TargetType::HTTPServer => {
+            TargetType::HttpServer => {
                 let r = REQWEST_CLIENT
                     .post(format!("{}/handlers/{}", self.address, request.identifier))
                     .body(

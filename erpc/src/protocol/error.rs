@@ -23,7 +23,7 @@ pub enum Error {
 
 impl Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self)
+        write!(f, "{:#?}", self)
     }
 }
 
@@ -91,7 +91,7 @@ pub enum SendableError {
 
 impl Display for SendableError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self)
+        write!(f, "{:#?}", self)
     }
 }
 
@@ -112,6 +112,12 @@ impl From<Error> for SendableError {
             Error::NotFound => Self::NotFound,
             _ => Self::Internal,
         }
+    }
+}
+
+impl From<String> for SendableError {
+    fn from(value: String) -> Self {
+        Error::from(value).into()
     }
 }
 

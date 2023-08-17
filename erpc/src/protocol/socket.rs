@@ -79,6 +79,15 @@ impl TryInto<tungstenite::Message> for Request {
     }
 }
 
+impl Request {
+    pub fn from_request(request: super::Request, id: &str) -> Self {
+        Self {
+            id: id.to_string(),
+            request,
+        }
+    }
+}
+
 /*
     A response to a websocket request. Wraps around the basic response to add an ID to assign this response to a request
 */
@@ -99,3 +108,11 @@ impl TryInto<tungstenite::Message> for Response {
     }
 }
 
+impl Response {
+    pub fn from_response(response: super::Response, id: &str) -> Self {
+        Self {
+            id: id.to_string(),
+            response,
+        }
+    }
+}

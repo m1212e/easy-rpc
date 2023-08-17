@@ -41,7 +41,7 @@ impl Target {
 
     pub async fn call(&self, request: protocol::Request) -> protocol::Response {
         match self.target_type {
-            TargetType::HTTPServer => match &self.socket {
+            TargetType::HttpServer => match &self.socket {
                 Some(socket) => {
                     let request = protocol::socket::Request {
                         id: nanoid::nanoid!(),
@@ -53,7 +53,7 @@ impl Target {
                         .lock()
                         .insert(request.id.clone(), sender);
 
-                    socket.requests.send(request);
+                    socket.requests.send(request).unwrap();
 
                     match reciever.await {
                         Ok(v) => v,
@@ -119,11 +119,13 @@ impl Target {
     }
 
     pub fn set_socket(&mut self, socket: Socket) {
+        let responses = socket.responses.clone();
         self.socket = Some(socket);
         let open_requests = self.open_socket_requests.clone();
         wasm_bindgen_futures::spawn_local(async move {
-            while let Ok(response) = socket.responses.recv_async().await {
-                let responder = match open_requests.lock().get(&response.id) {
+            while let Ok(response) = responses.recv_async().await {
+                let mut open_requests = open_requests.lock();
+                let responder = match open_requests.remove(&response.id) {
                     Some(v) => v,
                     None => {
                         error!(
@@ -136,7 +138,7 @@ impl Target {
 
                 match responder.send(response.response) {
                     Ok(_) => {}
-                    Err(err) => {
+                    Err(_) => {
                         error!("Could not send response on oneshot");
                     }
                 };

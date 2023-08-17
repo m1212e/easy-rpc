@@ -18,7 +18,7 @@ impl ERPCTarget {
     pub fn new(options: TargetOptions, target_type: String) -> Self {
         let target_type = match target_type.as_str() {
             "browser" => TargetType::Browser,
-            "http-server" => TargetType::HTTPServer,
+            "http-server" => TargetType::HttpServer,
             _ => panic!("Unsupported target type {}", target_type),
         };
 
@@ -38,16 +38,17 @@ impl ERPCTarget {
 
         env.execute_tokio_future(
             async move {
-                let res = match t
+                let v = t
                     .call(erpc::protocol::Request {
                         identifier: method_identifier,
                         parameters: parameters.unwrap_or_default(),
                     })
-                    .await
-                {
-                    Ok(v) => v.body,
+                    .await;
+
+                let res = match v.body {
+                    Ok(v) => v,
                     Err(err) => {
-                        return Err(napi::Error::from_reason(err));
+                        return Err(napi::Error::from_reason(err.to_string()));
                     }
                 };
 

@@ -1,4 +1,3 @@
-use log::error;
 use serde::Deserialize;
 use wasm_bindgen::{prelude::wasm_bindgen, JsError, JsValue};
 
@@ -27,7 +26,6 @@ pub struct ERPCTarget {
 
 #[wasm_bindgen]
 impl ERPCTarget {
-
     #[wasm_bindgen(constructor)]
     pub fn new(options: TargetOptions, target_type: &str) -> Result<ERPCTarget, JsValue> {
         let js_value: JsValue = options.into();
@@ -38,7 +36,7 @@ impl ERPCTarget {
             target: http_client_wasm::Target::new(
                 options.address,
                 match target_type {
-                    "http-server" => erpc::target::TargetType::HTTPServer,
+                    "http-server" => erpc::target::TargetType::HttpServer,
                     "browser" => erpc::target::TargetType::Browser,
                     _ => return Err(JsError::new("Invalid value for target type").into()),
                 },
@@ -64,9 +62,11 @@ impl ERPCTarget {
                 identifier,
                 parameters,
             })
-            .await?;
+            .await;
 
-
-        Ok(serde_wasm_bindgen::to_value(&result.body).unwrap())
+        match result.body {
+            Ok(v) => Ok(serde_wasm_bindgen::to_value(&v).unwrap()),
+            Err(err) => Err(JsError::new(&err.to_string()).into()),
+        }
     }
 }

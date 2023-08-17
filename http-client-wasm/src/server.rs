@@ -5,7 +5,7 @@ use std::{collections::HashMap, sync::Arc};
 //TODO ideally we recycle already existing ws connections to a backend when two frontend server are connecting to the
 // same machine
 
-use erpc::protocol;
+use erpc::protocol::{self, error};
 use log::{error, warn};
 use parking_lot::RwLock;
 use wasm_bindgen::{prelude::Closure, JsCast};
@@ -131,27 +131,41 @@ impl Server {
                         };
 
                     let id = message.id().to_string();
-                    let response: Result<protocol::Response, String> = match message {
-                        protocol::socket::SocketMessage::Request(req) => handlers
-                            .read()
-                            .get(&req.request.identifier)
-                            .ok_or(format!(
-                                "Could not find handler for request {}",
-                                req.request.identifier
-                            ))
-                            .and_then(|handler| handler(req.request)),
+                    let response: protocol::socket::Response = match message {
+                        protocol::socket::SocketMessage::Request(req) => {
+                            let handlers = handlers.read();
+                            let handler = handlers.get(&req.request.identifier);
+                            match handler {
+                                Some(handler) => protocol::socket::Response {
+                                    id,
+                                    response: handler(req.request),
+                                },
+                                None => protocol::socket::Response {
+                                    id,
+                                    response: protocol::Response {
+                                        body: Err(error::Error::from(format!(
+                                            "No handler for identifier {}",
+                                            req.request.identifier
+                                        ))
+                                        .into()),
+                                    },
+                                },
+                            }
+                        }
                         protocol::socket::SocketMessage::Response(res) => {
                             error!("Recieved websocket message of response type. This is not supported yet");
-                            Err("Recieved websocket message of response type. This is not supported yet".to_string())
+                            protocol::socket::Response {
+                                id,
+                                response: protocol::Response {
+                                    body: Err(error::Error::from("Recieved websocket message of response type. This is not supported yet".to_string()).into())
+                                }
+                            }
                         }
                     };
 
                     //TODO remove unwrap
                     cloned_ws
-                        .send_with_u8_array(
-                            &serde_json::to_vec(&protocol::socket::Response { id, body: response.unwrap() })
-                                .unwrap(),
-                        )
+                        .send_with_u8_array(&serde_json::to_vec(&response).unwrap())
                         .unwrap();
                 });
                 // set message event handler on WebSocket
@@ -164,8 +178,6 @@ impl Server {
                 });
                 ws.set_onerror(Some(onerror_callback.as_ref().unchecked_ref()));
                 onerror_callback.forget();
-
-                let cloned_ws = ws.clone();
             }
         });
     }
