@@ -6,13 +6,15 @@ const backend = new Backend({
 });
 
 backend.api.ping = async (msg) => {
-	console.log(`Got message from frontend: ${msg}`);
-	return "PONG";
+	return msg;
 };
 
 backend.onConnection(async (frontend) => {
-	console.log("Frontend connected, sending ping request");
-	console.log("returned from frontend: ", await frontend.api.ping("PING"));
+	console.log("Frontend connected");
+	setTimeout(async () => {
+		console.log("sending ping request");
+		console.log("returned from frontend: ", await frontend.api.ping("This message is from backend"));
+	}, 2000);
 });
 
 backend.run();

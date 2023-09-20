@@ -1,11 +1,12 @@
 pub mod error;
+pub mod routes;
 pub mod socket;
 
-use http_body_util::{BodyExt, Full};
-use hyper::body::Bytes;
-use serde::{Serialize, Deserialize};
+pub use self::error::SendableError;
+use serde::{Deserialize, Serialize};
 
-use self::error::{Error, SendableError};
+#[cfg(not(target_arch = "wasm32"))]
+use salvo::writing::Json;
 
 /**
    The most basic kind of request. Used to pass around request info internally, e.g. to pass into the handlers
@@ -17,25 +18,17 @@ pub struct Request {
 }
 
 impl Request {
-    pub async fn try_from_hyper_request(
-        request: hyper::Request<hyper::body::Incoming>,
-    ) -> Result<Self, Error> {
-        if !request.uri().path().starts_with("/handlers/") {
-            return Err(Error::NotFound);
-        }
-
-        let identifier = request
-            .uri()
-            .path()
-            .strip_prefix("/handlers/")
-            .expect("The path unexpectedly does not start with /handlers/")
-            .to_string();
-
-        let body = request.into_body().collect().await?.to_bytes();
-
-        Ok(Self {
+    #[cfg(not(target_arch = "wasm32"))]
+    pub async fn try_from_salvo_request(
+        req: &mut salvo::Request,
+        identifier: String,
+    ) -> Result<Self, SendableError> {
+        Ok(Request {
             identifier,
-            parameters: serde_json::from_slice(&body)?,
+            parameters: req
+                .parse_json()
+                .await
+                .map_err(|err| format!("Could not parse request: {}", err))?,
         })
     }
 }
@@ -52,21 +45,24 @@ pub struct Response {
     pub body: Result<serde_json::Value, SendableError>,
 }
 
-impl TryInto<hyper::Response<Full<Bytes>>> for Response {
-    type Error = Error;
-
-    fn try_into(self) -> Result<hyper::Response<Full<Bytes>>, Self::Error> {
-        let serialized: Bytes = serde_json::to_vec(&self.body?)?.into();
-        let response = hyper::Response::builder().body(Full::new(serialized))?;
-
-        Ok(response)
+impl From<SendableError> for Response {
+    fn from(value: SendableError) -> Self {
+        Response { body: Err(value) }
     }
 }
 
-impl From<Error> for Response {
-    fn from(value: Error) -> Self {
-        Response {
-            body: Err(value.into()),
+impl From<serde_json::Value> for Response {
+    fn from(value: serde_json::Value) -> Self {
+        Response { body: Ok(value) }
+    }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+impl salvo::Piece for Response {
+    fn render(self, res: &mut salvo::Response) {
+        match self.body {
+            Ok(v) => res.render(Json(v)),
+            Err(err) => err.render(res),
         }
     }
 }

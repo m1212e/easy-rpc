@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
-use tokio_tungstenite::tungstenite;
+use wasm_bindgen::JsCast;
 
-use super::error::Error;
+use super::SendableError;
 
 /**
    A socket message
@@ -12,29 +12,52 @@ pub enum SocketMessage {
     Response(Response),
 }
 
-impl TryFrom<String> for SocketMessage {
-    type Error = Error;
+#[cfg(not(target_arch = "wasm32"))]
+impl TryFrom<salvo::websocket::Message> for SocketMessage {
+    type Error = SendableError;
 
-    fn try_from(value: String) -> Result<Self, Self::Error> {
-        Ok(serde_json::from_str(&value)?)
+    fn try_from(value: salvo::websocket::Message) -> Result<Self, Self::Error> {
+        serde_json::from_slice(&value.into_bytes()).map_err(|e| e.into())
     }
 }
 
-impl TryFrom<Vec<u8>> for SocketMessage {
-    type Error = Error;
+#[cfg(not(target_arch = "wasm32"))]
+impl TryInto<salvo::websocket::Message> for SocketMessage {
+    type Error = SendableError;
 
-    fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
-        Ok(serde_json::from_slice(&value)?)
+    fn try_into(self) -> Result<salvo::websocket::Message, Self::Error> {
+        Ok(salvo::websocket::Message::binary(serde_json::to_vec(
+            &self,
+        )?))
     }
 }
 
-impl TryInto<tungstenite::Message> for SocketMessage {
-    type Error = Error;
+impl TryInto<Vec<u8>> for SocketMessage {
+    type Error = SendableError;
 
-    fn try_into(self) -> Result<tungstenite::Message, Self::Error> {
-        match self {
-            SocketMessage::Request(req) => req.try_into(),
-            SocketMessage::Response(res) => res.try_into(),
+    fn try_into(self) -> Result<Vec<u8>, Self::Error> {
+        Ok(serde_json::to_vec(&self)?)
+    }
+}
+
+// #[cfg(target_arch = "wasm32")]
+impl SocketMessage {
+    pub async fn try_from_wasm_socket_message_event(
+        value: web_sys::MessageEvent,
+    ) -> Result<Self, SendableError> {
+        if let Ok(abuf) = value.data().dyn_into::<js_sys::ArrayBuffer>() {
+            let array = js_sys::Uint8Array::new(&abuf);
+            Ok(serde_json::from_slice(array.to_vec().as_slice())?)
+        } else if let Ok(blob) = value.data().dyn_into::<web_sys::Blob>() {
+            let b = gloo_file::futures::read_as_bytes(&gloo_file::Blob::from(blob)).await?;
+            Ok(serde_json::from_slice(b.as_slice())?)
+        } else if let Ok(txt) = value.data().dyn_into::<js_sys::JsString>() {
+            Ok(serde_json::from_str(
+                &txt.as_string()
+                    .ok_or("Could not convert ws string to rs string")?,
+            )?)
+        } else {
+            Err(SendableError::from("Unknown message type"))
         }
     }
 }
@@ -45,14 +68,6 @@ impl SocketMessage {
             SocketMessage::Request(r) => &r.id,
             SocketMessage::Response(r) => &r.id,
         }
-    }
-
-    pub fn try_from_socket_message(value: tungstenite::Message) -> Result<Option<Self>, Error> {
-        Ok(match value {
-            tungstenite::Message::Text(text) => Some(text.try_into()?),
-            tungstenite::Message::Binary(binary) => Some(binary.try_into()?),
-            _ => None,
-        })
     }
 }
 
@@ -69,14 +84,6 @@ pub struct Request {
         The actual request
     */
     pub request: super::Request,
-}
-
-impl TryInto<tungstenite::Message> for Request {
-    type Error = Error;
-
-    fn try_into(self) -> Result<tungstenite::Message, Self::Error> {
-        Ok(tungstenite::Message::Binary(serde_json::to_vec(&self)?))
-    }
 }
 
 impl Request {
@@ -98,14 +105,6 @@ pub struct Response {
     */
     pub id: String,
     pub response: super::Response,
-}
-
-impl TryInto<tungstenite::Message> for Response {
-    type Error = Error;
-
-    fn try_into(self) -> Result<tungstenite::Message, Self::Error> {
-        Ok(tungstenite::Message::Binary(serde_json::to_vec(&self)?))
-    }
 }
 
 impl Response {

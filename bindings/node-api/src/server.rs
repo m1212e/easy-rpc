@@ -28,6 +28,7 @@ pub struct ERPCServer {
 
 #[napi]
 impl ERPCServer {
+    #[allow(clippy::needless_if)] 
     #[napi(constructor)]
     pub fn new(
         options: ServerOptions,
@@ -128,10 +129,9 @@ impl ERPCServer {
                         napi::Status::Ok => {}
                         _ => {
                             return erpc::protocol::Response {
-                                body: Err(protocol::error::Error::from(format!(
+                                body: Err(protocol::error::SendableError::from(format!(
                                     "Threadsafe function status not ok: {r}"
-                                ))
-                                .into()),
+                                ))),
                             }
                         }
                     };
@@ -140,10 +140,9 @@ impl ERPCServer {
                         Ok(v) => v,
                         Err(err) => {
                             return erpc::protocol::Response {
-                                body: Err(protocol::error::Error::from(format!(
+                                body: Err(protocol::error::SendableError::from(format!(
                                     "Could not receive response: {err}"
-                                ))
-                                .into()),
+                                ))),
                             }
                         }
                     };
@@ -173,7 +172,7 @@ impl ERPCServer {
             },
         )?;
 
-        let socket_notifier_channel = self.server.socket_broadcaster().clone();
+        let socket_notifier_channel = self.server.get_socket_broadcaster().clone();
         env.execute_tokio_future(
             async move {
                 loop {
@@ -212,11 +211,8 @@ impl ERPCServer {
       Starts the server as configured
     */
     #[napi]
-    pub async fn run(&self) -> Result<(), napi::Error> {
-        self.server
-            .run()
-            .await
-            .map_err(|err| napi::Error::from_reason(format!("Could not start server: {err}")))
+    pub async fn run(&self) {
+        self.server.run().await.await;
     }
 
     /**

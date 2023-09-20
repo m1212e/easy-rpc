@@ -1,13 +1,14 @@
-use crate::Socket;
 use erpc::{
-    protocol::{self, error::Error},
+    protocol::{self, SendableError},
     target::TargetType,
 };
 use log::error;
 use nanoid::nanoid;
-use parking_lot::Mutex;
+use parking_lot::{Mutex, RwLock};
 use std::{collections::HashMap, fmt::Debug, sync::Arc};
 use tokio::sync::oneshot;
+
+use crate::server::Socket;
 
 lazy_static::lazy_static! {
   static ref REQWEST_CLIENT: reqwest::Client = reqwest::Client::new();
@@ -18,7 +19,7 @@ lazy_static::lazy_static! {
 pub struct Target {
     address: String,
     target_type: TargetType,
-    socket: Option<Socket>,
+    socket: Arc<RwLock<Option<Socket>>>,
     //TODO check if this is optimal
     open_socket_requests: Arc<Mutex<HashMap<String, oneshot::Sender<protocol::socket::Response>>>>,
 }
@@ -32,7 +33,7 @@ impl Target {
         Target {
             address,
             target_type,
-            socket: None,
+            socket: Arc::new(RwLock::new(None)),
             open_socket_requests: Arc::new(Mutex::new(HashMap::new())),
         }
     }
@@ -41,7 +42,12 @@ impl Target {
         match self.target_type {
             TargetType::HttpServer => {
                 let r = REQWEST_CLIENT
-                    .post(format!("{}/handlers/{}", self.address, request.identifier))
+                    .post(format!(
+                        "{}/{}/{}",
+                        self.address,
+                        protocol::routes::HANDLERS_ROUTE,
+                        request.identifier
+                    ))
                     .body(
                         serde_json::to_vec(&request.parameters)
                             .expect("Vec of json::Value should be ok"),
@@ -49,22 +55,22 @@ impl Target {
 
                 let response = match r.send().await {
                     Ok(v) => v,
-                    Err(err) => return Error::from(err).into(),
+                    Err(err) => return SendableError::from(err).into(),
                 };
 
                 let bytes = match response.bytes().await {
                     Ok(v) => v,
-                    Err(err) => return Error::from(err).into(),
+                    Err(err) => return SendableError::from(err).into(),
                 };
 
                 protocol::Response {
-                    body: serde_json::from_slice(&bytes).map_err(|err| Error::from(err).into()),
+                    body: serde_json::from_slice(&bytes).map_err(SendableError::from),
                 }
             }
             TargetType::Browser => {
-                let request_over_socket_channel = match &self.socket {
+                let request_over_socket_channel = match self.socket.read().as_ref() {
                     Some(v) => v.requests.clone(),
-                    None => return Error::from("Socket not set for this target").into(),
+                    None => return SendableError::from("Socket not set for this target").into(),
                 };
 
                 let id = nanoid!();
@@ -86,16 +92,20 @@ impl Target {
 
                         requests.remove(&id);
 
-                        return Error::from(format!("Could not send request on socket: {err}"))
-                            .into();
+                        return SendableError::from(format!(
+                            "Could not send request on socket: {err}"
+                        ))
+                        .into();
                     }
                 }
 
                 let response = match reciever.await {
                     Ok(v) => v,
                     Err(err) => {
-                        return Error::from(format!("Could not await response channel: {err}"))
-                            .into()
+                        return SendableError::from(format!(
+                            "Could not await response channel: {err}"
+                        ))
+                        .into()
                     }
                 };
 
@@ -104,22 +114,26 @@ impl Target {
         }
     }
 
-    pub async fn set_socket(&mut self, socket: Socket) {
-        while let Ok(response) = socket.responses.recv_async().await {
-            let mut requests = self.open_socket_requests.lock();
+    pub fn set_socket(&mut self, socket: Socket) {
+        self.socket.write().replace(socket.clone());
+        let open_socket_requests = self.open_socket_requests.clone();
+        tokio::spawn(async move {
+            while let Ok(response) = socket.responses.recv_async().await {
+                let mut requests = open_socket_requests.lock();
 
-            let return_channel = match requests.remove(&response.id) {
-                Some(v) => v,
-                None => {
-                    error!("Could not find open request for id {}", response.id);
-                    continue;
-                }
-            };
+                let return_channel = match requests.remove(&response.id) {
+                    Some(v) => v,
+                    None => {
+                        error!("Could not find open request for id {}", response.id);
+                        continue;
+                    }
+                };
 
-            match return_channel.send(response) {
-                Ok(_) => {}
-                Err(ret_res) => error!("Could not send response for {}", ret_res.id),
-            };
-        }
+                match return_channel.send(response) {
+                    Ok(_) => {}
+                    Err(ret_res) => error!("Could not send response for {}", ret_res.id),
+                };
+            }
+        });
     }
 }

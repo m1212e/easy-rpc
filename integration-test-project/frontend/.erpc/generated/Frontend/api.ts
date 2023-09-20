@@ -24,6 +24,8 @@ export default class api {
 
     private _ping: (msg: string) => Promise<string> = undefined as any
     set ping(value: (msg: string) => Promise<string>) {
+        console.log(this.server);
+        
         this._ping = value
         this.server?.registerERPCHandler(value, "api/ping")
     }

@@ -19,6 +19,6 @@ mod tests {
             sleep(Duration::from_millis(3000)).await;
             s2.stop().unwrap();
         });
-        server.run().await.unwrap();
+        server.run().await;
     }
 }

@@ -18,6 +18,4 @@ erpc = { path = "../erpc" }
 log = "0.4"
 lazy_static = "1.4"
 parking_lot = { version = "0.12", features = [ "hardware-lock-elision" ] }
-hyper = { version = "1.0.0-rc.4", features = ["full"] }
-http-body-util = "0.1.0-rc.3" 
-tokio-tungstenite = "0.18"
+salvo = { version = "0.50", features = ["quinn", "affix", "cors", "websocket"] }

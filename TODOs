@@ -43,3 +43,4 @@ TODO: parking lot rwlock is blocking this may cause problems
 TODO: check for memory leaks by not removing things from hashmaps e.g. pending requests
 TODO: remove the protocol::error::Error::from calls/no manual calls to error! but let the error converter log it
 TODO: replace function argument lists with objects so the order can be switched
+TODO: error messages should have way more context, like: what happened at what handler, where is this even originated

@@ -1,88 +1,11 @@
 use std::fmt::Display;
 
-use thiserror::Error;
-use http_body_util::Full;
-use hyper::body::Bytes;
 use log::error;
 use serde::{Deserialize, Serialize};
+use thiserror::Error;
 
-use super::Response;
-
-/**
-   Server only errors which cannot be sent to the user and must be transferred to some sendable error
-*/
-#[derive(Debug, Error)]
-pub enum Error {
-    Hyper(hyper::Error),
-    HTTP(hyper::http::Error),
-    Serde(serde_json::Error),
-    Reqwest(reqwest::Error),
-    NotFound,
-    Custom(String),
-}
-
-impl Display for Error {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:#?}", self)
-    }
-}
-
-impl From<hyper::Error> for Error {
-    fn from(value: hyper::Error) -> Self {
-        Error::Hyper(value)
-    }
-}
-
-impl From<hyper::http::Error> for Error {
-    fn from(value: hyper::http::Error) -> Self {
-        Error::HTTP(value)
-    }
-}
-
-impl From<serde_json::Error> for Error {
-    fn from(value: serde_json::Error) -> Self {
-        Error::Serde(value)
-    }
-}
-
-impl From<reqwest::Error> for Error {
-    fn from(value: reqwest::Error) -> Self {
-        Error::Reqwest(value)
-    }
-}
-
-impl From<serde_wasm_bindgen::Error> for Error {
-    fn from(value: serde_wasm_bindgen::Error) -> Self {
-        Error::Custom(value.to_string())
-    }
-}
-
-impl From<wasm_bindgen::JsValue> for Error {
-    fn from(value: wasm_bindgen::JsValue) -> Self {
-        // since the to string is not implemented on JsValue we just use the one provided by the serde crate
-        Error::Custom(serde_wasm_bindgen::Error::from(value).to_string())
-    }
-}
-
-impl From<String> for Error {
-    fn from(value: String) -> Self {
-        Error::Custom(value)
-    }
-}
-
-impl From<&str> for Error {
-    fn from(value: &str) -> Self {
-        Error::Custom(value.to_string())
-    }
-}
-
-impl From<Error> for hyper::Response<Full<Bytes>> {
-    fn from(val: Error) -> Self {
-        let sendable: SendableError = val.into();
-        sendable.into()
-    }
-}
-
+//TODO: add more error types, to give the user more information about what went wrong
+/// Error type that can be sent over the wire, does not contain any sensitive information
 #[derive(Debug, Serialize, Deserialize, Error)]
 pub enum SendableError {
     NotFound,
@@ -95,36 +18,75 @@ impl Display for SendableError {
     }
 }
 
-impl From<SendableError> for Error {
-    fn from(value: SendableError) -> Self {
-        match value {
-            SendableError::NotFound => Error::NotFound,
-            SendableError::Internal => Error::Custom("Internal error".to_string()),
-        }
+impl From<serde_json::Error> for SendableError {
+    fn from(value: serde_json::Error) -> Self {
+        error!("{}", value);
+        Self::Internal
     }
 }
 
-impl From<Error> for SendableError {
-    fn from(value: Error) -> Self {
-        // At this point data contained in the error would be lost, so we log it to the error channel
+#[cfg(not(target_arch = "wasm32"))]
+impl From<reqwest::Error> for SendableError {
+    fn from(value: reqwest::Error) -> Self {
+        error!("{}", value);
+        Self::Internal
+    }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+impl From<salvo::http::errors::StatusError> for SendableError {
+    fn from(value: salvo::http::errors::StatusError) -> Self {
+        error!("{}", value);
+        Self::Internal
+    }
+}
+
+impl From<serde_wasm_bindgen::Error> for SendableError {
+    fn from(value: serde_wasm_bindgen::Error) -> Self {
+        error!("{}", value);
+        Self::Internal
+    }
+}
+
+impl From<wasm_bindgen::JsValue> for SendableError {
+    fn from(value: wasm_bindgen::JsValue) -> Self {
+        //TODO: check for correct error logging
         error!("{:#?}", value);
-        match value {
-            Error::NotFound => Self::NotFound,
-            _ => Self::Internal,
-        }
+        Self::Internal
+    }
+}
+
+impl From<gloo_file::FileReadError> for SendableError {
+    fn from(value: gloo_file::FileReadError) -> Self {
+        error!("{}", value);
+        Self::Internal
     }
 }
 
 impl From<String> for SendableError {
     fn from(value: String) -> Self {
-        Error::from(value).into()
+        error!("{}", value);
+        Self::Internal
     }
 }
 
-impl From<SendableError> for hyper::Response<Full<Bytes>> {
-    fn from(val: SendableError) -> Self {
-        Response { body: Err(val) }
-            .try_into()
-            .expect("Error conversion should not fail")
+impl From<&str> for SendableError {
+    fn from(value: &str) -> Self {
+        error!("{}", value);
+        Self::Internal
+    }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+impl salvo::Piece for SendableError {
+    fn render(self, res: &mut salvo::Response) {
+        match self {
+            Self::NotFound => {
+                res.status_code(salvo::http::StatusCode::NOT_FOUND);
+            }
+            Self::Internal => {
+                res.status_code(salvo::http::StatusCode::INTERNAL_SERVER_ERROR);
+            }
+        }
     }
 }

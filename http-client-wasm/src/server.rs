@@ -5,11 +5,11 @@ use std::{collections::HashMap, sync::Arc};
 //TODO ideally we recycle already existing ws connections to a backend when two frontend server are connecting to the
 // same machine
 
-use erpc::protocol::{self, error};
-use log::{error, warn};
+use erpc::protocol::{self};
+use log::error;
 use parking_lot::RwLock;
-use wasm_bindgen::{prelude::Closure, JsCast};
-use web_sys::{ErrorEvent, MessageEvent, WebSocket};
+use wasm_bindgen::{prelude::Closure, JsCast, JsValue};
+use web_sys::{console, ErrorEvent, MessageEvent, WebSocket};
 
 use crate::CREATED_TARGETS;
 
@@ -24,7 +24,7 @@ impl Server {
     pub fn new(role: String) -> Self {
         Self {
             role,
-            handlers: Arc::new(RwLock::new(HashMap::new())),
+            handlers: Arc::new(RwLock::new(HashMap::new())), // TODO what does this warning mean?
         }
     }
 
@@ -57,12 +57,12 @@ impl Server {
                     .address()
                     .replace("http://", "ws://")
                     .replace("https://", "wss://");
-                let address = format!("{address}/ws/{}", role);
+                let address = format!("{address}/{}/{role}", protocol::routes::WEBSOCKETS_ROUTE);
 
                 let ws = match WebSocket::new(&address) {
                     Ok(v) => v,
                     Err(err) => {
-                        error!("Could not create WebSocket: {:#?}", err);
+                        console::error_2(&JsValue::from_str("Could not create WebSocket: "), &err);
                         return;
                     }
                 };
@@ -70,103 +70,59 @@ impl Server {
                 let cloned_ws = ws.clone();
                 let handlers = handlers.clone();
                 let onmessage_callback = Closure::<dyn FnMut(_)>::new(move |e: MessageEvent| {
-                    let message: protocol::socket::SocketMessage =
-                        if let Ok(abuf) = e.data().dyn_into::<js_sys::ArrayBuffer>() {
-                            let array = js_sys::Uint8Array::new(&abuf);
-
-                            match serde_json::from_slice(array.to_vec().as_slice()) {
+                    let handlers = handlers.clone();
+                    let cloned_ws = cloned_ws.clone();
+                    wasm_bindgen_futures::spawn_local(async move {
+                        let message =
+                            match protocol::socket::SocketMessage::try_from_wasm_socket_message_event(e)
+                                .await
+                            {
                                 Ok(v) => v,
                                 Err(err) => {
-                                    error!("Could not deserialize incoming message: {:#?}", err);
-                                    return;
-                                }
-                            }
-                        } else if let Ok(blob) = e.data().dyn_into::<web_sys::Blob>() {
-                            warn!("Recieved blob message, ignoring. Blob type not yet supported");
-                            return;
-                            //TODO
-                            // let array_buffer = match JsFuture::from(blob.array_buffer()).await {
-                            //     Ok(v) => v,
-                            //     Err(err) => {
-                            //         error!("Could not convert blob to array buffer: {:#?}", err);
-                            //         return;
-                            //     }
-                            // };
-
-                            // let array_buffer = match array_buffer.dyn_into::<js_sys::ArrayBuffer>() {
-                            //     Ok(v) => v,
-                            //     Err(err) => {
-                            //         error!("Could not cast converted blob to array buffer: {:#?}", err);
-                            //         return;
-                            //     }
-                            // };
-
-                            // match serde_json::from_slice(
-                            //     js_sys::Uint8Array::new(&array_buffer).to_vec().as_slice(),
-                            // ) {
-                            //     Ok(v) => v,
-                            //     Err(err) => {
-                            //         error!("Could not deserialize incoming message: {:#?}", err);
-                            //         return;
-                            //     }
-                            // }
-                        } else if let Ok(txt) = e.data().dyn_into::<js_sys::JsString>() {
-                            let txt = match txt.as_string() {
-                                Some(v) => v,
-                                None => {
-                                    error!("Could not convert string");
+                                    error!("Could not convert socket message: {}", err);
                                     return;
                                 }
                             };
-                            match serde_json::from_str(&txt) {
-                                Ok(v) => v,
-                                Err(err) => {
-                                    error!("Could not deserialize incoming message: {:#?}", err);
-                                    return;
+
+                        let response: protocol::socket::SocketMessage = match message {
+                            protocol::socket::SocketMessage::Request(req) => {
+                                let handlers = handlers.read();
+                                match handlers.get(&req.request.identifier) {
+                                    Some(handler) => {
+                                        let response = handler(req.request);
+                                        protocol::socket::SocketMessage::Response(
+                                            protocol::socket::Response {
+                                                id: req.id,
+                                                response,
+                                            },
+                                        )
+                                    }
+                                    None => {
+                                        error!(
+                                            "Could not find handler for route {}",
+                                            req.request.identifier
+                                        );
+                                        protocol::socket::SocketMessage::Response(
+                                            protocol::socket::Response {
+                                                id: req.id,
+                                                response: protocol::error::SendableError::NotFound
+                                                    .into(),
+                                            },
+                                        )
+                                    }
                                 }
                             }
-                        } else {
-                            error!("message event, received Unknown: {:?}", e.data());
-                            return;
+                            protocol::socket::SocketMessage::Response(_) => todo!(), //TODO
                         };
 
-                    let id = message.id().to_string();
-                    let response: protocol::socket::Response = match message {
-                        protocol::socket::SocketMessage::Request(req) => {
-                            let handlers = handlers.read();
-                            let handler = handlers.get(&req.request.identifier);
-                            match handler {
-                                Some(handler) => protocol::socket::Response {
-                                    id,
-                                    response: handler(req.request),
-                                },
-                                None => protocol::socket::Response {
-                                    id,
-                                    response: protocol::Response {
-                                        body: Err(error::Error::from(format!(
-                                            "No handler for identifier {}",
-                                            req.request.identifier
-                                        ))
-                                        .into()),
-                                    },
-                                },
-                            }
-                        }
-                        protocol::socket::SocketMessage::Response(res) => {
-                            error!("Recieved websocket message of response type. This is not supported yet");
-                            protocol::socket::Response {
-                                id,
-                                response: protocol::Response {
-                                    body: Err(error::Error::from("Recieved websocket message of response type. This is not supported yet".to_string()).into())
-                                }
-                            }
-                        }
-                    };
+                        println!("Sending response: {:?}", response);
+                        //TODO remove unwrap
+                        let serialized: Vec<u8> = response.try_into().unwrap();
 
-                    //TODO remove unwrap
-                    cloned_ws
-                        .send_with_u8_array(&serde_json::to_vec(&response).unwrap())
-                        .unwrap();
+                        println!("serialized: {:?}", serialized);
+
+                        cloned_ws.send_with_u8_array(&serialized).unwrap();
+                    });
                 });
                 // set message event handler on WebSocket
                 ws.set_onmessage(Some(onmessage_callback.as_ref().unchecked_ref()));
@@ -174,7 +130,7 @@ impl Server {
                 onmessage_callback.forget();
 
                 let onerror_callback = Closure::<dyn FnMut(_)>::new(move |e: ErrorEvent| {
-                    error!("error event: {:?}", e);
+                    console::error_2(&JsValue::from_str("websocket error event: "), &e.error());
                 });
                 ws.set_onerror(Some(onerror_callback.as_ref().unchecked_ref()));
                 onerror_callback.forget();

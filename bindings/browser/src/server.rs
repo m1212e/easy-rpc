@@ -52,8 +52,10 @@ impl ERPCServer {
                 let result = handler
                     .apply(&JsValue::null(), &parameters)
                     .map_err(|err| {
-                        protocol::error::Error::from(format!("Apply call failed: {:#?}", err))
-                            .into()
+                        protocol::error::SendableError::from(format!(
+                            "Apply call failed: {:#?}",
+                            err
+                        ))
                     })
                     .map(|v| serde_wasm_bindgen::from_value(v).unwrap());
 

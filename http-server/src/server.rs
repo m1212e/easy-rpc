@@ -1,27 +1,17 @@
-use std::convert::Infallible;
-use std::{collections::HashMap, net::SocketAddr, pin::Pin, sync::Arc};
-
-use erpc::protocol::error::Error;
-use erpc::protocol::{self, socket::SocketMessage};
-use futures_util::{Future, SinkExt, StreamExt};
-use http_body_util::Full;
-use hyper::body::{Bytes, Incoming};
-use hyper::header::UPGRADE;
-use hyper::http::HeaderValue;
-use hyper::server::conn::http1;
-use hyper::service::service_fn;
-use hyper::upgrade::Upgraded;
-use hyper::Response;
-use hyper::StatusCode;
-use log::error;
-use parking_lot::RwLock;
-use serde::{de::DeserializeOwned, Serialize};
-use tokio::{net::TcpListener, sync::oneshot};
-use tokio_tungstenite::WebSocketStream;
-
 //TODO: check the channels for optimal tool for the problem (e.g. swithc to broadcast, mpsc where applicable)
 
-use crate::{handler, Socket};
+use std::{collections::HashMap, pin::Pin, sync::Arc};
+
+use erpc::protocol::{self, socket::SocketMessage, SendableError};
+use futures_util::Future;
+use log::error;
+use parking_lot::RwLock;
+use reqwest::Method;
+use salvo::{catcher::Catcher, cors::Cors, prelude::*};
+use serde::{de::DeserializeOwned, Serialize};
+use tokio::sync::oneshot;
+
+use crate::handler;
 
 pub type InternalHandler = Box<
     dyn Fn(protocol::Request) -> Pin<Box<dyn Future<Output = protocol::Response> + Send + Sync>>
@@ -30,6 +20,14 @@ pub type InternalHandler = Box<
 >;
 
 type HandlerMap = Arc<RwLock<HashMap<String, InternalHandler>>>;
+type SocketBroadcaster = (flume::Sender<Socket>, flume::Receiver<Socket>);
+
+#[derive(Clone, Debug)]
+pub struct Socket {
+    pub requests: flume::Sender<erpc::protocol::socket::Request>,
+    pub responses: flume::Receiver<erpc::protocol::socket::Response>,
+    pub role: String,
+}
 
 //TODO: check where rwlock/mutex is necessary
 #[derive(Clone)]
@@ -42,7 +40,7 @@ pub struct Server {
     allowed_cors_origins: Vec<String>,
     port: u16,
     handler_map: HandlerMap,
-    socket_broadcaster: (flume::Sender<Socket>, flume::Receiver<Socket>),
+    socket_broadcaster: SocketBroadcaster,
 }
 
 impl Server {
@@ -57,7 +55,7 @@ impl Server {
         }
     }
 
-    pub fn socket_broadcaster(&self) -> &flume::Receiver<Socket> {
+    pub fn get_socket_broadcaster(&self) -> &flume::Receiver<Socket> {
         &self.socket_broadcaster.1
     }
 
@@ -78,27 +76,20 @@ impl Server {
         let v: InternalHandler = Box::new(move |request| {
             let handler = handler.clone();
             Box::pin(async move {
-                //TODO there should be a macro for this
                 let parameters = match serde_json::to_value(request.parameters) {
                     Ok(v) => v,
-                    Err(err) => return Error::from(err).into(),
+                    Err(err) => return SendableError::from(err).into(),
                 };
-
                 let parameters = match serde_json::from_value::<P>(parameters) {
                     Ok(v) => v,
-                    Err(err) => return Error::from(err).into(),
+                    Err(err) => return SendableError::from(err).into(),
                 };
-
                 let result = handler.call(parameters).await;
-
                 let serialized = match serde_json::to_value(&result) {
                     Ok(v) => v,
-                    Err(err) => return Error::from(err).into(),
+                    Err(err) => return SendableError::from(err).into(),
                 };
-
-                protocol::Response {
-                    body: Ok(serialized),
-                }
+                serialized.into()
             })
         });
 
@@ -108,77 +99,54 @@ impl Server {
             .insert(identifier.to_string(), v);
     }
 
-    pub async fn run(&self) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-        let addr = SocketAddr::from(([127, 0, 0, 1], self.port));
-        let listener = TcpListener::bind(addr).await?;
+    pub async fn run(&self) -> impl Future<Output = ()> {
+        let (tx, rx) = oneshot::channel::<()>();
+        self.shutdown_signal.write().replace(tx);
 
-        let handler_map = self.handler_map.clone();
-        let enabled_sockets = self.enabled_sockets;
-        let socket_broadcaster = self.socket_broadcaster.0.clone();
-        let allowed_cors_origins = self.allowed_cors_origins.clone();
-        loop {
-            let handler_map = handler_map.clone();
-            let socket_broadcaster = socket_broadcaster.clone();
-            let (stream, _) = listener.accept().await?;
-            let allowed_cors_origins = allowed_cors_origins.clone();
+        let mut cors_handler = Cors::new()
+            .allow_methods(vec![Method::POST, Method::OPTIONS])
+            .allow_headers("*");
 
-            tokio::task::spawn(async move {
-                if let Err(err) = http1::Builder::new()
-                    .serve_connection(
-                        stream,
-                        service_fn(move |req| {
-                            let handler_map = handler_map.clone();
-                            let socket_broadcaster = socket_broadcaster.clone();
-                            let allowed_cors_origins = allowed_cors_origins.clone();
-                            async move {
-                                let headers = req.headers().clone();
-                                let mut response = Server::http_handler(
-                                    req,
-                                    handler_map,
-                                    enabled_sockets,
-                                    socket_broadcaster,
-                                )
-                                .await;
-
-                                // TODO put CORS code somewhere else
-                                response.headers_mut().append(
-                                    "Access-Control-Allow-Credentials",
-                                    HeaderValue::from_static("true"),
-                                );
-                                response.headers_mut().append(
-                                    "Access-Control-Allow-Methods",
-                                    HeaderValue::from_static("POST"),
-                                );
-                                if allowed_cors_origins.contains(&"*".to_string()) {
-                                    response.headers_mut().append(
-                                        "Access-Control-Allow-Origin",
-                                        HeaderValue::from_static("*"),
-                                    );
-                                } else if let Some(origin) = headers.get("Origin") {
-                                    if let Ok(origin) = origin.to_str() {
-                                        if allowed_cors_origins.contains(&origin.to_string()) {
-                                            if let Ok(header_value) = HeaderValue::from_str(origin)
-                                            {
-                                                response.headers_mut().append(
-                                                    "Access-Control-Allow-Origin",
-                                                    header_value,
-                                                );
-                                            }
-                                        }
-                                    }
-                                }
-
-                                Ok::<_, Infallible>(response)
-                            }
-                        }),
-                    )
-                    .with_upgrades()
-                    .await
-                {
-                    error!("Error serving http1 connection: {:?}", err);
-                }
-            });
+        if self.allowed_cors_origins.contains(&"*".to_string()) {
+            cors_handler = cors_handler.allow_origin("*");
+        } else {
+            cors_handler = cors_handler.allow_origin(&self.allowed_cors_origins.clone());
         }
+
+        let mut router = Router::with_hoop(affix::inject(self.handler_map.clone())).push(
+            Router::with_hoop(cors_handler.into_handler())
+                .options(salvo::handler::empty())
+                .path(format!(
+                    "{}/<**identifier>",
+                    protocol::routes::HANDLERS_ROUTE
+                ))
+                .post(request_handler),
+        );
+
+        if self.enabled_sockets {
+            router = router.push(
+                Router::with_hoop(affix::inject(self.socket_broadcaster.clone()))
+                    .path(format!("{}/<*role>", protocol::routes::WEBSOCKETS_ROUTE))
+                    .handle(socket_handler),
+            );
+        }
+
+        // let config = RustlsConfig::new(None);
+        // let listener = TcpListener::new(("0.0.0.0", self.port));
+        // let acceptor = QuinnListener::new(config, ("0.0.0.0", self.port))
+        //     .join(listener)
+        //     .bind()
+        //     .await;
+
+        let acceptor = TcpListener::new(("0.0.0.0", self.port)).bind().await;
+
+        salvo::Server::new(acceptor).serve_with_graceful_shutdown(
+            Service::new(router).catcher(Catcher::default().hoop(error_handler)),
+            async {
+                rx.await.ok();
+            },
+            None,
+        )
     }
 
     pub fn stop(&self) -> Result<(), String> {
@@ -202,189 +170,144 @@ impl Server {
 
         Ok(())
     }
+}
 
-    async fn http_handler(
-        request: hyper::Request<Incoming>,
-        handlers: HandlerMap,
-        enabled_sockets: bool,
-        socket_broadcaster: flume::Sender<Socket>,
-    ) -> hyper::Response<Full<Bytes>> {
-        if enabled_sockets && request.uri().path().starts_with("/ws/") {
-            //TODO check if role exists
-            let mut role = request.uri().path().strip_prefix("/ws/").unwrap();
-            if role.ends_with('/') {
-                role = role.strip_suffix('/').unwrap();
-            }
-            let role = role.to_string();
+#[handler]
+async fn request_handler(
+    req: &mut Request,
+    depot: &mut Depot,
+) -> Result<protocol::Response, protocol::SendableError> {
+    let response = {
+        let identifier = req
+            .param::<String>("**identifier")
+            .ok_or("Could not read identifier from path")?;
 
-            if !request.headers().contains_key(UPGRADE) {
-                return Response::builder()
-                    .status(StatusCode::BAD_REQUEST)
-                    .body(Full::new(Bytes::new()))
-                    .unwrap();
-            }
+        let req = protocol::Request::try_from_salvo_request(req, identifier).await?;
 
-            tokio::task::spawn(async move {
-                match hyper::upgrade::on(request).await {
-                    Ok(upgraded) => {
-                        let socket = match tokio_tungstenite::accept_async(upgraded).await {
+        let handlers = depot
+            .obtain::<HandlerMap>()
+            .ok_or("Could not obtain handler map")?
+            .read();
+
+        let handler = handlers
+            .get(&req.identifier)
+            .ok_or(protocol::SendableError::NotFound)?;
+
+        handler(req)
+    };
+
+    Ok(response.await)
+}
+
+#[handler]
+async fn socket_handler(
+    req: &mut Request,
+    res: &mut Response,
+    depot: &mut Depot,
+) -> Result<(), protocol::SendableError> {
+    let role = req
+        .param::<String>("*role")
+        .ok_or("Could not read role from path")?;
+
+    let handlers = depot
+        .obtain::<HandlerMap>()
+        .ok_or("Could not obtain handler map")?
+        .clone();
+
+    let socket_broadcaster = depot
+        .obtain::<SocketBroadcaster>()
+        .ok_or("Could not obtain socket broadcaster")?
+        .clone();
+
+    // interfaces for this socket, they mirror requests of this socket 1:1
+    let (requests_sender, requests_reciever) = flume::unbounded::<protocol::socket::Request>();
+    let (responses_sender, responses_reciever) = flume::unbounded::<protocol::socket::Response>();
+
+    let socket = Socket {
+        responses: responses_reciever,
+        requests: requests_sender.clone(),
+        role,
+    };
+
+    socket_broadcaster
+        .0
+        .send_async(socket)
+        .await
+        .map_err(|err| format!("Could not broadcast socket: {}", err))?;
+
+    WebSocketUpgrade::new()
+        .upgrade(req, res, |mut ws| async move {
+            loop {
+                tokio::select! {
+                    Some(msg) = ws.recv() => {
+                        let msg = if let Ok(msg) = msg {
+                            msg
+                        } else {
+                            return;
+                        };
+
+                        let msg = match SocketMessage::try_from(msg) {
                             Ok(v) => v,
                             Err(err) => {
-                                error!("Could not accept upgraded connection: {}", err);
+                                error!("Could not parse incoming socket request: {:?}", err);
                                 return;
                             }
                         };
 
-                        Server::handle_socket(socket, handlers, role, socket_broadcaster).await
+                        match msg {
+                            SocketMessage::Request(r) => {
+                                let response = {
+                                    let handlers = handlers.read();
+                                    let handler = match handlers.get(&r.request.identifier) {
+                                        Some(v) => v,
+                                        None => {
+                                            if let Err(err) = responses_sender.send(
+                                                protocol::socket::Response::from_response(protocol::SendableError::NotFound.into(), &r.id)
+                                            ) {
+                                                error!("Could not send response: {:?}", err);
+                                            };
+                                            return;
+                                        },
+                                    };
+
+                                    handler(r.request)
+                                };
+
+                                if let Err(err) = responses_sender.send_async(protocol::socket::Response::from_response(response.await, &r.id)).await {
+                                    error!("Could not send response: {:?}", err);
+                                };
+                            },
+                            SocketMessage::Response(r) => {
+                                if let Err(err) = responses_sender.send_async(r).await {
+                                    error!("Could not send response: {:?}", err);
+                                };
+                            },
+                        };
                     }
-                    Err(e) => error!("upgrade error: {}", e),
-                }
-            });
+                    Ok(req) = requests_reciever.recv_async() => {
+                        let message: salvo::websocket::Message =
+                            match protocol::socket::SocketMessage::Request(req).try_into() {
+                                Ok(v) => v,
+                                Err(err) => {
+                                    error!("Could not convert request to websocket message: {:?}", err);
+                                    return;
+                                }
+                            };
 
-            return Response::builder()
-                .header(UPGRADE, HeaderValue::from_static("websocket"))
-                .status(StatusCode::SWITCHING_PROTOCOLS)
-                .body(Full::new(Bytes::new()))
-                .unwrap();
-        }
-
-        let request = match protocol::Request::try_from_hyper_request(request).await {
-            Ok(v) => v,
-            Err(err) => {
-                return err.into();
-            }
-        };
-
-        let handler_result = Server::handle_request(request, handlers).await;
-        match handler_result.try_into() {
-            Ok(v) => v,
-            Err(err) => err.into(),
-        }
-    }
-
-    async fn handle_socket(
-        socket: WebSocketStream<Upgraded>,
-        handlers: HandlerMap,
-        role: String,
-        socket_broadcaster: flume::Sender<Socket>,
-    ) {
-        //TODO this section definitely needs an overhaul to reduce complexity
-
-        // the actual native socket channel
-        let (mut socket_send, mut socket_recieve) = socket.split();
-
-        // the channels to pass into the socket struct for use outside of this function, e.g. for targets to send requests
-        let (requests_sender, requests_reciever) = flume::unbounded::<protocol::socket::Request>();
-        let (responses_sender, responses_reciever) =
-            flume::unbounded::<protocol::socket::Response>();
-
-        //TODO there must be a more elegant way to do this
-        // since the WebSocketSteam is not cloneable an we need to send to the socket from multiple places, this wrapper channel and
-        // a worker process exist which allows us to pass messages into the socket from multiple senders
-        let (socket_outgoing_sender, socket_outgoing_reciever) =
-            flume::unbounded::<protocol::socket::SocketMessage>();
-        tokio::spawn(async move {
-            while let Ok(message) = socket_outgoing_reciever.recv_async().await {
-                socket_send
-                    .send(match message.try_into() {
-                        Ok(v) => v,
-                        Err(err) => {
-                            error!("Could not send message via socket: {:?}", err);
-                            continue;
-                        }
-                    })
-                    .await
-                    .unwrap();
-            }
-        });
-
-        // send requests to the client
-        tokio::spawn({
-            let socket_outgoing_sender = socket_outgoing_sender.clone();
-            async move {
-                while let Ok(request) = requests_reciever.recv_async().await {
-                    socket_outgoing_sender
-                        .send(SocketMessage::Request(request))
-                        .unwrap();
-                }
-            }
-        });
-
-        // broadcast the creation of a socket (e.g. to create a new target which can wrap around the socket)
-        match socket_broadcaster
-            .send_async(Socket {
-                responses: responses_reciever,
-                requests: requests_sender,
-                role,
-            })
-            .await
-        {
-            Ok(_) => {}
-            Err(err) => {
-                error!("Could not broadcast socket: {:#?}", err);
-                return;
-            }
-        }
-
-        while let Some(message) = socket_recieve.next().await {
-            let message = match message {
-                Ok(v) => v,
-                Err(err) => {
-                    error!("Error while recieving websocket message: {:?}", err);
-                    continue;
-                }
-            };
-            let message = match protocol::socket::SocketMessage::try_from_socket_message(message) {
-                Ok(v) => match v {
-                    Some(v) => v,
-                    None => continue,
-                },
-                Err(err) => {
-                    error!("Could not parse websocket message: {:?}", err);
-                    continue;
-                }
-            };
-
-            match message {
-                SocketMessage::Request(req) => {
-                    let response = Server::handle_request(req.request, handlers.clone()).await;
-
-                    match socket_outgoing_sender.send(SocketMessage::Response(
-                        protocol::socket::Response {
-                            id: req.id,
-                            response,
-                        },
-                    )) {
-                        Ok(_) => {}
-                        Err(err) => {
-                            error!("Could not send response: {:?}", err);
+                        if ws.send(message).await.is_err() {
+                            return;
                         }
                     }
                 }
-                SocketMessage::Response(response) => match responses_sender.send(response) {
-                    Ok(_) => {}
-                    Err(err) => {
-                        error!("Could not send response on response channel: {:?}", err);
-                    }
-                },
             }
-        }
-    }
+        })
+        .await?;
 
-    async fn handle_request(
-        request: protocol::Request,
-        handlers: HandlerMap,
-    ) -> protocol::Response {
-        let handler_result_future = {
-            let lock = handlers.read();
-            let handler = match lock.get(&request.identifier).ok_or(Error::NotFound) {
-                Ok(v) => v,
-                Err(err) => return err.into(),
-            };
+    Ok(())
+}
 
-            handler(request)
-        };
-
-        handler_result_future.await
-    }
+// this is used to remove the default error page, which is salvo branded
+#[handler]
+async fn error_handler(res: &mut Response, ctrl: &mut FlowCtrl) {
+    ctrl.skip_rest();
 }

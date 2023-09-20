@@ -6,6 +6,8 @@
 	},
 	"dependencies": {
 		"@easy-rpc/node": "file:../../bindings/node-api",
+		"http3": "^0.0.1",
+		"quic": "^0.4.2",
 		"ts-node": "^10.9.1",
 		"typescript": "^5.0.4"
 	},

@@ -1,4 +1,5 @@
 [workspace]
+resolver = "2"
 members = [
     "erpc",
     "http-server",
@@ -7,3 +8,9 @@ members = [
     "bindings/node-api",
     "bindings/browser"
 ]
+
+[profile.release.package.browser]
+opt-level = "s"
+
+[profile.release]
+lto = true

@@ -8,10 +8,17 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 log = "0.4"
 nanoid = "0.4.0"
-hyper = { version = "1.0.0-rc.4" }
 http-body-util = "0.1.0-rc.3"
-reqwest = { version = "0.11"}
-tokio-tungstenite = "0.18"
 wasm-bindgen = { version = "0.2"}
 serde-wasm-bindgen = "0.5"
 thiserror = "1.0"
+flume = "0.10"
+
+# [target.'cfg(target_arch = "wasm32")'.dependencies]
+web-sys = { version = "0.3", features = ["MessageEvent"]}
+js-sys = "0.3"
+gloo-file = { version = "0.3", features = ["futures"]}
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+reqwest = { version = "0.11"}
+salvo = "0.50"

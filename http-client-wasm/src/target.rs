@@ -1,15 +1,15 @@
 use std::{collections::HashMap, sync::Arc};
 
 use erpc::{
-    protocol::{self, error::Error},
+    protocol::{self, SendableError},
     target::TargetType,
 };
 use futures::channel::oneshot;
 use log::error;
 use parking_lot::Mutex;
-use wasm_bindgen::JsCast;
+use wasm_bindgen::{JsCast, JsValue};
 use wasm_bindgen_futures::JsFuture;
-use web_sys::{Request, RequestInit, RequestMode, Response};
+use web_sys::{Request, RequestInit, RequestMode, Response, console};
 
 use crate::{Socket, CREATED_TARGETS};
 
@@ -58,7 +58,7 @@ impl Target {
                     match reciever.await {
                         Ok(v) => v,
                         Err(err) => {
-                            Error::from(format!("Recieving response cancelled: {}", err)).into()
+                            SendableError::from(format!("Recieving response cancelled: {}", err)).into()
                         }
                     }
                 }
@@ -67,46 +67,57 @@ impl Target {
                     opts.method("POST");
                     opts.mode(RequestMode::Cors);
 
-                    let body = match serde_wasm_bindgen::to_value(&request.parameters) {
+                    let stringified = match serde_json::to_string(&request.parameters) {
                         Ok(v) => v,
-                        Err(err) => return Error::from(err).into(),
+                        Err(err) => return SendableError::from(err).into(),
                     };
-                    opts.body(Some(&body));
 
-                    let url = format!("{}/handlers/{}", self.address, request.identifier);
+                    opts.body(Some(&JsValue::from_str(stringified.as_str())));
+
+                    let url = format!(
+                        "{}/{}/{}",
+                        self.address,
+                        protocol::routes::HANDLERS_ROUTE,
+                        request.identifier
+                    );
                     let request = match Request::new_with_str_and_init(&url, &opts) {
                         Ok(v) => v,
-                        Err(err) => return Error::from(err).into(),
+                        Err(err) => return SendableError::from(err).into(),
+                    };
+
+                    match request.headers().set("Content-Type", "application/json") {
+                        Ok(_) => {},
+                        Err(err) => return SendableError::from(format!("Could not add header to request: {:#?}", err)).into(),
                     };
 
                     let window = match web_sys::window() {
                         Some(v) => v,
-                        None => return Error::from("Could not access window object").into(),
+                        None => return SendableError::from("Could not access window object").into(),
                     };
                     let resp_value = match JsFuture::from(window.fetch_with_request(&request)).await
                     {
                         Ok(v) => v,
-                        Err(err) => return Error::from(err).into(),
+                        Err(err) => return SendableError::from(err).into(),
                     };
 
                     let resp: Response = match resp_value.dyn_into() {
                         Ok(v) => v,
-                        Err(err) => return Error::from(err).into(),
+                        Err(err) => return SendableError::from(err).into(),
                     };
 
                     let body = match JsFuture::from(match resp.array_buffer() {
                         Ok(v) => v,
-                        Err(err) => return Error::from(err).into(),
+                        Err(err) => return SendableError::from(err).into(),
                     })
                     .await
                     {
                         Ok(v) => v,
-                        Err(err) => return Error::from(err).into(),
+                        Err(err) => return SendableError::from(err).into(),
                     };
                     let body: serde_json::Value =
                         match serde_json::from_slice(&js_sys::Uint8Array::new(&body).to_vec()) {
                             Ok(v) => v,
-                            Err(err) => return Error::from(err).into(),
+                            Err(err) => return SendableError::from(err).into(),
                         };
 
                     protocol::Response { body: Ok(body) }
